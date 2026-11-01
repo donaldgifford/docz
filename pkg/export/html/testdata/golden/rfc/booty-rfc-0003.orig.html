@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="RFC-0003">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>RFC-0003: Agent Capability Tokens</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · RFC</p>
+<h1>Agent Capability Tokens</h1>
+<p class="summary"><strong>Status:</strong> Draft <strong>Author:</strong> Donald Gifford <strong>Date:</strong> 2026-05-10</p>
+<div class="meta">
+<span class="pill">RFC-0003</span>
+<span class="pill st-draft">Draft</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-05-10</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="problem" aria-controls="p-problem">Problem</button>
+<button type="button" data-tab="proposal" aria-controls="p-proposal">Proposal</button>
+<button type="button" data-tab="design" aria-controls="p-design">Design</button>
+<button type="button" data-tab="alternatives" aria-controls="p-alternatives">Alternatives</button>
+<button type="button" data-tab="implementation-phases" aria-controls="p-implementation-phases">Implementation Phases</button>
+<button type="button" data-tab="risks" aria-controls="p-risks">Risks</button>
+<button type="button" data-tab="success" aria-controls="p-success">Success</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<ul>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#problem-statement">Problem Statement</a></li>
+<li><a href="#proposed-solution">Proposed Solution</a></li>
+<li><a href="#design">Design</a>
+<ul>
+<li><a href="#token-lifecycle">Token lifecycle</a></li>
+<li><a href="#jwt-claim-structure">JWT claim structure</a></li>
+<li><a href="#enforcement-points">Enforcement points</a></li>
+<li><a href="#policy-engine-opa-embedded">Policy engine (OPA, embedded)</a></li>
+<li><a href="#scope-vocabulary-registry">Scope vocabulary registry</a></li>
+<li><a href="#key-management">Key management</a></li>
+<li><a href="#failure-modes">Failure modes</a></li>
+</ul>
+</li>
+<li><a href="#alternatives-considered">Alternatives Considered</a></li>
+<li><a href="#implementation-phases">Implementation Phases</a>
+<ul>
+<li><a href="#phase-1--framework-verify-primitive--dispatcher-hook">Phase 1 — Framework verify primitive + dispatcher hook</a></li>
+<li><a href="#phase-2--adk-controller-as-token-issuer">Phase 2 — ADK controller as token issuer</a></li>
+<li><a href="#phase-3--egress-proxy--fs-mount-enforcement">Phase 3 — Egress proxy + FS mount enforcement</a></li>
+<li><a href="#phase-4--vault-jit-integration">Phase 4 — Vault JIT integration</a></li>
+<li><a href="#phase-5--scope-vocabulary-registry--tooling">Phase 5 — Scope vocabulary registry + tooling</a></li>
+</ul>
+</li>
+<li><a href="#risks-and-mitigations">Risks and Mitigations</a></li>
+<li><a href="#success-criteria">Success Criteria</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+<h3 id="summary">Summary</h3>
+<p>Introduce a <strong>capability token</strong> model — a controller-signed JWT issued at
+AgentRun creation that establishes cryptographic provenance for the agent's
+runtime environment and carries scoped claims for tool calls, network egress,
+filesystem access, AWS JIT credentials, and budget limits. The framework's tool
+dispatcher verifies the token once at agent startup, caches typed claims, and
+evaluates each tool invocation against the claims via an embedded OPA policy
+engine. Out-of-process enforcement points (network egress proxy, filesystem
+mount setup, Vault JIT) verify the same token to gate non-Go-code-path access.
+The model ties the previously orthogonal isolation, budget, and identity-aware-
+filtering mechanisms into a single cryptographically grounded authorization
+story without inventing new infrastructure.</p>
+
+</section>
+<section class="panel" id="p-problem">
+<h2 class="panel-title">Problem</h2>
+<h3 id="problem-statement">Problem Statement</h3>
+<p>The framework and ADK currently have three security mechanisms operating
+independently:</p>
+<ol>
+<li><strong>Sandbox isolation</strong> (gVisor in v1; per the sandbox INV) prevents the agent
+from making syscalls outside its containment boundary</li>
+<li><strong>Budget enforcement</strong> (per framework INV Q9) prevents runaway token /
+tool-call / wall-clock consumption</li>
+<li><strong>Identity-aware filtering</strong> (per the triage bot RFC) prevents tools from
+surfacing cross-tenant data</li>
+</ol>
+<p>These are real controls but they don't compose. Each has its own trust story,
+its own bypass surface, and its own audit trail. As the tool inventory grows
+(the AWS access investigator will add ~12 tools; the coding-agent reference adds
+~6; ADK Phase 4 reference agents add more), the lack of a unified authorization
+model becomes brittle in three specific ways:</p>
+<ul>
+<li><p><strong>No cryptographic provenance.</strong> An agent inside its sandbox is just some Go
+process running with ambient permissions defined by its binary and config
+files. A tool receiving a call has no signed evidence that the call comes from
+a specific AgentRun authorized for specific scopes. Audit trails are
+reconstructive (&quot;which agent ran this tool?&quot;) rather than verifiable (&quot;this
+tool call was authorized by AgentRun X with scope Y at time Z, signature
+attached&quot;).</p>
+</li>
+<li><p><strong>Trust in Vault JIT is implicit.</strong> The agent-platform design issues per-run
+STS credentials via Vault. Vault has to verify something about the requester
+before issuing. Today that's implicit (IRSA, service-account JWT, ambient pod
+identity). Formalizing it — Vault verifies the agent capability JWT and issues
+STS scoped to the JWT's AWS-scope claims — removes the implicit-trust footgun
+and gives Vault a clean authorization boundary.</p>
+</li>
+<li><p><strong>Retrofit cost grows with tool inventory.</strong> Tools written without an
+authorization gate today will each grow their own ad-hoc auth shim later, or
+worse, not have one. By the time ADK Phase 4 ships, we'll have 30+ tools with
+inconsistent auth checks. Adding a single verification gate in the framework's
+dispatcher from day 1 means all tools — including ones we haven't written yet
+— are gated through one mechanism that they don't have to reason about.</p>
+</li>
+</ul>
+<p>A capability-token model addresses all three. The JWT is the signed provenance;
+Vault's JWT auth backend formalizes the existing implicit trust; the framework's
+dispatcher gate enforces uniformly across the tool inventory.</p>
+
+</section>
+<section class="panel" id="p-proposal">
+<h2 class="panel-title">Proposal</h2>
+<h3 id="proposed-solution">Proposed Solution</h3>
+<p>A controller-issued, Vault-Transit-signed JWT carries the agent's identity,
+provenance, and scoped permissions for the duration of an AgentRun. The JWT is:</p>
+<ul>
+<li><strong>Issued</strong> by the ADK controller at AgentRun creation, after resolving the
+AgentType's maximum scopes intersected with the AgentRun spec</li>
+<li><strong>Signed</strong> by Vault Transit (existing infrastructure, no new trust root) with
+a rotation-managed key</li>
+<li><strong>Verified once</strong> at framework startup; typed claims are cached for the
+agent's lifetime</li>
+<li><strong>Bounded</strong> by the agent's wall-clock budget plus a small buffer; no refresh
+path</li>
+<li><strong>Sandbox-bound</strong> via a <code>provenance.sandbox_instance_id</code> claim that pins the
+token to a specific harness pod UID</li>
+<li><strong>Enforced</strong> at five surfaces: tool dispatch (in-process), egress proxy
+(sidecar), filesystem mounts (harness pod setup), Vault JIT (Vault's JWT auth
+method), and the framework's budget loop</li>
+</ul>
+<p>Policy evaluation uses OPA embedded as a Go library
+(<code>github.com/open-policy-agent/opa/rego</code>), not the OPA daemon. Rego policies are
+loaded once at framework startup and compiled. Per-call evaluation is
+microsecond-scale on cached compiled queries.</p>
+<p>See the sibling ADRs for the JWT-over-SPIFFE and OPA-over-Cedar decisions.</p>
+
+</section>
+<section class="panel" id="p-design">
+<h2 class="panel-title" id="design">Design</h2>
+<ul class="heading-list">
+<li><a href="#token-lifecycle">Token lifecycle</a></li>
+<li><a href="#jwt-claim-structure">JWT claim structure</a></li>
+<li><a href="#enforcement-points">Enforcement points</a></li>
+<li><a href="#policy-engine-opa-embedded">Policy engine (OPA, embedded)</a></li>
+<li><a href="#scope-vocabulary-registry">Scope vocabulary registry</a></li>
+<li><a href="#key-management">Key management</a></li>
+<li><a href="#failure-modes">Failure modes</a></li>
+</ul>
+<h4 id="token-lifecycle">Token lifecycle</h4>
+<pre class="mermaid">sequenceDiagram
+    participant Ctrl as ADK Controller
+    participant Vault as Vault Transit&lt;br/&gt;(signer)
+    participant Pod as Harness Pod
+    participant FW as Framework Loop
+    participant Disp as Tool Dispatcher
+    participant Proxy as Egress Proxy
+    participant Jit as Vault JIT
+
+    Ctrl-&gt;&gt;Ctrl: Resolve AgentType max scopes&lt;br/&gt;∩ AgentRun spec → effective scopes
+    Ctrl-&gt;&gt;Vault: Sign JWT with effective scopes
+    Vault--&gt;&gt;Ctrl: Signed JWT
+    Ctrl-&gt;&gt;Pod: Launch with JWT (projected volume&lt;br/&gt;or env via Vault Agent)
+    Pod-&gt;&gt;FW: Start, load JWT
+    FW-&gt;&gt;Vault: Verify signature, fetch public key
+    Vault--&gt;&gt;FW: Public key (cached)
+    FW-&gt;&gt;FW: Parse claims into typed struct,&lt;br/&gt;cache for run lifetime
+    FW-&gt;&gt;Jit: Present JWT, request STS for scoped role
+    Jit-&gt;&gt;Jit: Verify JWT, check aws_jit scope
+    Jit--&gt;&gt;FW: STS credentials (scoped, short-lived)
+
+    loop Per tool call
+        FW-&gt;&gt;Disp: Dispatch with tool name + args
+        Disp-&gt;&gt;Disp: Look up tool&#39;s RequiredScope
+        Disp-&gt;&gt;Disp: OPA evaluate:&lt;br/&gt;scope ∈ jwt.scopes.tools?
+        alt granted
+            Disp-&gt;&gt;Disp: Invoke tool.Run()
+            Disp--&gt;&gt;FW: ToolOut
+        else denied
+            Disp--&gt;&gt;FW: PolicyDenied error&lt;br/&gt;(structured, sent to agent loop)
+        end
+    end
+
+    loop Per egress call
+        Pod-&gt;&gt;Proxy: Outbound HTTP request
+        Proxy-&gt;&gt;Proxy: Verify JWT (cached pubkey)&lt;br/&gt;Check destination ∈ egress.destinations
+        alt allowed
+            Proxy-&gt;&gt;Proxy: Forward request
+        else denied
+            Proxy--&gt;&gt;Pod: 403 Forbidden&lt;br/&gt;(structured error)
+        end
+    end
+
+    Note over FW: At wall-clock expiry,&lt;br/&gt;loop terminates gracefully
+</pre>
+<h4 id="jwt-claim-structure">JWT claim structure</h4>
+<pre><code class="language-json">{
+  &#34;iss&#34;: &#34;adk-controller.platform.internal&#34;,
+  &#34;sub&#34;: &#34;agentrun/01HXYZ...&#34;,
+  &#34;aud&#34;: [&#34;adk-tools&#34;, &#34;vault&#34;, &#34;egress-proxy&#34;],
+  &#34;exp&#34;: 1715212345,
+  &#34;iat&#34;: 1715212000,
+  &#34;jti&#34;: &#34;01HXYZ...&#34;,
+
+  &#34;agent&#34;: {
+    &#34;type&#34;: &#34;access-triage-bot&#34;,
+    &#34;type_version&#34;: &#34;v1.4.2&#34;,
+    &#34;tenant&#34;: &#34;platform-aws&#34;,
+    &#34;principal&#34;: &#34;okta:donald.gifford@corp.io&#34;,
+    &#34;run_id&#34;: &#34;01HXYZ...&#34;
+  },
+
+  &#34;provenance&#34;: {
+    &#34;sandbox_runtime&#34;: &#34;gvisor&#34;,
+    &#34;sandbox_instance_id&#34;: &#34;harness-pod-uid-abc123&#34;,
+    &#34;image_digest&#34;: &#34;sha256:...&#34;,
+    &#34;controller_version&#34;: &#34;v0.3.1&#34;,
+    &#34;framework_version&#34;: &#34;v0.1.0&#34;
+  },
+
+  &#34;scopes&#34;: {
+    &#34;tools&#34;: [
+      &#34;aws.iam.simulate&#34;,
+      &#34;aws.cloudtrail.lookup_events&#34;,
+      &#34;aws.sts.decode_authorization_message&#34;,
+      &#34;kb.search&#34;,
+      &#34;backstage.resource_owner&#34;
+    ],
+    &#34;egress&#34;: {
+      &#34;mode&#34;: &#34;allowlist&#34;,
+      &#34;destinations&#34;: [
+        &#34;sts.amazonaws.com&#34;,
+        &#34;iam.amazonaws.com&#34;,
+        &#34;cloudtrail.us-east-1.amazonaws.com&#34;,
+        &#34;internal.langfuse.corp&#34;
+      ]
+    },
+    &#34;fs&#34;: {
+      &#34;read&#34;: [&#34;/skills/&#34;, &#34;/agent-input/&#34;],
+      &#34;write&#34;: [&#34;/agent-workspace/&#34;],
+      &#34;quota_bytes&#34;: 524288000
+    },
+    &#34;aws_jit&#34;: {
+      &#34;role_arn_pattern&#34;: &#34;arn:aws:iam::*:role/access-triage-reader-*&#34;,
+      &#34;max_session_seconds&#34;: 900
+    },
+    &#34;budget&#34;: {
+      &#34;max_tokens&#34;: 50000,
+      &#34;max_tool_calls&#34;: 12,
+      &#34;max_wallclock_seconds&#34;: 60
+    }
+  }
+}
+</code></pre>
+<p>Claim notes:</p>
+<ul>
+<li><code>aud</code> is multi-valued because the same token is verified by tools, Vault, and
+the egress proxy. Each enforcement point checks for its expected audience
+entry.</li>
+<li><code>jti</code> is the unique token ID — equal to the AgentRun ID. Allows one-shot
+revocation if needed (Vault Transit doesn't natively revoke JWTs; we maintain
+a small Redis-backed revocation set with TTL = max token lifetime).</li>
+<li><code>provenance.sandbox_instance_id</code> is set by the controller at pod creation;
+tools that want to verify &quot;this token belongs to the pod it claims to be in&quot;
+can check the local pod UID against this claim.</li>
+<li><code>scopes.budget</code> is the signed, immutable upper bound. The framework's loop
+reads from here and enforces; OTel/Langfuse records actual consumption against
+the signed limits. Tampering with the in-memory loop budget doesn't help an
+attacker — the signed limit is the ceiling.</li>
+<li>All scope vocabulary entries (<code>aws.iam.simulate</code>, etc.) are registered in a
+central docz page (<code>docs/reference/scopes.md</code>) and lint-enforced in CI.</li>
+</ul>
+<h4 id="enforcement-points">Enforcement points</h4>
+<p><strong>1. Tool dispatch (in-process).</strong> The framework's tool dispatcher is the gate.
+Each <code>*llm.Tool</code> struct has a new optional field:</p>
+<pre><code class="language-go">type Tool struct {
+    Name        string
+    Description string
+    InputSchema Schema
+    RequiredScope string          // NEW: scope vocabulary entry
+    Run         func(ctx context.Context, input json.RawMessage) ToolOut
+}
+</code></pre>
+<p>If <code>RequiredScope</code> is empty, the tool is treated as <code>unscoped</code> — a denylist of
+unscoped tools is maintained in the framework so adding new ones requires a code
+change (no accidentally-unscoped tools). The dispatcher always runs:</p>
+<pre><code class="language-go">decision := policyEngine.Eval(ctx, EvalInput{
+    Subject:        jwt.Agent,
+    Action:         tool.RequiredScope,
+    Resource:       call.ResourceContext,  // optional, tool-provided
+    GrantedScopes:  jwt.Scopes.Tools,
+})
+if !decision.Allow {
+    return ToolOut{}, PolicyDenied{
+        Scope: tool.RequiredScope,
+        Reason: decision.Reason,
+    }
+}
+return tool.Run(ctx, call.Input)
+</code></pre>
+<p><code>PolicyDenied</code> is a structured error returned to the agent loop. The agent
+receives it as a tool result and can reason about it (&quot;I tried to call X but the
+policy denied; let me try Y instead&quot;). Langfuse traces the denial with full
+context.</p>
+<p><strong>2. Egress proxy (sidecar).</strong> A small Go proxy runs as a sidecar in the harness
+pod. The agent's HTTP client is preconfigured (via environment variable /
+config) to use <code>http://localhost:PROXY_PORT</code> as its proxy. The proxy:</p>
+<ul>
+<li>Receives the JWT once at startup (same projected volume as the framework)</li>
+<li>Verifies the signature</li>
+<li>On every outbound request, checks the destination host against
+<code>scopes.egress.destinations</code> (exact match or suffix match per a policy bit)</li>
+<li>For HTTPS, the proxy is a forward proxy (CONNECT) and does not MITM TLS —
+destination matching is on the CONNECT target hostname. No certificate
+injection, no per-pod CA trust pollution.</li>
+<li>Denied requests return 403 with a JSON error body containing the denied
+destination and the matching policy rule</li>
+</ul>
+<p>Belt-and-braces: a <code>NetworkPolicy</code> on the harness pod denies all egress except
+to the proxy port (or to a Kubernetes Service that points at it). gVisor's
+networking namespace prevents bypass via raw sockets. The proxy is the single
+egress point.</p>
+<p><strong>3. Filesystem mounts (harness pod setup).</strong> Set at pod creation by the
+controller, not at runtime. The harness pod spec has:</p>
+<ul>
+<li><code>scopes.fs.read</code> paths mounted read-only (ConfigMap, Secret, projected volume,
+or PV depending on content)</li>
+<li><code>scopes.fs.write</code> paths mounted on an <code>emptyDir</code> with the quota enforced via
+<code>sizeLimit</code></li>
+<li>Nothing else is mounted. The container's root filesystem is read-only
+(<code>securityContext.readOnlyRootFilesystem: true</code>)</li>
+</ul>
+<p>This makes filesystem enforcement structural — there is no API by which the
+agent can request more filesystem access mid-run. The token is consulted at pod
+creation; after that, the kernel and the mount table enforce.</p>
+<p><strong>4. Vault JIT.</strong> Vault's JWT auth method is configured with the ADK
+controller's signing key as the bound issuer. A Vault role binds to the
+<code>agent.tenant</code> and <code>scopes.aws_jit.role_arn_pattern</code> claims; when an agent
+presents the JWT to request AWS credentials, Vault:</p>
+<ul>
+<li>Verifies the JWT against the bound issuer</li>
+<li>Checks that the requested AWS role matches <code>scopes.aws_jit.role_arn_pattern</code></li>
+<li>Issues STS credentials with TTL ≤ <code>scopes.aws_jit.max_session_seconds</code></li>
+</ul>
+<p>This replaces the existing implicit IRSA / projected-token pattern with
+explicit, capability-token-driven STS issuance. No new infrastructure — the
+existing Vault is the same Vault.</p>
+<p><strong>5. Budget loop (framework).</strong> The framework's loop reads <code>scopes.budget</code> at
+startup and enforces the three dimensions (tokens, tool calls, wall-clock) per
+Q9 of the framework INV. The signed budget claim is what makes the dual-layer
+story complete: Langfuse records actual consumption (observability layer); the
+loop blocks at the signed ceiling (enforcement layer); the ceiling itself is
+signed by the controller, so tampering with the loop binary doesn't lift the
+limit.</p>
+<h4 id="policy-engine-opa-embedded">Policy engine (OPA, embedded)</h4>
+<p>Per the sibling ADR (<code>ADR-NNNN: Use OPA for scope policy evaluation</code>), policies
+are written in Rego and evaluated via <code>github.com/open-policy-agent/opa/rego</code>.
+Loaded at framework startup, compiled once, evaluated per call.</p>
+<p>Example policy:</p>
+<pre><code class="language-rego">package agent.capability
+
+default allow = false
+
+# A tool call is allowed if the tool&#39;s required scope is in the
+# token&#39;s granted tool scopes.
+allow {
+    input.action == granted
+    granted := input.granted_scopes[_]
+}
+
+# Tool-resource-bound check: for tools that operate on a specific
+# resource, also enforce tenant ownership.
+allow {
+    input.action == granted
+    granted := input.granted_scopes[_]
+    resource_in_tenant(input.resource, input.subject.tenant)
+}
+
+resource_in_tenant(resource, tenant) {
+    resource.tenant == tenant
+}
+
+# Special-case: aws.iam.simulate is always allowed if scoped,
+# regardless of resource — it&#39;s a query, not a mutation.
+allow {
+    input.action == &#34;aws.iam.simulate&#34;
+    &#34;aws.iam.simulate&#34; in input.granted_scopes
+}
+</code></pre>
+<p>The policy bundle is versioned in a <code>policies/</code> directory alongside the agent
+code, baked into the harness container image. Hot-reload is not supported in v1
+— policy changes ship as new container builds. This is a deliberate choice;
+hot-reload introduces the same trust- boundary question the JWT is solving.</p>
+<h4 id="scope-vocabulary-registry">Scope vocabulary registry</h4>
+<p>A single docz page at <code>docs/reference/scopes.md</code> is the canonical registry. Each
+entry:</p>
+<pre><code class="language-markdown">## aws.iam.simulate
+
+- **Description**: Invoke iam:SimulateCustomPolicy or
+  iam:SimulatePrincipalPolicy against a target principal/policy set
+- **Risk tier**: read-only
+- **Granted to**: access-triage-bot, access-investigator, coding-agent
+- **Owner**: platform-aws@corp.io
+- **Added**: 2026-05-10 (RFC-NNNN)
+</code></pre>
+<p>The registry is enforced via lint: a CI check parses every <code>*llm.Tool</code>
+declaration in the framework + agent repos, extracts each <code>RequiredScope</code> value,
+and verifies it has an entry in the registry. Unregistered scopes fail CI.</p>
+<p>Scope names follow reverse-DNS-style: <code>&lt;service&gt;.&lt;resource&gt;.&lt;action&gt;</code>. Service
+is the first segment; resource is optional for service-wide actions; action is
+verb-shaped. This convention is non-negotiable in the lint.</p>
+<h4 id="key-management">Key management</h4>
+<p>Signing key lives in Vault Transit, named <code>agent-capability-token-v1</code>. Rotation
+cadence: quarterly, with overlapping validity windows. Public keys are fetched
+from Vault's <code>/transit/keys/agent-capability-token-v1</code> endpoint by verifiers
+(framework, egress proxy, Vault JIT itself); the endpoint returns all valid
+public keys, keyed by version. Tokens carry the <code>kid</code> (key ID) header so
+verifiers know which version to check.</p>
+<p>Rotation procedure:</p>
+<ol>
+<li>Generate new key version in Vault Transit (existing API)</li>
+<li>Wait for verifiers to fetch updated public-key set (default: 5min cache TTL)</li>
+<li>Mark new version as <code>latest</code>; controller starts signing with it</li>
+<li>Old version remains valid for token TTL window (max 1h given the
+wall-clock-budget-based lifetime)</li>
+<li>After window, mark old version <code>deprecated</code>; remove after one additional
+rotation cycle</li>
+</ol>
+<p>Compromise procedure: revoke the signing key version in Vault Transit, clear the
+verifier public-key cache, force re-fetch. All tokens signed with the
+compromised version are rejected immediately. Active AgentRuns terminate;
+controller re-issues new tokens against the new key for any AgentRuns the
+operator chooses to resume.</p>
+<h4 id="failure-modes">Failure modes</h4>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Detection</th>
+<th>Response</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Token verification fails at startup</td>
+<td>Framework fails to start</td>
+<td>Pod restarts; controller is alerted; AgentRun status: FailedToStart</td>
+</tr>
+<tr>
+<td>Token expires mid-run</td>
+<td>Framework wall-clock budget enforcement</td>
+<td>Graceful termination, partial results returned, AgentRun status: BudgetExceeded</td>
+</tr>
+<tr>
+<td>Tool dispatch denies a scope</td>
+<td>Policy engine returns deny</td>
+<td>Structured <code>PolicyDenied</code> to agent loop; agent can reason and try alternatives</td>
+</tr>
+<tr>
+<td>Egress proxy denies a destination</td>
+<td>Proxy returns 403</td>
+<td>Agent's HTTP client gets the error; tool surfaces it</td>
+</tr>
+<tr>
+<td>Vault JIT denies STS request</td>
+<td>Vault returns permission denied</td>
+<td>Tool that needed AWS creds returns an error; agent can request a different role or surface to user</td>
+</tr>
+<tr>
+<td>Signing key compromise</td>
+<td>Operational signal (security alert)</td>
+<td>Key revoke + cache flush; all in-flight runs terminate</td>
+</tr>
+<tr>
+<td>Tool author forgets <code>RequiredScope</code></td>
+<td>Lint catches at CI</td>
+<td>Build fails; tool is in the unscoped-denylist by default</td>
+</tr>
+<tr>
+<td>Policy bug allows wrong scope</td>
+<td>Policy test suite + regal lint + manual review</td>
+<td>Hotfix as a new policy bundle release; existing runs unaffected (policies baked-in)</td>
+</tr>
+<tr>
+<td>Token theft from compromised sandbox</td>
+<td>sandbox_instance_id binding + short lifetime</td>
+<td>Attacker gets the remaining wall-clock window; ≤ 60s for triage bot, similar for others</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-alternatives">
+<h2 class="panel-title">Alternatives</h2>
+<h3 id="alternatives-considered">Alternatives Considered</h3>
+<p><strong>No capability model (status quo).</strong> Three orthogonal mechanisms, no
+cryptographic provenance, retrofit cost grows with tool inventory. Rejected —
+this is what the RFC is solving.</p>
+<p><strong>SPIFFE/SPIRE workload identity.</strong> Industry-standard answer. JWT-SVIDs would
+slot into our model identically. The cost is running SPIRE servers and agents,
+designing federation, learning the SPIFFE operational model. v1 doesn't need
+federation across clusters or external workloads; deferred to v2 (see sibling
+ADR).</p>
+<p><strong>Cedar policy engine.</strong> AWS's open-source IAM-shaped policy language with a Go
+SDK. Cleaner syntax for our specific authz model (principal/action/resource).
+Rejected for v1 because the team already has Rego muscle from Conftest for
+Terraform IaC; one policy language across IaC + agent authz beats two (see
+sibling ADR).</p>
+<p><strong>Custom Go scope-matcher.</strong> Write a simple
+<code>Allowed(scope, granted []string) bool</code> function and call it a day. Works for
+the simple case (scope ∈ granted), breaks down the moment a tool needs
+resource-bound constraints (&quot;this tool, only for resources in tenant X&quot;),
+time-bound constraints, or aggregate constraints (&quot;max N calls of this tool per
+run&quot;). Rejected — embedded OPA handles these uniformly.</p>
+<p><strong>Macaroons / Biscuit tokens.</strong> Both support delegation (attenuation) cleanly —
+a token holder can derive a more-restricted token without involving the issuer.
+Interesting for v3+ scenarios (agent A wants to delegate a subset of its
+capability to a tool that in turn calls agent B), but the v1 case doesn't need
+delegation. JWT is the right starting point.</p>
+<p><strong>Mutual TLS only.</strong> Per-tool mTLS for in-process tools is absurd; for
+out-of-process enforcement (egress, Vault) mTLS without a capability claim is
+just authentication, not authorization. Capability tokens are required
+regardless of transport.</p>
+<p><strong>Ambient pod identity (IRSA / projected service-account token).</strong> What the
+agent platform implicitly relies on today. Works for AWS auth (the existing
+case). Doesn't carry tool / egress / fs / budget scopes; doesn't bind to
+AgentRun identity; doesn't have provenance claims. Capability tokens are a
+superset.</p>
+
+</section>
+<section class="panel" id="p-implementation-phases">
+<h2 class="panel-title" id="implementation-phases">Implementation Phases</h2>
+<ul class="heading-list">
+<li><a href="#phase-1--framework-verify-primitive--dispatcher-hook">Phase 1 — Framework verify primitive &#43; dispatcher hook</a></li>
+<li><a href="#phase-2--adk-controller-as-token-issuer">Phase 2 — ADK controller as token issuer</a></li>
+<li><a href="#phase-3--egress-proxy--fs-mount-enforcement">Phase 3 — Egress proxy &#43; FS mount enforcement</a></li>
+<li><a href="#phase-4--vault-jit-integration">Phase 4 — Vault JIT integration</a></li>
+<li><a href="#phase-5--scope-vocabulary-registry--tooling">Phase 5 — Scope vocabulary registry &#43; tooling</a></li>
+</ul>
+<p>This RFC delivers in five phases, sequenced against the framework RFC, ADK RFC,
+and sandbox INV phasing.</p>
+<h4 id="phase-1--framework-verify-primitive--dispatcher-hook">Phase 1 — Framework verify primitive + dispatcher hook</h4>
+<p><strong>Goal:</strong> The framework can verify a capability JWT and gate tool dispatch on
+scope checks.</p>
+<ul>
+<li><code>auth/</code> package in the framework</li>
+<li>JWT parser and verifier with pluggable signer (Vault Transit for v1; mockable
+for tests)</li>
+<li>Typed <code>Claims</code> struct</li>
+<li><code>RequiredScope</code> field on <code>*llm.Tool</code></li>
+<li>Tool dispatcher integrates the policy gate</li>
+<li>OPA embedded via <code>github.com/open-policy-agent/opa/rego</code></li>
+<li>Policy bundle loading from a <code>policies/</code> directory at startup</li>
+<li>Structured <code>PolicyDenied</code> error type</li>
+<li>Unit tests for verify, claims parsing, dispatcher gate, policy eval</li>
+</ul>
+<p><strong>Exit criteria:</strong> A test agent with two tools (one allowed scope, one denied
+scope) demonstrates the gate works. CI lint passes on the scope vocabulary
+registry.</p>
+<h4 id="phase-2--adk-controller-as-token-issuer">Phase 2 — ADK controller as token issuer</h4>
+<p><strong>Goal:</strong> AgentRun creation produces a signed JWT, injected into the harness
+pod.</p>
+<ul>
+<li>ADK controller computes effective scopes from AgentType max ∩ AgentRun spec</li>
+<li>Vault Transit signing key provisioned (Terraform)</li>
+<li>Controller signs JWT via Vault Transit API</li>
+<li>JWT injected into harness pod via projected volume (preferred) or env var
+(fallback)</li>
+<li>Public-key endpoint exposed by Vault Transit; verifier cache TTL configured</li>
+<li>Key rotation runbook documented</li>
+</ul>
+<p><strong>Exit criteria:</strong> Triage bot AgentRun in homelab Talos produces a signed JWT;
+framework verifies it; tool gate enforces.</p>
+<h4 id="phase-3--egress-proxy--fs-mount-enforcement">Phase 3 — Egress proxy + FS mount enforcement</h4>
+<p><strong>Goal:</strong> Out-of-process enforcement of egress and filesystem scopes.</p>
+<p>Depends on the sandbox INV's runner integration (gVisor in v1).</p>
+<ul>
+<li>Egress proxy implementation (Go, forward HTTP proxy, JWT-aware)</li>
+<li>Harness pod spec updated to include proxy sidecar</li>
+<li><code>NetworkPolicy</code> denies non-proxy egress</li>
+<li>FS mount setup driven by <code>scopes.fs</code> claims at pod creation</li>
+<li><code>readOnlyRootFilesystem</code> enforced</li>
+<li><code>emptyDir.sizeLimit</code> enforces quota</li>
+</ul>
+<p><strong>Exit criteria:</strong> Triage bot in EKS staging successfully reaches allowlisted
+destinations and is denied for non-allowlisted ones; filesystem writes outside
+the workspace fail.</p>
+<h4 id="phase-4--vault-jit-integration">Phase 4 — Vault JIT integration</h4>
+<p><strong>Goal:</strong> Vault issues STS credentials based on the capability JWT rather than
+implicit pod identity.</p>
+<ul>
+<li>Vault JWT auth method configured with controller signing key as bound issuer</li>
+<li>Vault role binds to <code>agent.tenant</code> + <code>scopes.aws_jit.role_arn_pattern</code></li>
+<li>Existing IRSA pattern migrated; capability JWT becomes the authentication
+credential</li>
+<li>Documentation updated</li>
+</ul>
+<p><strong>Exit criteria:</strong> AWS-touching agents (triage bot, access investigator) receive
+STS via JWT-auth; existing IRSA paths deprecated for these agents.</p>
+<h4 id="phase-5--scope-vocabulary-registry--tooling">Phase 5 — Scope vocabulary registry + tooling</h4>
+<p><strong>Goal:</strong> Operational maturity around the scope vocabulary.</p>
+<ul>
+<li><code>docs/reference/scopes.md</code> populated with all in-use scopes</li>
+<li>CI lint enforces vocabulary registration</li>
+<li>regal lint on all <code>policies/</code> directories</li>
+<li>Policy test suite (one OPA test per allow/deny branch)</li>
+<li>Scope change process documented (RFC if new scope, ADR if
+semantically-significant change)</li>
+</ul>
+<p><strong>Exit criteria:</strong> Adding a new tool requires (a) registering the scope, (b)
+updating the relevant policy, (c) passing lint + tests. No code path bypasses
+these.</p>
+
+</section>
+<section class="panel" id="p-risks">
+<h2 class="panel-title">Risks</h2>
+<h3 id="risks-and-mitigations">Risks and Mitigations</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Impact</th>
+<th>Likelihood</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tool author bypasses dispatcher</td>
+<td class="high">Critical — defeats the model</td>
+<td class="low">Low if framework is the only registration path</td>
+<td>Tools registered only via framework's <code>RegisterTool</code>; lint catches in-package shortcuts; code review</td>
+</tr>
+<tr>
+<td>Signing key compromise</td>
+<td class="high">Critical — forged tokens</td>
+<td class="low">Low</td>
+<td>Vault Transit + rotation + audit; revoke + cache-flush playbook</td>
+</tr>
+<tr>
+<td>OPA policy bug grants wrong scope</td>
+<td class="high">High — unauthorized tool calls</td>
+<td class="medium">Medium without rigor</td>
+<td>regal lint, policy test suite (allow + deny branches per rule), required review for <code>policies/</code> changes</td>
+</tr>
+<tr>
+<td>Egress proxy as SPOF</td>
+<td class="medium">Medium — agent network fails</td>
+<td class="low">Low</td>
+<td>Sidecar with restart-on-failure; proxy down → agent's network is down (fail-closed, not bypass)</td>
+</tr>
+<tr>
+<td>Scope vocabulary churn</td>
+<td class="medium">Medium — registry rot</td>
+<td class="high">High over time</td>
+<td>Treat scopes as a contract; semver; RFC for new ones; deprecation process with grace period</td>
+</tr>
+<tr>
+<td>Performance overhead at dispatch</td>
+<td class="low">Low — microseconds</td>
+<td class="low">Low</td>
+<td>Compiled OPA queries cached; benchmark in CI; budget &lt;5ms p99</td>
+</tr>
+<tr>
+<td>Token theft from compromised sandbox</td>
+<td class="medium">Medium — limited window</td>
+<td class="medium">Medium</td>
+<td>Short lifetime (≤ wall-clock budget); <code>sandbox_instance_id</code> binding; audience scoping; future: replay-detection via jti tracking</td>
+</tr>
+<tr>
+<td>Rotation runbook drift</td>
+<td class="medium">Medium — operational mishap</td>
+<td class="medium">Medium</td>
+<td>Runbook tested quarterly; key rotation simulation as part of disaster-recovery drills</td>
+</tr>
+<tr>
+<td>Policy hot-reload requested mid-run</td>
+<td class="low">Low — operational temptation</td>
+<td class="medium">Medium</td>
+<td>Policies are baked into images; the same trust-boundary argument the JWT is solving rules out hot-reload</td>
+</tr>
+<tr>
+<td>Cross-cluster federation needed</td>
+<td class="medium">Medium — JWT model insufficient</td>
+<td class="low">Low for v1, growing later</td>
+<td>SPIFFE migration path documented in the sibling ADR; v2 work</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-success">
+<h2 class="panel-title">Success</h2>
+<h3 id="success-criteria">Success Criteria</h3>
+<p><strong>Phase 1:</strong></p>
+<div class="grid g2">
+<div class="card ok">100% of tool dispatches in test agents go through the policy gate (verified by
+dispatcher unit tests + integration test)</div>
+<div class="card ok">Zero tool calls succeed without a matching scope in chaos testing
+(deliberately misconfigured agent)</div>
+<div class="card ok">Policy evaluation latency &lt;5ms p99 on a 50-rule policy bundle</div>
+</div>
+<p><strong>Phase 2:</strong></p>
+<div class="grid g2">
+<div class="card ok">Triage bot AgentRun produces a valid JWT in &lt;100ms (controller-side including
+Vault Transit signing call)</div>
+<div class="card ok">JWT verification at framework startup &lt;10ms</div>
+<div class="card ok">Key rotation runbook executes cleanly in homelab (rehearsal)</div>
+</div>
+<p><strong>Phase 3:</strong></p>
+<div class="grid g2">
+<div class="card ok">Egress allowlist enforced; chaos test confirms denied destinations return 403
+and are logged with denial context</div>
+<div class="card ok">Filesystem writes outside <code>scopes.fs.write</code> fail with predictable errors</div>
+<div class="card ok">Quota exhaustion produces a clean error, not a wedged pod</div>
+</div>
+<p><strong>Phase 4:</strong></p>
+<div class="grid g2">
+<div class="card ok">AWS-touching agents receive STS via JWT-auth on every run</div>
+<div class="card ok">Audit log shows JWT-bound STS issuance with traceable AgentRun ID</div>
+<div class="card ok">Implicit IRSA paths deprecated and removed from these agents</div>
+</div>
+<p><strong>Phase 5:</strong></p>
+<div class="grid g2">
+<div class="card ok">Scope vocabulary registry has 100% coverage of in-use scopes (lint passes)</div>
+<div class="card ok">regal lint passes on all <code>policies/</code> directories</div>
+<div class="card ok">Policy test suite covers every allow/deny branch (coverage reported in CI)</div>
+<div class="card ok">Adding a new tool without registering its scope fails CI</div>
+</div>
+<p><strong>Org-level outcomes:</strong></p>
+<div class="grid g2">
+<div class="card ok">A security review can answer &quot;what is agent X authorized to do?&quot; by reading
+the AgentType spec, not by reading code</div>
+<div class="card ok">Every tool call has a signed audit trail tying it to an AgentRun, principal,
+scope, and policy decision</div>
+<div class="card ok">Vault JIT is the single AWS-creds issuance path for agents; no
+ambient-pod-identity backdoors</div>
+</div>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>Forthcoming sibling ADR:
+<code>Use JWT for v1 agent capability tokens; defer SPIFFE to v2</code></li>
+<li>Forthcoming sibling ADR: <code>Use OPA (embedded) for scope policy evaluation</code></li>
+<li>Forthcoming: Agentic Go Framework RFC — <code>auth/</code> package is added here</li>
+<li>Forthcoming: ADK RFC — controller-as-token-issuer role added to Phase 2</li>
+<li>Forthcoming: Sandbox Options INV — egress proxy added to Q7 (network)
+discussion</li>
+<li>Forthcoming: AWS Access Triage Slack Bot RFC — declares its tool / egress / fs
+scopes per this model</li>
+<li>Internal: Agent platform RFC + DESIGN suite (Vault JIT pattern, AgentType /
+AgentRun CRDs)</li>
+<li>Internal: Backstage IDP (resource ownership for tenant-scope checks)</li>
+<li>External: <a href="https://www.openpolicyagent.org/">Open Policy Agent</a> — embedded
+library: <code>github.com/open-policy-agent/opa/rego</code></li>
+<li>External:
+<a href="https://developer.hashicorp.com/vault/docs/secrets/transit">Vault Transit secrets engine</a>
+— JWT signing</li>
+<li>External:
+<a href="https://developer.hashicorp.com/vault/docs/auth/jwt">Vault JWT auth method</a> —
+JWT verification for STS issuance</li>
+<li>External: <a href="https://github.com/StyraInc/regal">regal</a> — Rego linter</li>
+<li>External: <a href="https://spiffe.io/">SPIFFE</a> — deferred to v2; documented for future
+migration</li>
+<li>External: <a href="https://www.cedarpolicy.com/">Cedar</a> — rejected for v1; documented
+in sibling ADR</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../rfc/testdata/booty-rfc-0003.orig.md</code>, sha256 <code>721f63cdf4e987f53bce1c3f118ffdb49eafff72fd87e1e49a2755437bf308ec</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+<script>/* mermaid 12.0.0 */</script>
+<script>/*
+ * Draws every pre.mermaid with the mermaid global, in the theme's tokens,
+ * and draws again when the mode changes (DESIGN-0025 §7). The theme
+ * variables follow ui/'s mermaidThemeFromTokens. A diagram whose source
+ * fails to parse keeps its source, with the error beneath it, rather than
+ * leaving a blank box. securityLevel strict keeps a diagram's labels from
+ * carrying script or links.
+ */
+(function () {
+  "use strict";
+  if (!window.mermaid || !window.docz) return;
+
+  var blocks = Array.prototype.slice.call(document.querySelectorAll("pre.mermaid"));
+  blocks.forEach(function (pre) {
+    pre.setAttribute("data-source", pre.textContent);
+  });
+
+  function themeVariables() {
+    var p = window.docz.palette([
+      "--color-bg-raised",
+      "--color-bg-elevated",
+      "--color-border-strong",
+      "--color-fg-primary",
+      "--color-fg-tertiary",
+    ]);
+    var raised = p["--color-bg-raised"];
+    var elevated = p["--color-bg-elevated"];
+    var border = p["--color-border-strong"];
+    var fg = p["--color-fg-primary"];
+    return {
+      primaryColor: elevated,
+      primaryBorderColor: border,
+      primaryTextColor: fg,
+      secondaryColor: raised,
+      secondaryBorderColor: border,
+      tertiaryColor: raised,
+      tertiaryBorderColor: border,
+      mainBkg: elevated,
+      nodeBorder: border,
+      lineColor: p["--color-fg-tertiary"],
+      clusterBkg: raised,
+      clusterBorder: border,
+      titleColor: fg,
+      edgeLabelBackground: raised,
+      fontFamily: "monospace",
+      fontSize: "14px",
+    };
+  }
+
+  var run = 0;
+
+  function draw() {
+    run++;
+    window.mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables: themeVariables(),
+    });
+    blocks.forEach(function (pre, i) {
+      var source = pre.getAttribute("data-source");
+      var next = pre.nextElementSibling;
+      if (next && next.classList.contains("diagram-error")) next.remove();
+      window.mermaid
+        .render("docz-mermaid-" + run + "-" + i, source)
+        .then(function (out) {
+          pre.innerHTML = out.svg;
+          pre.setAttribute("data-processed", "true");
+        })
+        .catch(function (err) {
+          pre.textContent = source;
+          pre.removeAttribute("data-processed");
+          var msg = document.createElement("p");
+          msg.className = "diagram-error";
+          msg.textContent = "Diagram failed to render: " + (err && err.message ? err.message : String(err));
+          pre.insertAdjacentElement("afterend", msg);
+        });
+    });
+  }
+
+  draw();
+  window.docz.onMode(draw);
+})();
+</script>
+</body>
+</html>

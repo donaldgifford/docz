@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="RFC-0001">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>RFC-0001: Agent Dev Kit on the Agentic Go Framework</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · RFC</p>
+<h1>Agent Dev Kit on the Agentic Go Framework</h1>
+<p class="summary"><strong>Status:</strong> Draft <strong>Author:</strong> Donald Gifford <strong>Date:</strong> 2026-05-10</p>
+<div class="meta">
+<span class="pill">RFC-0001</span>
+<span class="pill st-draft">Draft</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-05-10</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="problem" aria-controls="p-problem">Problem</button>
+<button type="button" data-tab="proposal" aria-controls="p-proposal">Proposal</button>
+<button type="button" data-tab="design" aria-controls="p-design">Design</button>
+<button type="button" data-tab="alternatives" aria-controls="p-alternatives">Alternatives</button>
+<button type="button" data-tab="implementation-phases" aria-controls="p-implementation-phases">Implementation Phases</button>
+<button type="button" data-tab="risks" aria-controls="p-risks">Risks</button>
+<button type="button" data-tab="success" aria-controls="p-success">Success</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<ul>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#problem-statement">Problem Statement</a></li>
+<li><a href="#proposed-solution">Proposed Solution</a></li>
+<li><a href="#design">Design</a>
+<ul>
+<li><a href="#layered-architecture">Layered architecture</a></li>
+<li><a href="#component-design">Component design</a>
+<ul>
+<li><a href="#adk-server">adk-server</a></li>
+<li><a href="#adk-cli">adk CLI</a></li>
+<li><a href="#adk-controller">adk-controller</a></li>
+<li><a href="#sandbox-runners">Sandbox runners</a></li>
+<li><a href="#reference-agents">Reference agents</a></li>
+<li><a href="#skill-registry">Skill registry</a></li>
+</ul>
+</li>
+<li><a href="#comparison-to-shelley">Comparison to shelley</a></li>
+<li><a href="#multi-tenant-data-model">Multi-tenant data model</a></li>
+</ul>
+</li>
+<li><a href="#alternatives-considered">Alternatives Considered</a></li>
+<li><a href="#implementation-phases">Implementation Phases</a>
+<ul>
+<li><a href="#phase-0--prerequisites">Phase 0 — Prerequisites</a></li>
+<li><a href="#phase-1--adk-server--cli--reference-agent-single-tenant-no-controller">Phase 1 — adk-server + CLI + reference agent (single-tenant, no controller)</a></li>
+<li><a href="#phase-2--multi-tenant--adk-controller">Phase 2 — multi-tenant + adk-controller</a></li>
+<li><a href="#phase-3--sandbox-runners">Phase 3 — sandbox runners</a></li>
+<li><a href="#phase-4--skill-registry-v2--ecosystem">Phase 4 — skill registry v2 + ecosystem</a></li>
+</ul>
+</li>
+<li><a href="#risks-and-mitigations">Risks and Mitigations</a></li>
+<li><a href="#success-criteria">Success Criteria</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+<h3 id="summary">Summary</h3>
+<p>Build an <strong>Agent Dev Kit (ADK)</strong> on top of the agentic Go framework — the
+opinionated, batteries-included product layer that turns the framework (a
+library) into a complete development and operations environment for agents.
+Where the framework provides primitives (provider abstraction, <code>Tool</code> shape,
+loop, skills, eval, OTel/Langfuse), the ADK provides a server, CLI, persistence
+layer, sandbox runners, reference agent implementations, and a multi-tenant
+operational story. Inspired by <code>boldsoftware/shelley</code> and its predecessor
+<code>sketch.dev</code> but designed for the org's stack: multi-tenant, Postgres /
+CloudNativePG, Vault JIT, Backstage, Talos / EKS, and the existing agent
+platform's AgentType/AgentRun CRDs.</p>
+<p>This RFC depends on the <a href="#references">agentic Go framework RFC</a> landing first;
+the ADK is a layer on top, not a replacement.</p>
+<blockquote>
+<p><strong>Update (2026-07-02,
+ADR-0003):</strong>
+the ADK no longer targets its own repository. Components land in
+<code>sdk-booty-sh</code>, layered above the framework packages and structured for later
+extraction only if a real split trigger fires. References to &quot;the ADK repo&quot; in
+this document should be read as this repo. The local-dev runner slice
+(<code>adk run</code>) was pulled forward by
+DESIGN-0002 as
+the doc-driven loop harness (<code>dloop</code>); the &quot;framework churn breaking the ADK&quot;
+risk below is largely dissolved by co-location.</p>
+</blockquote>
+
+</section>
+<section class="panel" id="p-problem">
+<h2 class="panel-title">Problem</h2>
+<h3 id="problem-statement">Problem Statement</h3>
+<p>The agentic Go framework will give us a clean library for building agents. It
+will not give us:</p>
+<ul>
+<li>A multi-tenant HTTP server with conversation persistence and per- tenant auth</li>
+<li>A CLI for local agent development, ad-hoc runs, and scripted invocations</li>
+<li>A Kubernetes deployment story (already designed separately as the agent
+platform's AgentType/AgentRun CRDs — but the controller needs to be wired to
+actually launch framework-built agents)</li>
+<li>Sandbox runners for code-executing agents (covered by a separate sandbox INV;
+the ADK is what consumes its conclusions)</li>
+<li>Reference implementations of the patterns we expect agent authors to follow</li>
+<li>A way to share skills across agents and teams</li>
+<li>A persistence layer that fits org infrastructure (Postgres, not SQLite;
+multi-tenant, not single-user)</li>
+</ul>
+<p>Without these, every agent we build (triage bot, access investigator, price
+tracker, future ones) will reimplement the operational layer slightly
+differently. We've already seen this start to happen — the price tracker has its
+own LLM client wiring; the triage bot RFC sketches its own thread persistence;
+the access investigator will sketch its own Slack/JSM/EventBridge plumbing.
+Without an ADK, each of these grows its own divergent server, persistence,
+deploy, and observability story. With an ADK, they all build on the same product
+layer and only the agent-specific logic differs.</p>
+<p>The framework alone is necessary but not sufficient.</p>
+
+</section>
+<section class="panel" id="p-proposal">
+<h2 class="panel-title">Proposal</h2>
+<h3 id="proposed-solution">Proposed Solution</h3>
+<p>The ADK is six components, each built on the agentic framework:</p>
+<ol>
+<li><strong><code>adk-server</code></strong> — HTTP server with conversation persistence, multi-tenant
+auth, agent run dispatch, and optional SSE/WebSocket streaming for
+chat-shaped UIs. Replaces the bespoke server each agent would otherwise
+build.</li>
+<li><strong><code>adk</code> CLI</strong> — local-dev driver, scripted run interface, agent authoring
+helpers (<code>adk new agent</code>, <code>adk run</code>, <code>adk skills list</code>). Replaces the bespoke
+CLI each agent author would otherwise build.</li>
+<li><strong><code>adk-controller</code></strong> — Kubernetes operator implementing the <code>AgentType</code> /
+<code>AgentRun</code> CRDs already designed in the agent platform DESIGN suite.
+Translates CRDs into framework-built agent processes inside harness
+containers, with Vault JIT credentials injected per-run.</li>
+<li><strong>Sandbox runners</strong> — pluggable per the sandbox INV's conclusions. The ADK
+ships opinionated defaults (gVisor for in-cluster moderate isolation,
+Firecracker for high-isolation execution, Apple Virtualization framework for
+Mac dev) and exposes the <code>SandboxRunner</code> interface for users to plug their
+own.</li>
+<li><strong>Reference agents</strong> — at least three:
+<ul>
+<li><strong><code>coding-agent</code></strong> (shelley-equivalent: bash, patch, search, think tools;
+the &quot;agentic coding assistant&quot; pattern)</li>
+<li><strong><code>access-triage-bot</code></strong> (the Slack triage bot from the sibling RFC)</li>
+<li><strong><code>price-tracker-agent</code></strong> (the existing tracker, ported onto the ADK as a
+validation that the kit handles non-chat-shaped agents)</li>
+</ul>
+</li>
+<li><strong>Skill registry</strong> — internal store for sharing skills across agents and
+teams. Skills are versioned, signable, and discoverable. Backed by Backstage
+catalog metadata; storage in object storage (Garage S3 in homelab, S3 in
+prod).</li>
+</ol>
+<p>Optional but probably-skipped: <strong>a minimal UI</strong>. Shelley ships its own React UI;
+we should not. We already have Slack as the primary chat surface, Backstage as
+the developer portal, and JSM as the ticket workflow. A bespoke ADK UI would
+compete with all three. The ADK ships an OpenAPI/SSE surface that existing UIs
+(Slack, Backstage plugins, internal portals) can consume; building &quot;yet another
+chat UI&quot; is out of scope.</p>
+
+</section>
+<section class="panel" id="p-design">
+<h2 class="panel-title" id="design">Design</h2>
+<h4 id="layered-architecture">Layered architecture</h4>
+<pre class="mermaid">flowchart TB
+    subgraph Agents[&#34;Agents (consumers)&#34;]
+        direction LR
+        A1[coding-agent]
+        A2[access-triage-bot]
+        A3[access-investigator]
+        A4[price-tracker-agent]
+        A5[future agents...]
+    end
+
+    subgraph ADK[&#34;Agent Dev Kit (this RFC)&#34;]
+        direction TB
+        Server[adk-server&lt;br/&gt;multi-tenant HTTP +&lt;br/&gt;conversation persistence]
+        CLI[adk CLI&lt;br/&gt;local dev,&lt;br/&gt;scripted runs]
+        Ctrl[adk-controller&lt;br/&gt;AgentType / AgentRun CRDs]
+        Sand[Sandbox runners&lt;br/&gt;gVisor / Firecracker /&lt;br/&gt;Apple Virt / WASM]
+        Refs[Reference agents]
+        SkillReg[Skill registry&lt;br/&gt;Backstage + S3]
+    end
+
+    subgraph FW[&#34;Agentic Go Framework (separate RFC)&#34;]
+        direction LR
+        F1[llm/]
+        F2[loop/]
+        F3[tools/]
+        F4[skills/]
+        F5[eval/]
+        F6[otel/]
+        F7[mcp/]
+    end
+
+    subgraph Infra[&#34;Org Infrastructure&#34;]
+        direction LR
+        I1[Postgres /&lt;br/&gt;CloudNativePG]
+        I2[Vault JIT]
+        I3[Langfuse]
+        I4[Backstage]
+        I5[Talos / EKS]
+        I6[Slack / JSM]
+    end
+
+    Agents --&gt; ADK
+    ADK --&gt; FW
+    ADK --&gt; Infra
+    FW --&gt; Infra
+
+    style ADK fill:#f0e1ff
+    style FW fill:#e1f5ff
+    style Infra fill:#fff4e1
+</pre>
+<p>The framework is the library. The ADK is the kit. Agents are the consumers.
+Infrastructure is what everything runs on.</p>
+<h4 id="component-design">Component design</h4>
+<h5 id="adk-server">adk-server</h5>
+<p>HTTP server with these responsibilities:</p>
+<ul>
+<li><strong>Auth</strong> — OIDC / SSO via Okta. Multi-tenant: every request is scoped to a
+tenant (a team, a service principal, or a CI runner). Tenant determines which
+agent types are runnable, which skills are visible, and which Vault paths are
+reachable.</li>
+<li><strong>Conversation persistence</strong> — Postgres-backed. Schema accommodates the
+framework's <code>Conversation</code> / <code>Message</code> model with multi-tenant attribution and
+full audit (who ran what when, what tools fired, what budgets were consumed).</li>
+<li><strong>Agent run dispatch</strong> — receives a &quot;run agent X with input Y&quot; request,
+validates against tenant permissions, enqueues to River (existing convention),
+returns a run ID.</li>
+<li><strong>Streaming surface</strong> — SSE (and optionally WebSocket) for consumers that want
+token-by-token streaming. Slack adapter, for example, doesn't need streaming;
+an interactive Backstage plugin might.</li>
+<li><strong>OpenAPI surface</strong> — generated from Go types; consumers (Slack bot, Backstage
+plugin, CLI) use the generated client.</li>
+</ul>
+<h5 id="adk-cli">adk CLI</h5>
+<p>Distributed as a single Go binary (homebrew tap, plus direct download for
+Linux). Subcommands:</p>
+<ul>
+<li><code>adk new agent &lt;name&gt;</code> — scaffolds a new agent project (skeleton with
+framework imports, example tool, example skill, OTel wiring, Dockerfile)</li>
+<li><code>adk run &lt;agent&gt; [--input &lt;file&gt;]</code> — runs an agent locally, optionally with
+sandbox isolation (defaults from the OS — Apple Virtualization on Mac,
+rootless Podman on Linux dev)</li>
+<li><code>adk skills list / show / install</code> — interacts with the skill registry</li>
+<li><code>adk eval &lt;agent&gt; --dataset &lt;file&gt;</code> — runs the framework's eval harness
+against a ground-truth dataset; gateable in CI</li>
+<li><code>adk auth login</code> — Okta SSO flow for the developer; tokens stored via
+1Password CLI integration (existing convention)</li>
+</ul>
+<h5 id="adk-controller">adk-controller</h5>
+<p>Implements the <code>AgentType</code> and <code>AgentRun</code> CRDs already designed in the agent
+platform DESIGN suite. Per-run lifecycle:</p>
+<ol>
+<li><code>AgentRun</code> resource is created (by webhookd, River job, or another controller
+— e.g., the triage bot Slack adapter)</li>
+<li>Controller resolves the <code>AgentType</code> (the agent image + runtime config),
+allocates a harness Pod, mounts framework runtime, injects skills from the
+registry</li>
+<li>Controller requests Vault JIT credentials scoped to the run's declared
+resource needs (per the agent platform's secret model)</li>
+<li>Harness Pod runs the agent, streams events to adk-server via the internal API
+(Pod cannot reach Vault again; secrets are single-use)</li>
+<li>On completion, controller updates the <code>AgentRun</code> status with results, costs,
+errors; harness Pod terminates</li>
+</ol>
+<p>The controller is thin — most of the lifecycle work is in the agent platform's
+existing operator. The ADK extension is the part that knows how to materialize a
+framework-built agent inside a harness container.</p>
+<h5 id="sandbox-runners">Sandbox runners</h5>
+<p>Per the sandbox INV (sibling doc), the framework defines a <code>SandboxRunner</code>
+interface:</p>
+<pre><code class="language-go">type SandboxRunner interface {
+    Name() string
+    Capabilities() Capabilities  // filesystem, network, exec, gpu
+    Run(ctx context.Context, spec ExecSpec) (Result, error)
+}
+</code></pre>
+<p>The ADK ships opinionated default implementations:</p>
+<ul>
+<li><strong><code>gvisor</code></strong> — for in-cluster moderate-isolation execution (most agent
+code-execution workloads in Kubernetes)</li>
+<li><strong><code>firecracker</code></strong> — for high-isolation in-cluster execution (untrusted code,
+PR-review agents); via <code>firecracker-go-sdk</code></li>
+<li><strong><code>apple-virt</code></strong> — for Mac developer workflows; via <code>Code-Hex/vz/v3</code></li>
+<li><strong><code>podman-rootless</code></strong> — for Linux dev / homelab fast iteration</li>
+<li><strong><code>wasm-wasmtime</code></strong> — for tools that compile to WebAssembly</li>
+</ul>
+<p>Agent authors choose a runner via config; ADK validates the runner is available
+on the host and degrades gracefully (with a logged warning) when not.</p>
+<h5 id="reference-agents">Reference agents</h5>
+<p>Three reference implementations, each living under <code>examples/</code> in the ADK repo:</p>
+<p><strong><code>coding-agent</code></strong> — the shelley-equivalent. Tools: <code>bash</code>, <code>patch</code>, <code>search</code>,
+<code>think</code>, <code>todo</code>. Demonstrates the pattern for agents that modify a working tree.
+Used internally for code-modifying tasks (the agent that drafts Renovate config
+updates, the one that proposes docz template fixes, etc.). Sandboxed via gVisor
+or Firecracker per deployment context.</p>
+<p><strong><code>access-triage-bot</code></strong> — the Slack triage bot from the sibling RFC.
+Demonstrates a chat-shaped, multi-turn, identity-aware agent. No code execution;
+sandbox unused.</p>
+<p><strong><code>price-tracker-agent</code></strong> — port of the existing server price tracker.
+Demonstrates a non-chat-shaped, scheduled, batch-processing agent. Validates
+that the ADK isn't accidentally biased toward chat-only patterns.</p>
+<p>These three together cover the major shapes (chat, batch, code-mod) and serve as
+the &quot;follow this example&quot; answer for new agent authors.</p>
+<h5 id="skill-registry">Skill registry</h5>
+<p>Skills are discoverable across the org. Each skill has:</p>
+<ul>
+<li>A <code>Skill</code> interface implementation (markdown-fronted by default per the
+framework's Q4 resolution)</li>
+<li>A semantic version</li>
+<li>A signature (sigstore-backed, via <code>cosign</code> — fits the existing homelab
+security stack)</li>
+<li>Backstage catalog metadata (owner team, stability tier, documentation link)</li>
+<li>Bundled assets in object storage (Garage S3 homelab, S3 prod)</li>
+</ul>
+<p>The <code>adk skills</code> CLI subcommands talk to the registry. Skills can be marked
+tenant-scoped (only this team's agents can use it) or global. The registry is
+read-through-cached at the harness pod startup.</p>
+<h4 id="comparison-to-shelley">Comparison to shelley</h4>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Shelley</th>
+<th>ADK</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Tenant model</strong></td>
+<td>Single-user</td>
+<td>Multi-tenant from day 1</td>
+</tr>
+<tr>
+<td><strong>Persistence</strong></td>
+<td>SQLite + sqlc</td>
+<td>Postgres / CloudNativePG</td>
+</tr>
+<tr>
+<td><strong>UI</strong></td>
+<td>Bundled React app</td>
+<td>None — consumers (Slack, Backstage) bring their own</td>
+</tr>
+<tr>
+<td><strong>Distribution</strong></td>
+<td>Homebrew + binary</td>
+<td>Homebrew + binary + container image + K8s operator</td>
+</tr>
+<tr>
+<td><strong>Auth</strong></td>
+<td>None (local-only)</td>
+<td>Okta OIDC, multi-tenant</td>
+</tr>
+<tr>
+<td><strong>Backends</strong></td>
+<td>Anthropic-focused</td>
+<td>Anthropic + OpenAI-compat + Ollama</td>
+</tr>
+<tr>
+<td><strong>Observability</strong></td>
+<td>Internal SSE traces</td>
+<td>Langfuse + OTel native</td>
+</tr>
+<tr>
+<td><strong>Sandboxing</strong></td>
+<td>None (runs on host)</td>
+<td>Pluggable; opinionated defaults</td>
+</tr>
+<tr>
+<td><strong>Skill model</strong></td>
+<td>Skills package</td>
+<td>Markdown-first via framework's <code>Skill</code> interface</td>
+</tr>
+<tr>
+<td><strong>Coding-agent specifics</strong></td>
+<td>First-class (<code>claudetool</code>)</td>
+<td>One reference agent among several</td>
+</tr>
+<tr>
+<td><strong>Deployment target</strong></td>
+<td>Developer laptop</td>
+<td>Laptop + K8s + harness container</td>
+</tr>
+<tr>
+<td><strong>Secrets</strong></td>
+<td>Env vars / config</td>
+<td>Vault JIT per-run</td>
+</tr>
+<tr>
+<td><strong>Queue</strong></td>
+<td>Inline</td>
+<td>River (Postgres-native)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The shape rhymes; the choices diverge wherever shelley's product context
+(single-user, laptop, coding-only) differs from ours (multi-tenant, prod + dev,
+any agent shape).</p>
+<h4 id="multi-tenant-data-model">Multi-tenant data model</h4>
+<p>Schema sketch (Postgres, managed via existing tooling — sqlc or sqlx with
+golang-migrate, TBD):</p>
+<ul>
+<li><code>tenants</code> — id, name, created_at, parent_tenant_id (for team hierarchies)</li>
+<li><code>agent_types</code> — id, tenant_id, name, version, image, runtime_config (the type
+definition; mirrors the K8s <code>AgentType</code> CRD)</li>
+<li><code>agent_runs</code> — id, agent_type_id, tenant_id, principal (the identity that
+started the run), status, started_at, completed_at, budget, consumed</li>
+<li><code>conversations</code> — id, agent_run_id, tenant_id, started_at</li>
+<li><code>messages</code> — id, conversation_id, role, content, tool_calls, tool_results,
+tokens_in, tokens_out, model, cost_usd, created_at</li>
+<li><code>skills</code> — id, name, version, signature, owner_tenant, scope (global /
+tenant), bundle_uri</li>
+<li><code>audit_log</code> — id, tenant_id, principal, event, target, metadata, created_at
+(every action — start run, fetch skill, decode auth message — gets a row)</li>
+</ul>
+<p>Foreign keys enforced. RLS policies (Postgres row-level security) enforce tenant
+isolation at the database layer, not just the application.</p>
+
+</section>
+<section class="panel" id="p-alternatives">
+<h2 class="panel-title">Alternatives</h2>
+<h3 id="alternatives-considered">Alternatives Considered</h3>
+<p><strong>Just ship the framework, no kit.</strong> Each agent team builds their own server,
+persistence, CLI, deployment, sandbox, and observability wiring. Fastest path
+for the framework itself, slowest path for every downstream consumer. We've
+already seen the divergence start; without an ADK, it accelerates. Rejected —
+the framework alone is insufficient and the cost of &quot;everyone reimplements&quot; is
+paid in perpetuity.</p>
+<p><strong>Adopt shelley wholesale.</strong> Take shelley's full repo, swap our provider
+abstraction in, fix the multi-tenant story, replace SQLite with Postgres, drop
+the React UI. By the time we're done, we've forked shelley and inherited its
+design choices for everything we didn't deliberately change. Rejected — the
+surgery is bigger than building our own kit on top of our framework, and
+shelley's design choices are right for shelley's product, not ours.</p>
+<p><strong>Build only the operator, no server / CLI.</strong> The agent platform already has the
+operator design; arguably the rest is unnecessary ceremony. Rejected — local
+development without the CLI is painful (every iteration requires a K8s
+round-trip), and the server is needed for any chat-shaped or interactive
+consumer (Slack, Backstage, even just <code>curl</code>-based debugging).</p>
+<p><strong>Build only server + CLI, no operator.</strong> Skip the K8s integration; agents run
+as long-lived processes managed by something else (systemd, nomad, just a
+daemon). Rejected — the agent platform's CRD-driven model is already designed
+and gives us per-run Vault JIT, harness isolation, and the right ops story.
+Skipping the controller throws away that work.</p>
+<p><strong>Bundle a UI.</strong> Shelley does. We'd be reinventing Slack, Backstage, and JSM in
+worse versions of each. Rejected — ADK exposes an OpenAPI surface; consumers
+bring their own UI. The triage bot uses Slack; the access investigator uses JSM
+tickets and Slack threads; future agents can have Backstage plugins. None of
+these benefit from a bespoke ADK UI.</p>
+<p><strong>Make the ADK a single monolithic binary.</strong> Server, CLI, controller, runners
+all in one. Easier to release. Rejected — the controller is a long-lived
+Kubernetes process, the server is a long-lived HTTP process, the CLI is a
+short-lived dev tool, the runners are per-execution processes. Different
+lifecycles, different permissions, different failure domains. Splitting them is
+the right call; sharing the framework gives us the consistency that matters.</p>
+
+</section>
+<section class="panel" id="p-implementation-phases">
+<h2 class="panel-title" id="implementation-phases">Implementation Phases</h2>
+<ul class="heading-list">
+<li><a href="#phase-0--prerequisites">Phase 0 — Prerequisites</a></li>
+<li><a href="#phase-1--adk-server--cli--reference-agent-single-tenant-no-controller">Phase 1 — adk-server &#43; CLI &#43; reference agent (single-tenant, no controller)</a></li>
+<li><a href="#phase-2--multi-tenant--adk-controller">Phase 2 — multi-tenant &#43; adk-controller</a></li>
+<li><a href="#phase-3--sandbox-runners">Phase 3 — sandbox runners</a></li>
+<li><a href="#phase-4--skill-registry-v2--ecosystem">Phase 4 — skill registry v2 &#43; ecosystem</a></li>
+</ul>
+<h4 id="phase-0--prerequisites">Phase 0 — Prerequisites</h4>
+<p>The framework RFC must land first. The ADK is a layer on top; without the
+framework's <code>Tool</code> shape, <code>Skill</code> interface, <code>Loop</code> driver, and provider
+abstraction, the ADK has no foundation.</p>
+<p>The sandbox INV must conclude before Phase 3 starts; until then, the ADK's
+<code>SandboxRunner</code> interface is sketched but not wired.</p>
+<h4 id="phase-1--adk-server--cli--reference-agent-single-tenant-no-controller">Phase 1 — adk-server + CLI + reference agent (single-tenant, no controller)</h4>
+<p><strong>Goal:</strong> End-to-end &quot;run an agent locally and via HTTP&quot; with conversation
+persistence, but without the K8s deployment story or multi-tenant auth.
+Validates the core surface.</p>
+<ul>
+<li><code>adk-server</code> HTTP API (single-tenant; auth = single shared token)</li>
+<li>Postgres persistence (single schema, tenant column unused)</li>
+<li><code>adk</code> CLI: <code>new agent</code>, <code>run</code>, <code>auth login</code></li>
+<li>Reference agent: <code>access-triage-bot</code> (the simplest of the three; proves
+chat-shaped flow and identity resolution)</li>
+<li>OTel/Langfuse wired through</li>
+</ul>
+<p><strong>Exit criteria:</strong> triage bot runs end-to-end via the ADK with the same UX as it
+would standalone; nothing about the bot's code knows &quot;I'm running on the ADK&quot;
+beyond the framework imports.</p>
+<h4 id="phase-2--multi-tenant--adk-controller">Phase 2 — multi-tenant + adk-controller</h4>
+<p><strong>Goal:</strong> Production-ready multi-tenant deployment.</p>
+<ul>
+<li>Okta OIDC auth on the server</li>
+<li>Tenant-scoped data model (RLS policies)</li>
+<li><code>adk-controller</code> implementing <code>AgentType</code> / <code>AgentRun</code> CRDs</li>
+<li>Vault JIT integration per-run (existing agent-platform pattern)</li>
+<li>River queue for agent run dispatch</li>
+<li>Skill registry v1 (read-only, manually populated)</li>
+<li>Second reference agent: <code>price-tracker-agent</code> (validates non-chat shape)</li>
+</ul>
+<p><strong>Exit criteria:</strong> triage bot and price tracker both deployed via CRDs in
+homelab; tenant isolation verified via security review.</p>
+<h4 id="phase-3--sandbox-runners">Phase 3 — sandbox runners</h4>
+<p><strong>Goal:</strong> Code-executing agents work safely.</p>
+<ul>
+<li><code>SandboxRunner</code> interface in the framework (covered there, finalized here)</li>
+<li>Default implementations: <code>gvisor</code>, <code>firecracker</code>, <code>apple-virt</code>,
+<code>podman-rootless</code>, <code>wasm-wasmtime</code></li>
+<li>Third reference agent: <code>coding-agent</code> (validates code-execution flow)</li>
+<li>Sandbox runner selection per <code>AgentType</code> config</li>
+</ul>
+<p><strong>Exit criteria:</strong> coding-agent runs in a Firecracker microVM in homelab; same
+agent runs in Apple Virtualization on Mac dev with identical behavior modulo
+platform-specific paths.</p>
+<h4 id="phase-4--skill-registry-v2--ecosystem">Phase 4 — skill registry v2 + ecosystem</h4>
+<p><strong>Goal:</strong> Skills become first-class shareable artifacts.</p>
+<ul>
+<li>Skill registry: write API, sigstore signing, Backstage metadata</li>
+<li><code>adk skills install</code> resolves and verifies signatures</li>
+<li>Documentation site (under docz wiki / Backstage TechDocs)</li>
+<li>Migration: pull ad-hoc skills out of agent repos into the registry</li>
+</ul>
+<p><strong>Exit criteria:</strong> ≥ 10 shared skills in the registry; skills versioned and
+signed; agent authors discover skills via Backstage.</p>
+
+</section>
+<section class="panel" id="p-risks">
+<h2 class="panel-title">Risks</h2>
+<h3 id="risks-and-mitigations">Risks and Mitigations</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Impact</th>
+<th>Likelihood</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Scope creep — ADK becomes a shelley clone with extra steps</td>
+<td class="high">High — wasted effort, no differentiation</td>
+<td class="medium">Medium</td>
+<td>Stay disciplined: ADK is the org-fit layer, not a coding-agent product. Reference agents are reference, not the focus</td>
+</tr>
+<tr>
+<td>Multi-tenant security mistake (cross-tenant data leak)</td>
+<td class="high">Critical — privacy / compliance</td>
+<td class="low">Low with RLS</td>
+<td>Postgres RLS at the schema layer; security review before each tenant-touching change; integration tests that explicitly try to cross tenants</td>
+</tr>
+<tr>
+<td>Framework churn breaking the ADK</td>
+<td class="medium">Medium — stop-the-world refactors</td>
+<td class="medium">Medium until framework v1.0</td>
+<td>ADK pins to framework versions; framework follows semver; ADK's CI runs against framework HEAD nightly to catch breakage early</td>
+</tr>
+<tr>
+<td>Becoming the bottleneck for new agents</td>
+<td class="high">High — slows down agent dev</td>
+<td class="medium">Medium</td>
+<td>Reference agents must be runnable without ADK changes; framework + bring-your-own-server is always a supported escape hatch</td>
+</tr>
+<tr>
+<td>Vault JIT integration complexity</td>
+<td class="medium">Medium — secret-management bugs</td>
+<td class="medium">Medium</td>
+<td>Reuse the agent platform's existing pattern verbatim; no new secret model in the ADK</td>
+</tr>
+<tr>
+<td>K8s controller bugs orphan harness pods</td>
+<td class="medium">Medium — resource leak</td>
+<td class="medium">Medium</td>
+<td>Owner references; finalizers; periodic reconciliation; existing operator patterns from the homelab</td>
+</tr>
+<tr>
+<td>Reference agents diverge from production agents</td>
+<td class="medium">Medium — examples become stale</td>
+<td class="high">High over time</td>
+<td>Reference agents are the actual production agents (triage bot is shipped from the example dir); no parallel &quot;demo&quot; implementations</td>
+</tr>
+<tr>
+<td>Skill registry signing key compromise</td>
+<td class="high">High — supply-chain attack on agents</td>
+<td class="low">Low</td>
+<td>Sigstore + transparency log; key rotation runbook; audit log of every skill resolution</td>
+</tr>
+<tr>
+<td>ADK ships before framework hits v1 stability</td>
+<td class="medium">Medium — public surface churn</td>
+<td class="high">High in early phases</td>
+<td>ADK v0.x explicitly experimental; no public API guarantees until framework v1</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-success">
+<h2 class="panel-title">Success</h2>
+<h3 id="success-criteria">Success Criteria</h3>
+<p><strong>Phase 1:</strong></p>
+<div class="grid g2">
+<div class="card ok">Triage bot runs identically on the ADK and standalone (modulo config); the
+agent code is unaware of the deployment context</div>
+<div class="card ok">Time from <code>adk new agent</code> to a running first iteration: &lt; 10 minutes for a
+developer who has never touched the ADK before</div>
+</div>
+<p><strong>Phase 2:</strong></p>
+<div class="grid g2">
+<div class="card ok">Tenant isolation verified by security review (RLS, audit log, JIT scope
+verification)</div>
+<div class="card ok">Triage bot and price tracker both deployed via CRDs in homelab cluster,
+observable in Langfuse, with cost attribution by tenant</div>
+</div>
+<p><strong>Phase 3:</strong></p>
+<div class="grid g2">
+<div class="card ok">Coding agent runs in Firecracker microVM (production-shape) and Apple
+Virtualization (dev-shape) with identical observable behavior on a fixed test
+input</div>
+</div>
+<p><strong>Phase 4:</strong></p>
+<div class="grid g2">
+<div class="card ok">≥ 10 versioned, signed skills in the registry</div>
+<div class="card ok">≥ 3 production agents on the ADK (triage, investigator, tracker port, plus any
+new ones since)</div>
+<div class="card ok">Time-to-first-prototype for a new agent author: &lt; 1 day for chat- shaped, &lt; 2
+days for code-execution-shaped</div>
+</div>
+<p><strong>Org-level outcomes:</strong></p>
+<div class="grid g2">
+<div class="card ok">Every new agent built in the org uses the ADK by default; building outside the
+ADK requires a justification doc</div>
+<div class="card ok">Time to deploy a new agent to production: days, not weeks</div>
+<div class="card ok">Single source of truth for agent observability, cost attribution, and audit
+(Langfuse + Postgres audit log)</div>
+</div>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>Forthcoming: Agentic Go Framework RFC (sibling, the foundation this RFC layers
+on top of)</li>
+<li>Forthcoming: Sandbox Options INV (sibling, conclusions feed Phase 3 defaults)</li>
+<li>Forthcoming: AWS Access Triage Slack Bot RFC (sibling; first reference agent)</li>
+<li>Internal: Agent platform RFC + DESIGN suite (AgentType / AgentRun CRDs,
+harness containers, Vault JIT, River queue)</li>
+<li>Internal: Backstage IDP catalog (skill registry metadata source)</li>
+<li>External: <a href="https://github.com/boldsoftware/shelley">boldsoftware/shelley</a> —
+primary inspiration, with the divergences documented in the comparison table</li>
+<li>External: <a href="https://github.com/boldsoftware/sketch">boldsoftware/sketch</a> —
+shelley's predecessor; the Sketch coding-agent product</li>
+<li>External: <a href="https://github.com/Code-Hex/vz">Code-Hex/vz</a> — Apple Virtualization
+framework Go binding (Phase 3 dependency)</li>
+<li>External:
+<a href="https://github.com/firecracker-microvm/firecracker-go-sdk">firecracker-go-sdk</a>
+— Firecracker Go SDK (Phase 3 dependency)</li>
+<li>External: Postgres RLS documentation — for tenant isolation patterns</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../rfc/testdata/booty-rfc-0001.orig.md</code>, sha256 <code>577afc8b7d76ae4589e37d06bc996c9c25116d58aaada0c2a260b80abd15e120</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+<script>/* mermaid 12.0.0 */</script>
+<script>/*
+ * Draws every pre.mermaid with the mermaid global, in the theme's tokens,
+ * and draws again when the mode changes (DESIGN-0025 §7). The theme
+ * variables follow ui/'s mermaidThemeFromTokens. A diagram whose source
+ * fails to parse keeps its source, with the error beneath it, rather than
+ * leaving a blank box. securityLevel strict keeps a diagram's labels from
+ * carrying script or links.
+ */
+(function () {
+  "use strict";
+  if (!window.mermaid || !window.docz) return;
+
+  var blocks = Array.prototype.slice.call(document.querySelectorAll("pre.mermaid"));
+  blocks.forEach(function (pre) {
+    pre.setAttribute("data-source", pre.textContent);
+  });
+
+  function themeVariables() {
+    var p = window.docz.palette([
+      "--color-bg-raised",
+      "--color-bg-elevated",
+      "--color-border-strong",
+      "--color-fg-primary",
+      "--color-fg-tertiary",
+    ]);
+    var raised = p["--color-bg-raised"];
+    var elevated = p["--color-bg-elevated"];
+    var border = p["--color-border-strong"];
+    var fg = p["--color-fg-primary"];
+    return {
+      primaryColor: elevated,
+      primaryBorderColor: border,
+      primaryTextColor: fg,
+      secondaryColor: raised,
+      secondaryBorderColor: border,
+      tertiaryColor: raised,
+      tertiaryBorderColor: border,
+      mainBkg: elevated,
+      nodeBorder: border,
+      lineColor: p["--color-fg-tertiary"],
+      clusterBkg: raised,
+      clusterBorder: border,
+      titleColor: fg,
+      edgeLabelBackground: raised,
+      fontFamily: "monospace",
+      fontSize: "14px",
+    };
+  }
+
+  var run = 0;
+
+  function draw() {
+    run++;
+    window.mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables: themeVariables(),
+    });
+    blocks.forEach(function (pre, i) {
+      var source = pre.getAttribute("data-source");
+      var next = pre.nextElementSibling;
+      if (next && next.classList.contains("diagram-error")) next.remove();
+      window.mermaid
+        .render("docz-mermaid-" + run + "-" + i, source)
+        .then(function (out) {
+          pre.innerHTML = out.svg;
+          pre.setAttribute("data-processed", "true");
+        })
+        .catch(function (err) {
+          pre.textContent = source;
+          pre.removeAttribute("data-processed");
+          var msg = document.createElement("p");
+          msg.className = "diagram-error";
+          msg.textContent = "Diagram failed to render: " + (err && err.message ? err.message : String(err));
+          pre.insertAdjacentElement("afterend", msg);
+        });
+    });
+  }
+
+  draw();
+  window.docz.onMode(draw);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+// Package html renders a docz document as one standalone HTML page
+// (DESIGN-0025): a header with the summary and status, a tab per region, and
+// docz's theme inlined, so the file opens from disk with no network request.
+//
+// [Render] is pure: bytes in, a [Page] out, no filesystem, no state between
+// calls. It reads the document's regions with kinds.ResolveRegions, so an
+// unmarked document gets inferred regions and the page says so, and renders
+// each region's markdown with goldmark (GFM and footnotes) through a node
+// renderer that gives headings docz's own anchors, turns GitHub alerts into
+// callouts and task lists into read-only checkboxes, and escapes raw HTML
+// except a short allow-list whose tags lose every attribute.
+//
+// The page skeleton is an html/template, so every interpolated value is
+// escaped by construction. The theme (pkg/theme) is inlined between
+// <!-- docz:theme --> markers. A raw inline tag left open closes inside its
+// own paragraph, heading, or list text, and links keep only http, https,
+// mailto, an anchor the page has, or what [RenderOptions.Resolve] returns;
+// the rest are text and are reported in [Page.Links].
+//
+// A mermaid fence follows [RenderOptions.Mermaid]: [MermaidSource] shows
+// the source as a labelled code block, and [MermaidEmbed] and [MermaidCDN]
+// write it for mermaid to draw in the theme's colours, with mermaid inlined
+// or loaded from a pinned CDN URL under subresource integrity. Only a page
+// with a diagram carries mermaid.
+//
+// A region's tab and layout come from its kind, through one table: IMPL
+// phases as cards with progress and task state, runbook procedures as
+// numbered steps, ADR consequences and alternatives as cards, open
+// questions as expandables, and so on. The typed readings come from the
+// type packages, parsed only when a region they read is laid out, so a
+// custom type carrying a built-in's regions gets its layout. A layout that
+// cannot be used falls back to the region's markdown and is reported in
+// [Page.Problems].
+//
+// A docz-flow, docz-stepper, or docz-scorecard fence is a widget: its YAML
+// is checked against a closed schema and written as a JSON island the theme
+// runtime draws, with a fallback readable without JavaScript. An invalid
+// block is shown as its source with each error and its line.
+//
+// [Export] is the repository run docz export html makes: every document
+// of the chosen types (or the named ones) rendered to a page under the
+// output directory, mirroring each type's directory below the docs
+// directory, an index page when there is more than one, links between the
+// exported pages kept relative, small images inlined, and a page whose
+// bytes already match left alone. [Hooks] narrate it through the context.
+//
+// Every page carries a Content-Security-Policy that loads nothing from the
+// network, outside the CDN mermaid mode. Nothing time-dependent is written:
+// the same input gives the same bytes, and [Page.Hash] is their SHA-256.
+package html

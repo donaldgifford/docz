@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="DESIGN-0001">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>DESIGN-0001: A scorecard widget</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · frameworks</p>
+<h1>A scorecard widget</h1>
+<div class="meta">
+<span class="pill">DESIGN-0001</span>
+<span class="pill st-draft">Draft</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title" id="overview">Overview</h2>
+<p>How ready the release is.</p>
+<figure class="widget" data-widget="scorecard">
+<figcaption>Release readiness</figcaption>
+<script type="application/json" data-widget="scorecard">{"title":"Release readiness","note":"Measured from the release checklist.","checks":[{"id":"C1","name":"Signed artifacts","target":"Every archive and image signed","weight":2,"fixes":"Testing"},{"id":"C2","name":"SBOM attached","target":"An SBOM per archive"}],"example":{"generated_at":"2026-10-31","subject":"docz v2.3.0","results":[{"id":"C1","score":1,"observed":"cosign signatures on all images"},{"id":"C2","score":null}]}}</script>
+<div class="widget-mount"></div>
+<div class="widget-fallback table-wrap">
+<table>
+<thead><tr><th>#</th><th>Check</th><th>Target</th><th>Weight</th><th>Fixes it</th></tr></thead>
+<tbody>
+<tr><td>C1</td><td>Signed artifacts</td><td>Every archive and image signed</td><td>2</td><td><a href="#p-testing" data-tab="testing">Testing</a></td></tr>
+<tr><td>C2</td><td>SBOM attached</td><td>An SBOM per archive</td><td>1</td><td></td></tr>
+</tbody>
+</table>
+</div>
+</figure>
+
+</section>
+<section class="panel" id="p-testing">
+<h2 class="panel-title" id="testing">Testing</h2>
+<p>Run the release checklist.</p>
+
+</section>
+<footer class="page-footer">
+From <code>testdata/pages/widget-scorecard.md</code>, sha256 <code>d9aecf6007c6ca1bf2a9143d7a2107c08a1b567a3684b265d1e17b3468d0120e</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

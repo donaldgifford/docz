@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "out": "build/html",
+  "dry_run": false,
+  "pages": [
+    {
+      "id": "ADR-0001",
+      "type": "adr",
+      "source": "docs/adr/0001-keep-frameworks-in-a-register.md",
+      "path": "adr/0001-keep-frameworks-in-a-register.html",
+      "action": "wrote",
+      "hash": "sha256:9e75ba9dc900cdb37fa6925db6e1c459d746c4910135de4e1f3bc41221a66a1d",
+      "unresolved_links": [],
+      "problems": []
+    },
+    {
+      "id": "FW-0001",
+      "type": "frameworks",
+      "source": "docs/frameworks/0001-adopt-the-internal-auth-framework.md",
+      "path": "frameworks/0001-adopt-the-internal-auth-framework.html",
+      "action": "wrote",
+      "hash": "sha256:d314de4e11a7fcbdbdbb0aa784f1f399c57c052b87bcb7ff2c2dfb36a2422e00",
+      "unresolved_links": [],
+      "problems": []
+    },
+    {
+      "id": "FW-0002",
+      "type": "frameworks",
+      "source": "docs/frameworks/0002-retire-the-legacy-job-runner.md",
+      "path": "frameworks/0002-retire-the-legacy-job-runner.html",
+      "action": "wrote",
+      "hash": "sha256:6bacdf6a27fc10a0fb906a4c39110155701498ba9f3c01ce5d6276fbe190d316",
+      "unresolved_links": [],
+      "problems": []
+    },
+    {
+      "id": "",
+      "type": "",
+      "source": "",
+      "path": "index.html",
+      "action": "wrote",
+      "hash": "sha256:fd585edfe0f734b11d11e8c9fdc475b97d3878b3b87ef764750db8094d510290",
+      "unresolved_links": [],
+      "problems": []
+    }
+  ],
+  "total": {
+    "pages": 4,
+    "wrote": 4,
+    "unchanged": 0,
+    "failed": 0
+  }
+}

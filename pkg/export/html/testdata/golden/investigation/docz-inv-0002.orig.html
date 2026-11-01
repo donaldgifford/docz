@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="INV-0002">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>INV-0002: Architectural Review and Cleanup Opportunities</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Investigation</p>
+<h1>Architectural Review and Cleanup Opportunities</h1>
+<p class="summary"><strong>Status:</strong> Concluded <strong>Author:</strong> Donald Gifford <strong>Date:</strong> 2026-05-15</p>
+<div class="meta">
+<span class="pill">INV-0002</span>
+<span class="pill st-accepted">Concluded</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-05-15</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
+<button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
+<button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<ul>
+<li><a href="#question">Question</a></li>
+<li><a href="#hypothesis">Hypothesis</a></li>
+<li><a href="#context">Context</a></li>
+<li><a href="#approach">Approach</a></li>
+<li><a href="#environment">Environment</a></li>
+<li><a href="#findings">Findings</a>
+<ul>
+<li><a href="#critical-testability-blockers">Critical: Testability blockers</a>
+<ul>
+<li><a href="#f1-package-level-globals-in-cmd-prevent-parallel-testing-multi-agent">F1. Package-level globals in cmd/ prevent parallel testing [multi-agent]</a></li>
+<li><a href="#f2-direct-fmtprintf--osstdout-instead-of-cmdoutorstdout-multi-agent">F2. Direct fmt.Printf / os.Stdout instead of cmd.OutOrStdout() [multi-agent]</a></li>
+<li><a href="#f3-if-verbose--fmtfprintfosstderr---pattern-repeated-20-times-multi-agent">F3. if verbose { fmt.Fprintf(os.Stderr, ...) } pattern repeated 20+ times [multi-agent]</a></li>
+<li><a href="#f4-internaldocumenttimego-uses-mutable-package-global-timenow-multi-agent">F4. internal/document/time.go uses mutable package-global timeNow [multi-agent]</a></li>
+<li><a href="#f5-gitusername-exec-call-not-injectable">F5. gitUserName() exec call not injectable</a></li>
+<li><a href="#f6-configload-reads-doczyaml-from-working-directory-implicitly-multi-agent">F6. config.Load reads .docz.yaml from working directory implicitly [multi-agent]</a></li>
+</ul>
+</li>
+<li><a href="#critical-correctness-bugs">Critical: Correctness bugs</a>
+<ul>
+<li><a href="#f7-config-validation-error-swallowed-at-startup-multi-agent">F7. Config validation error swallowed at startup [multi-agent]</a></li>
+<li><a href="#f8-mergeconfigfile-silently-swallows-yaml-parse-errors">F8. mergeConfigFile silently swallows YAML parse errors</a></li>
+<li><a href="#f9-currentdate-calls-timenow-three-times-multi-agent">F9. currentDate() calls timeNow() three times [multi-agent]</a></li>
+<li><a href="#f10-bare-return-err-without-context-wrap-multi-agent">F10. Bare return err without context wrap [multi-agent]</a></li>
+<li><a href="#f11-doctitle-returns-fallback-value-alongside-non-nil-error">F11. DocTitle returns fallback value alongside non-nil error</a></li>
+</ul>
+</li>
+<li><a href="#high-three-way-duplication-of-defaults-multi-agent">High: Three-way duplication of defaults [multi-agent]</a>
+<ul>
+<li><a href="#f12-cmdinitgowritedefaultconfig-hardcodes-yaml-that-duplicates-defaultconfig">F12. cmd/init.go:writeDefaultConfig() hardcodes YAML that duplicates DefaultConfig()</a></li>
+</ul>
+</li>
+<li><a href="#high-library-returns-user-facing-strings">High: Library returns user-facing strings</a>
+<ul>
+<li><a href="#f13-internalindex-returns-user-facing-messages-as-msg-err-multi-agent">F13. internal/index returns user-facing messages as (msg, err) [multi-agent]</a></li>
+</ul>
+</li>
+<li><a href="#high-domain-modeling--doctype-scattered">High: Domain modeling — DocType scattered</a>
+<ul>
+<li><a href="#f14-document-type-expressed-in-6-locations-with-no-compile-time-enforcement-multi-agent">F14. &quot;Document type&quot; expressed in 6+ locations with no compile-time enforcement [multi-agent]</a></li>
+<li><a href="#f15-validtypes-iteration-vs-appcfgtypes-map-disconnect">F15. ValidTypes() iteration vs appCfg.Types map disconnect</a></li>
+<li><a href="#f16-doctype-and-status-are-bare-string-everywhere">F16. DocType and Status are bare string everywhere</a></li>
+</ul>
+</li>
+<li><a href="#high-stranded-business-logic-in-cmd">High: Stranded business logic in cmd/</a>
+<ul>
+<li><a href="#f17-cmdwikigowritemkdocsyaml-is-business-logic-not-command-wiring">F17. cmd/wiki.go:writeMkDocsYAML is business logic, not command wiring</a></li>
+<li><a href="#f18-cmdupdategoupdatetocs-is-business-logic-stranded-in-cmd">F18. cmd/update.go:updateToCs is business logic stranded in cmd</a></li>
+<li><a href="#f19-runwikiupdatenav-and-runwikiupdatedryrun-duplicate-nav-building-logic">F19. runWikiUpdateNav and runWikiUpdateDryRun duplicate nav-building logic</a></li>
+</ul>
+</li>
+<li><a href="#medium-package-boundary-issues">Medium: Package boundary issues</a>
+<ul>
+<li><a href="#f20-internalindex-has-three-responsibilities">F20. internal/index has three responsibilities</a></li>
+<li><a href="#f21-frontmatter-parsing-duplicated-across-packages">F21. Frontmatter parsing duplicated across packages</a></li>
+<li><a href="#f22-three-different-regexes-for-is-this-a-docz-file">F22. Three different regexes for &quot;is this a docz file&quot;</a></li>
+<li><a href="#f23-two-slugify-functions-with-different-algorithms-multi-agent">F23. Two Slugify functions with different algorithms [multi-agent]</a></li>
+</ul>
+</li>
+<li><a href="#medium-stutter-and-naming">Medium: Stutter and naming</a>
+<ul>
+<li><a href="#f24-templatetemplatedata-stutters-with-package-name-multi-agent">F24. template.TemplateData stutters with package name [multi-agent]</a></li>
+<li><a href="#f25-wikiindextype--wikiindexdata-stutter">F25. WikiIndexType / WikiIndexData stutter</a></li>
+<li><a href="#f26-tocconfig--toc-inconsistent-initialism-casing">F26. ToCConfig / ToC inconsistent initialism casing</a></li>
+<li><a href="#f27-named-return-values-used-as-variables-in-validate">F27. Named return values used as variables in Validate()</a></li>
+</ul>
+</li>
+<li><a href="#medium-mechanical--style-fixes">Medium: Mechanical / style fixes</a>
+<ul>
+<li><a href="#f28-osisnotexisterr-instead-of-errorsiserr-fserrnotexist-multi-agent">F28. os.IsNotExist(err) instead of errors.Is(err, fs.ErrNotExist) [multi-agent]</a></li>
+<li><a href="#f29-sortslice-instead-of-slicessortfunc">F29. sort.Slice instead of slices.SortFunc</a></li>
+<li><a href="#f30-stringsnewreaderstringdata-instead-of-bytesnewreaderdata-multi-agent">F30. strings.NewReader(string(data)) instead of bytes.NewReader(data) [multi-agent]</a></li>
+<li><a href="#f31-string-concatenation-for-paths-instead-of-filepathjoin-multi-agent">F31. String concatenation for paths instead of filepath.Join [multi-agent]</a></li>
+<li><a href="#f32-hand-rolled-itoa-instead-of-strconvitoa-multi-agent">F32. Hand-rolled itoa instead of strconv.Itoa [multi-agent]</a></li>
+<li><a href="#f33-defer-encclose-missing-in-cmdconfiggo">F33. defer enc.Close() missing in cmd/config.go</a></li>
+<li><a href="#f34-magic-strings-adr-and-csv-without-constants">F34. Magic strings &quot;adr&quot; and &quot;csv&quot; without constants</a></li>
+<li><a href="#f35-minheadings-3-magic-number">F35. MinHeadings: 3 magic number</a></li>
+<li><a href="#f36-file-mode-0o644--0o750-scattered-across-17-sites">F36. File mode 0o644 / 0o750 scattered across 17 sites</a></li>
+<li><a href="#f37-literal-filenames-doczyaml--readmemd--mkdocsyml--templates-scattered">F37. Literal filenames &quot;.docz.yaml&quot; / &quot;README.md&quot; / &quot;mkdocs.yml&quot; / &quot;templates&quot; scattered</a></li>
+</ul>
+</li>
+<li><a href="#medium-duplication-patterns">Medium: Duplication patterns</a>
+<ul>
+<li><a href="#f38-unknown-document-type-q-valid-types-s-error-repeated-4-times-multi-agent">F38. unknown document type %q (valid types: %s) error repeated 4 times [multi-agent]</a></li>
+<li><a href="#f39-doctype--configresolvetypealiasstringstolowerargs0-repeated-6-times">F39. docType := config.ResolveTypeAlias(strings.ToLower(args[0])) repeated 6 times</a></li>
+<li><a href="#f40-enabled-type-guard-block-repeated">F40. Enabled-type guard block repeated</a></li>
+</ul>
+</li>
+<li><a href="#medium-performance--actually-worth-fixing">Medium: Performance — actually worth fixing</a>
+<ul>
+<li><a href="#f41-files-read-twice-during-docz-update-multi-agent">F41. Files read twice during docz update [multi-agent]</a></li>
+<li><a href="#f42-parseheadings-called-twice-on-dry-run-path-multi-agent">F42. ParseHeadings called twice on dry-run path [multi-agent]</a></li>
+</ul>
+</li>
+<li><a href="#low-performance--leave-alone">Low: Performance — leave alone</a></li>
+<li><a href="#low-minor-cleanups">Low: Minor cleanups</a>
+<ul>
+<li><a href="#f43-run-vs-rune-inconsistency">F43. Run vs RunE inconsistency</a></li>
+<li><a href="#f44-missing-silenceusage-true-on-root-command">F44. Missing SilenceUsage: true on root command</a></li>
+<li><a href="#f45-package-comment-in-wrong-file">F45. Package comment in wrong file</a></li>
+<li><a href="#f46-pointer-to-options-where-value-would-suffice">F46. Pointer-to-options where value would suffice</a></li>
+<li><a href="#f47-no-input-validation-in-create">F47. No input validation in Create</a></li>
+<li><a href="#f48-frontmatter-parse-misses-rn-line-endings">F48. Frontmatter parse misses \r\n line endings</a></li>
+<li><a href="#f49-setdefaults-does-not-cover-all-config-fields">F49. setDefaults does not cover all Config fields</a></li>
+<li><a href="#f50-existingnavorder-silently-drops-bare-string-nav-entries">F50. ExistingNavOrder silently drops bare-string nav entries</a></li>
+</ul>
+</li>
+<li><a href="#whats-already-good">What's already good</a></li>
+</ul>
+</li>
+<li><a href="#conclusion">Conclusion</a></li>
+<li><a href="#recommendation">Recommendation</a>
+<ul>
+<li><a href="#wave-1--mechanical-wins-1-pr-1-day">Wave 1 — Mechanical wins (1 PR, ~1 day)</a></li>
+<li><a href="#wave-2--correctness-and-duplication-1-pr-1-day">Wave 2 — Correctness and duplication (1 PR, ~1 day)</a></li>
+<li><a href="#wave-3--performance-worth-fixing-1-pr-half-day">Wave 3 — Performance worth fixing (1 PR, ~half day)</a></li>
+<li><a href="#wave-4--stranded-business-logic-2-prs-2-days--done-impl-0008">Wave 4 — Stranded business logic (2 PRs, ~2 days) — Done (IMPL-0008)</a></li>
+<li><a href="#wave-5--architecture-refactor--done-design-0004--impl-0009">Wave 5 — Architecture refactor — Done (DESIGN-0004 + IMPL-0009)</a></li>
+<li><a href="#low-priority--defer">Low priority / defer</a></li>
+</ul>
+</li>
+<li><a href="#references">References</a></li>
+</ul>
+<h3 id="question">Question</h3>
+<p>What architectural debt, idiomatic-Go gaps, style violations, and performance
+issues exist in the docz codebase today, and how should they be prioritized into
+a cleanup roadmap that improves testability, extensibility, and maintainability
+without breaking the existing public surface?</p>
+<h3 id="hypothesis">Hypothesis</h3>
+<p>The codebase predates the team's standardized Go style guides and architecture
+patterns, so we expect to find:</p>
+<ol>
+<li><strong>Testability blockers</strong> — package-level globals in <code>cmd/</code>, hardcoded
+<code>os.Stdout</code>/<code>os.Stderr</code> writes, and time/exec calls that cannot be
+intercepted.</li>
+<li><strong>Domain-modeling drift</strong> — &quot;document type&quot; represented as scattered strings
+across config maps, hardcoded slices, alias maps, and template filenames with
+no compile-time enforcement that they stay in sync.</li>
+<li><strong>Three-way duplication of defaults</strong> — <code>internal/config.DefaultConfig()</code>,
+the hardcoded YAML in <code>cmd/init.go:writeDefaultConfig()</code>, and Viper's
+<code>setDefaults()</code> all encode the same truth.</li>
+<li><strong>Stranded business logic in <code>cmd/</code></strong> — file I/O and YAML generation that
+belongs in <code>internal/</code> packages.</li>
+<li><strong>Stutter and style drift</strong> — <code>template.TemplateData</code>, <code>ToCConfig</code>,
+<code>os.IsNotExist</code>, hand-rolled <code>itoa</code>, manual date formatting, etc.</li>
+</ol>
+<p>We expect most issues to be mechanical fixes; the larger architectural items
+(Runner pattern, DocType registry) will need a dedicated design doc.</p>
+<h3 id="context">Context</h3>
+<p>The docz codebase (~4,200 LOC across <code>cmd/</code> and <code>internal/</code>) was written before
+the team adopted standardized go-development style guides, the Uber Go Style
+Guide as a reference, and structured architecture-review practices. Dogfooding
+docz on its own repository surfaced several pain points (documented in
+INV-0001), and recent bug fixes (<code>fix/update-skips-disabled-types</code>,
+<code>fix/version-and-mkdocs-extensions</code>) revealed that the defaults-duplication
+problem is actively producing drift bugs.</p>
+<p>We want a single source of truth for outstanding cleanup work so the team can
+plan a phased refactor and ratchet quality up over time.</p>
+<p><strong>Triggered by:</strong> Dogfooding pain points; bug pattern of three-way default drift
+(<code>markdown_extensions</code> PR #30, disabled-types PR #31).</p>
+
+</section>
+<section class="panel" id="p-approach">
+<h2 class="panel-title" id="approach">Approach</h2>
+<p>Ran four specialized review agents in parallel against the full codebase, each
+with a distinct focus, then synthesized and deduplicated the findings:</p>
+<ol>
+<li><strong>Architecture review</strong> (<code>go-development:go-architect</code>) — package boundaries,
+global state, dependency injection, domain modeling, extensibility,
+testability gaps, error-handling strategy.</li>
+<li><strong>Uber Go Style audit</strong> (<code>go-development:go-style</code>) — naming, receivers,
+error wrapping, magic constants, named returns, initialism casing,
+time/path/sort idioms.</li>
+<li><strong>Performance review</strong> (<code>go-development:go-performance</code>) — algorithmic
+complexity, allocations, I/O patterns, regex/parsing efficiency, and honest
+&quot;do not optimize&quot; calls for code that is fine at CLI scale.</li>
+<li><strong>Idiomatic Go review</strong> (general-purpose) — error handling pitfalls,
+stringly-typed code, magic constants, Cobra-specific conventions (<code>Run</code> vs
+<code>RunE</code>, <code>cmd.OutOrStdout()</code>, <code>SilenceUsage</code>), logging, duplication.</li>
+</ol>
+<p>All four agents read the same set of files; findings were cross-referenced to
+identify the highest-confidence (multi-agent agreement) issues.</p>
+<h3 id="environment">Environment</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Go module version</td>
+<td>1.25.7</td>
+</tr>
+<tr>
+<td>Codebase size</td>
+<td>~4,200 LOC (<code>cmd/</code> + <code>internal/</code>)</td>
+</tr>
+<tr>
+<td>Built-in document types</td>
+<td>6 (rfc, adr, design, impl, plan, inv)</td>
+</tr>
+<tr>
+<td>CLI framework</td>
+<td>Cobra + Viper</td>
+</tr>
+<tr>
+<td>Template engine</td>
+<td><code>text/template</code> with <code>//go:embed</code></td>
+</tr>
+<tr>
+<td>Current docz version</td>
+<td>v0.0.10-5-g2272af5</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-findings">
+<h2 class="panel-title" id="findings">Findings</h2>
+<ul class="heading-list">
+<li><a href="#critical-testability-blockers">Critical: Testability blockers</a></li>
+<li><a href="#critical-correctness-bugs">Critical: Correctness bugs</a></li>
+<li><a href="#high-three-way-duplication-of-defaults-multi-agent">High: Three-way duplication of defaults [multi-agent]</a></li>
+<li><a href="#high-library-returns-user-facing-strings">High: Library returns user-facing strings</a></li>
+<li><a href="#high-domain-modeling--doctype-scattered">High: Domain modeling — DocType scattered</a></li>
+<li><a href="#high-stranded-business-logic-in-cmd">High: Stranded business logic in cmd/</a></li>
+<li><a href="#medium-package-boundary-issues">Medium: Package boundary issues</a></li>
+<li><a href="#medium-stutter-and-naming">Medium: Stutter and naming</a></li>
+<li><a href="#medium-mechanical--style-fixes">Medium: Mechanical / style fixes</a></li>
+<li><a href="#medium-duplication-patterns">Medium: Duplication patterns</a></li>
+<li><a href="#medium-performance--actually-worth-fixing">Medium: Performance — actually worth fixing</a></li>
+<li><a href="#low-performance--leave-alone">Low: Performance — leave alone</a></li>
+<li><a href="#low-minor-cleanups">Low: Minor cleanups</a></li>
+<li><a href="#whats-already-good">What&#39;s already good</a></li>
+</ul>
+<p>The findings are grouped by severity and theme. Items marked <strong>[multi-agent]</strong>
+were flagged independently by two or more review agents.</p>
+<div class="card" id="critical-testability-blockers">
+<p class="card-label">Critical: Testability blockers</p>
+<h5 id="f1-package-level-globals-in-cmd-prevent-parallel-testing-multi-agent">F1. Package-level globals in <code>cmd/</code> prevent parallel testing [multi-agent]</h5>
+<p><strong>Files:</strong> <code>cmd/root.go:29-34</code>, <code>cmd/init.go:14</code>, <code>cmd/create.go:16-20</code>,
+<code>cmd/update.go:16</code>, <code>cmd/list.go:19-22</code>, <code>cmd/wiki.go:16-21</code></p>
+<p>The <code>cmd</code> package declares 14+ mutable package-level variables for Cobra flags
+plus the resolved <code>appCfg</code>. Every test must manually reset these between cases;
+<code>t.Parallel()</code> would cause races. Tests in <code>cmd/</code> capture stdout via <code>os.Pipe</code>
+tricks (~20 occurrences) because handlers call <code>fmt.Printf</code> directly against
+<code>os.Stdout</code>. The combination of these two patterns is the single biggest blocker
+to clean unit tests.</p>
+<p><strong>Impact:</strong> Tests cannot run in parallel. Flag state leaks between test cases.
+Output-capture is fragile (a <code>t.Fatal</code> before restoration leaks stdout). Adding
+any new flag adds another implicit dependency to every existing cmd test.</p>
+<h5 id="f2-direct-fmtprintf--osstdout-instead-of-cmdoutorstdout-multi-agent">F2. Direct <code>fmt.Printf</code> / <code>os.Stdout</code> instead of <code>cmd.OutOrStdout()</code> [multi-agent]</h5>
+<p><strong>Files:</strong> all of <code>cmd/*.go</code> (50+ call sites); enumerated in
+<code>cmd/create.go:65,72-74,93</code>, <code>cmd/init.go:40,56,65,181,189,208</code>,
+<code>cmd/update.go:49,67,76,95,104,115,126,133,142,147</code>,
+<code>cmd/template.go:105,135,150-154</code>,
+<code>cmd/wiki.go:107,137-138,151,162,167,173,183,227,233,296,337,345-348,357-361</code>,
+<code>cmd/version.go:22</code>, <code>cmd/list.go:107-122,125-129,131-145</code></p>
+<p>Cobra commands receive a <code>*cobra.Command</code> whose <code>OutOrStdout()</code>,
+<code>ErrOrStderr()</code>, <code>Println()</code>, and <code>PrintErrf()</code> route through writers that tests
+can override via <code>cmd.SetOut(buf)</code> / <code>cmd.SetErr(buf)</code>. Every handler currently
+discards the <code>*cobra.Command</code> parameter (<code>_ *cobra.Command</code>) and writes directly
+to <code>os.Stdout</code> / <code>os.Stderr</code>. This is the single biggest testability win
+available.</p>
+<h5 id="f3-if-verbose--fmtfprintfosstderr---pattern-repeated-20-times-multi-agent">F3. <code>if verbose { fmt.Fprintf(os.Stderr, ...) }</code> pattern repeated 20+ times [multi-agent]</h5>
+<p><strong>Files:</strong> <code>cmd/create.go:65,72-74</code>, <code>cmd/init.go:40,65,189</code>,
+<code>cmd/update.go:49,67,76,115,126,133,142,147</code>,
+<code>cmd/wiki.go:137-138,151,162,167,173,227,233,296</code>, <code>cmd/template.go:150-154</code></p>
+<p>There is no logger abstraction; every cmd file has its own copies. Cannot
+configure log level beyond on/off. Cannot capture in tests. Should be replaced
+with <code>log/slog</code> (stdlib since Go 1.21; we are on 1.25). <code>--verbose</code> becomes a
+slog handler level. Plumbing slog through internal packages is straightforward.</p>
+<h5 id="f4-internaldocumenttimego-uses-mutable-package-global-timenow-multi-agent">F4. <code>internal/document/time.go</code> uses mutable package-global <code>timeNow</code> [multi-agent]</h5>
+<p><strong>File:</strong> <code>internal/document/time.go:7</code></p>
+<pre><code class="language-go">var timeNow = time.Now
+</code></pre>
+<p>Tests override this and restore via <code>t.Cleanup</code>. Not safe for parallel tests;
+not explicit at call sites. The idiomatic alternative is passing <code>time.Time</code> or
+a <code>func() time.Time</code> as a parameter via <code>CreateOptions</code>.</p>
+<h5 id="f5-gitusername-exec-call-not-injectable">F5. <code>gitUserName()</code> exec call not injectable</h5>
+<p><strong>File:</strong> <code>cmd/create.go:132-138</code></p>
+<pre><code class="language-go">out, err := exec.CommandContext(context.Background(), &#34;git&#34;, &#34;config&#34;, &#34;user.name&#34;).Output()
+</code></pre>
+<p>Cannot be intercepted in tests. The author-resolution path is therefore not
+exercised in cmd tests — they either set <code>createAuthor = &quot;&quot;</code> and get &quot;Unknown&quot;
+or whatever <code>git config</code> returns in CI. Should accept a <code>func() string</code> or
+<code>GitUserResolver</code> interface; should also accept <code>cmd.Context()</code> instead of
+<code>context.Background()</code> so the lookup is cancellable.</p>
+<h5 id="f6-configload-reads-doczyaml-from-working-directory-implicitly-multi-agent">F6. <code>config.Load</code> reads <code>.docz.yaml</code> from working directory implicitly [multi-agent]</h5>
+<p><strong>File:</strong> <code>internal/config/config.go:151-178</code>, <code>cmd/wiki_test.go:12-27</code>,
+<code>internal/config/config_test.go:127-191</code></p>
+<p><code>Load</code> reads <code>.docz.yaml</code> from <code>os.Getwd()</code>. Every test that exercises config
+loading must <code>os.Chdir</code> into a temp dir and use <code>t.Cleanup</code> to restore. This is
+process-wide state — tests cannot run in parallel even within a single test
+file. Fix: change <code>Load(configFile string)</code> to
+<code>Load(configFile, repoRoot string)</code> and read from <code>repoRoot</code> instead.</p>
+</div>
+<div class="card" id="critical-correctness-bugs">
+<p class="card-label">Critical: Correctness bugs</p>
+<h5 id="f7-config-validation-error-swallowed-at-startup-multi-agent">F7. Config validation error swallowed at startup [multi-agent]</h5>
+<p><strong>File:</strong> <code>cmd/root.go:72-79</code></p>
+<pre><code class="language-go">warnings, validErr := cfg.Validate()
+for _, w := range warnings { fmt.Fprintf(os.Stderr, &#34;Warning: %s\n&#34;, w) }
+if validErr != nil { fmt.Fprintf(os.Stderr, &#34;Config error: %v\n&#34;, validErr) }
+appCfg = cfg
+</code></pre>
+<p>Validation error is printed to stderr but the program continues with the invalid
+config. A user with <code>statuses: []</code> in <code>.docz.yaml</code> sees a warning and then
+cryptic downstream failures. Fix: use <code>PersistentPreRunE</code> on <code>rootCmd</code> instead
+of <code>cobra.OnInitialize</code> and propagate the error as a non-zero exit.</p>
+<h5 id="f8-mergeconfigfile-silently-swallows-yaml-parse-errors">F8. <code>mergeConfigFile</code> silently swallows YAML parse errors</h5>
+<p><strong>File:</strong> <code>internal/config/config.go:262-272</code></p>
+<pre><code class="language-go">func mergeConfigFile(v *viper.Viper, path string) error {
+    if _, err := os.Stat(path); err != nil {
+        return nil //nolint:nilerr // missing config file is not an error
+    }
+    fileV := viper.New()
+    fileV.SetConfigFile(path)
+    if err := fileV.ReadInConfig(); err != nil {
+        return nil //nolint:nilerr // unreadable config file is silently skipped
+    }
+    return v.MergeConfigMap(fileV.AllSettings())
+}
+</code></pre>
+<p>A malformed <code>.docz.yaml</code> (YAML syntax error, parse failure) is silently
+discarded — the user gets defaults plus no diagnostic, then later wonders why
+their config &quot;doesn't work&quot;. Distinguish &quot;file does not exist&quot; (return nil) from
+&quot;file exists but cannot be parsed&quot; (return wrapped error).</p>
+<h5 id="f9-currentdate-calls-timenow-three-times-multi-agent">F9. <code>currentDate()</code> calls <code>timeNow()</code> three times [multi-agent]</h5>
+<p><strong>File:</strong> <code>internal/document/create.go:118-121</code></p>
+<pre><code class="language-go">return fmt.Sprintf(&#34;%d-%02d-%02d&#34;,
+    timeNow().Year(), timeNow().Month(), timeNow().Day())
+</code></pre>
+<p>Three clock reads. Theoretical midnight-skew bug. Also: should use
+<code>time.DateOnly</code> (Go 1.20+) instead of manual <code>fmt.Sprintf</code>:</p>
+<pre><code class="language-go">return timeNow().Format(time.DateOnly)
+</code></pre>
+<h5 id="f10-bare-return-err-without-context-wrap-multi-agent">F10. Bare <code>return err</code> without context wrap [multi-agent]</h5>
+<p><strong>Files:</strong> <code>cmd/update.go:54</code>, <code>cmd/create.go:89</code>, <code>cmd/init.go:51</code>,
+<code>cmd/wiki.go:103,109,154-156,178-180,197-199</code>, <code>internal/wiki/wiki.go:58</code></p>
+<p>Multiple sites return errors without wrapping in
+<code>fmt.Errorf(&quot;context: %w&quot;, err)</code>. When these surface to the user, the stack
+trace is lost and the message provides no context about which operation failed.</p>
+<h5 id="f11-doctitle-returns-fallback-value-alongside-non-nil-error">F11. <code>DocTitle</code> returns fallback value alongside non-nil error</h5>
+<p><strong>File:</strong> <code>internal/wiki/titles.go:27-43</code></p>
+<pre><code class="language-go">func DocTitle(filePath string) (string, error) {
+    data, err := os.ReadFile(filePath)
+    if err != nil {
+        return FilenameTitle(filepath.Base(filePath)), err  // unusual contract
+    }
+    ...
+}
+</code></pre>
+<p>Returning both a usable value and an error is an unusual API contract that
+invites bugs in callers. The wiki package already checks <code>err != nil</code> and
+discards the value, but the contract should be one-or-the-other.</p>
+</div>
+<div class="card" id="high-three-way-duplication-of-defaults-multi-agent">
+<p class="card-label">High: Three-way duplication of defaults [multi-agent]</p>
+<h5 id="f12-cmdinitgowritedefaultconfig-hardcodes-yaml-that-duplicates-defaultconfig">F12. <code>cmd/init.go:writeDefaultConfig()</code> hardcodes YAML that duplicates <code>DefaultConfig()</code></h5>
+<p><strong>Files:</strong> <code>cmd/init.go:60-183</code> (100+ lines of literal YAML),
+<code>internal/config/config.go:66-144</code> (Go-literal version),
+<code>internal/config/config.go:291-319</code> (<code>setDefaults</code> Viper version)</p>
+<p>The same defaults are encoded in three places. Adding <code>markdown_extensions</code> to
+<code>DefaultConfig</code> would not propagate to the written file; PR #30 was exactly this
+drift. <code>setDefaults</code> currently misses <code>MarkdownExtensions</code>, <code>DocsDir</code>,
+<code>RepoURL</code>, <code>SiteURL</code>, and <code>Theme</code> — added later but never wired into Viper
+defaults.</p>
+<p><strong>Fix:</strong> Replace the literal YAML in <code>writeDefaultConfig</code> with
+<code>yaml.Marshal(config.DefaultConfig())</code>. Either derive <code>setDefaults</code> from the
+struct via reflection or remove it in favor of pre-defaulted struct
+unmarshalling.</p>
+</div>
+<div class="card" id="high-library-returns-user-facing-strings">
+<p class="card-label">High: Library returns user-facing strings</p>
+<h5 id="f13-internalindex-returns-user-facing-messages-as-msg-err-multi-agent">F13. <code>internal/index</code> returns user-facing messages as <code>(msg, err)</code> [multi-agent]</h5>
+<p><strong>Files:</strong> <code>internal/index/index.go:92</code> (<code>UpdateReadme(...) (string, error)</code>),
+<code>internal/index/index.go:117</code> (<code>DryRunReadme</code>)</p>
+<p>Returns <code>&quot;Updated %s&quot;</code>, <code>&quot;Created %s&quot;</code>, <code>&quot;Warning: %s has no DOCZ markers...&quot;</code>
+as the success-path string. The warning case returns <code>nil</code> error but a string
+starting with <code>&quot;Warning:&quot;</code> that the caller is supposed to inspect.</p>
+<p><strong>Fix:</strong> Return a typed result like
+<code>type UpdateOutcome { Action UpdateAction; Path string }</code>. The cmd layer formats
+the user-facing message.</p>
+</div>
+<div class="card" id="high-domain-modeling--doctype-scattered">
+<p class="card-label">High: Domain modeling — <code>DocType</code> scattered</p>
+<h5 id="f14-document-type-expressed-in-6-locations-with-no-compile-time-enforcement-multi-agent">F14. &quot;Document type&quot; expressed in 6+ locations with no compile-time enforcement [multi-agent]</h5>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Location</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>internal/config/config.go:204</code></td>
+<td><code>ValidTypes()</code> — hardcoded ordered slice</td>
+</tr>
+<tr>
+<td><code>internal/config/config.go:66-144</code></td>
+<td><code>DefaultConfig().Types</code> — map of TypeConfig</td>
+</tr>
+<tr>
+<td><code>internal/config/config.go:209-211</code></td>
+<td><code>typeAliases</code> — private alias map</td>
+</tr>
+<tr>
+<td><code>internal/config/config.go:192-201</code></td>
+<td><code>DefaultNavTitles()</code> — separate map</td>
+</tr>
+<tr>
+<td><code>internal/config/config.go:224-232</code></td>
+<td><code>TypesHelp()</code> — hardcoded prose</td>
+</tr>
+<tr>
+<td><code>internal/template/templates/*.md</code></td>
+<td>One file per type, named by convention</td>
+</tr>
+<tr>
+<td><code>cmd/init.go:70-175</code></td>
+<td>YAML duplicating all of the above</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Adding a new type (e.g., <code>runbook</code>) requires changes in all of these places with
+no compile-time signal if any step is missed. A type added to <code>ValidTypes()</code>
+without an embedded template panics at runtime.</p>
+<p><strong>Fix:</strong> Introduce a <code>DocType</code> value struct that bundles canonical name,
+aliases, default <code>TypeConfig</code>, nav title, and template name. <code>ValidTypes()</code>
+derives from a registration list. Add <code>TestAllTypesHaveEmbeddedTemplates</code> as
+compile-time-style enforcement.</p>
+<h5 id="f15-validtypes-iteration-vs-appcfgtypes-map-disconnect">F15. <code>ValidTypes()</code> iteration vs <code>appCfg.Types</code> map disconnect</h5>
+<p><strong>Files:</strong> <code>cmd/create.go:54-57</code>, <code>cmd/update.go:35-43</code>, <code>cmd/list.go:52-59</code>,
+<code>cmd/init.go:36</code>, <code>cmd/wiki.go:307</code></p>
+<p>Every command iterates <code>config.ValidTypes()</code> (hardcoded slice) and looks each
+name up in <code>appCfg.Types</code> (the actual config). A user who adds a custom type to
+the map (which <code>Validate()</code> only warns about) sees their type ignored by all
+iteration. Two orderings exist: the hardcoded slice and the map iteration order.</p>
+<p><strong>Fix:</strong> Add <code>Config.EnabledTypes() []string</code> returning sorted enabled canonical
+type names. Iterate that single method instead of the slice + map lookup.</p>
+<h5 id="f16-doctype-and-status-are-bare-string-everywhere">F16. <code>DocType</code> and <code>Status</code> are bare <code>string</code> everywhere</h5>
+<p><strong>Files:</strong> <code>internal/config/config.go:204</code>, <code>internal/document/create.go:14-15</code>,
+<code>internal/template/template.go:20</code>, <code>internal/template/embed.go:14</code>,
+<code>internal/document/document.go:16</code></p>
+<p>Should be <code>type DocType string</code> and <code>type Status string</code> with constants and
+validation methods. Currently every command does manual <code>strings.ToLower</code> +
+<code>ResolveTypeAlias</code> + map lookup + error wrapping.</p>
+</div>
+<div class="card" id="high-stranded-business-logic-in-cmd">
+<p class="card-label">High: Stranded business logic in <code>cmd/</code></p>
+<h5 id="f17-cmdwikigowritemkdocsyaml-is-business-logic-not-command-wiring">F17. <code>cmd/wiki.go:writeMkDocsYAML</code> is business logic, not command wiring</h5>
+<p><strong>File:</strong> <code>cmd/wiki.go:247-288</code></p>
+<p>Constructs the initial <code>mkdocs.yml</code> content by manual string building. Knows the
+structure of a valid mkdocs.yml. Cannot be unit-tested without going through the
+cmd layer and the <code>appCfg</code> global. <code>internal/wiki</code> already handles
+reading/writing mkdocs.yml via <code>ReadMkDocs</code>/<code>WriteMkDocs</code>.</p>
+<p><strong>Fix:</strong> Move to <code>internal/wiki</code> as
+<code>wiki.CreateMkDocs(path string, cfg MkDocsConfig) error</code>.</p>
+<h5 id="f18-cmdupdategoupdatetocs-is-business-logic-stranded-in-cmd">F18. <code>cmd/update.go:updateToCs</code> is business logic stranded in cmd</h5>
+<p><strong>File:</strong> <code>cmd/update.go:110-150</code></p>
+<p>Reads files from disk, calls <code>toc.UpdateToC</code>, compares content, writes back.
+Distinct from command I/O concerns. Cannot be unit-tested in isolation — must go
+through <code>updateType</code> which also writes README.</p>
+<p><strong>Fix:</strong> Move to <code>internal/toc</code> as
+<code>toc.UpdateFiles(paths []string, minHeadings int, dryRun bool) (UpdateReport, error)</code>.</p>
+<h5 id="f19-runwikiupdatenav-and-runwikiupdatedryrun-duplicate-nav-building-logic">F19. <code>runWikiUpdateNav</code> and <code>runWikiUpdateDryRun</code> duplicate nav-building logic</h5>
+<p><strong>File:</strong> <code>cmd/wiki.go:135-210</code></p>
+<p>Both functions have nearly identical bodies: call <code>wiki.ScanDocs</code>,
+<code>wiki.ReadMkDocs</code>, <code>wiki.ExistingNavOrder</code>, then either <code>MergeNavOrder</code> or
+<code>SortEntries</code>. Diverge only at the final output step.</p>
+<p><strong>Fix:</strong> Extract shared nav-building helper that returns <code>[]wiki.NavEntry</code>.</p>
+</div>
+<div class="card" id="medium-package-boundary-issues">
+<p class="card-label">Medium: Package boundary issues</p>
+<h5 id="f20-internalindex-has-three-responsibilities">F20. <code>internal/index</code> has three responsibilities</h5>
+<p><strong>File:</strong> <code>internal/index/index.go</code></p>
+<p>Package currently handles:</p>
+<ol>
+<li>Directory scanning (<code>ScanDocuments</code>, <code>DocEntry</code>)</li>
+<li>Markdown table generation (<code>GenerateTable</code>)</li>
+<li>README marker splicing (<code>UpdateReadme</code>, <code>DryRunReadme</code>, <code>spliceMarkers</code>,
+<code>createNewReadme</code>)</li>
+</ol>
+<p>The package comment says &quot;document scanning and README index generation&quot; — the
+&quot;and&quot; is the tell.</p>
+<p><strong>Fix:</strong> Move <code>ScanDocuments</code> + <code>DocEntry</code> to <code>internal/document</code> (it already
+uses <code>document.Frontmatter</code> via embedding). Keep README splicing in
+<code>internal/index</code>.</p>
+<h5 id="f21-frontmatter-parsing-duplicated-across-packages">F21. <code>Frontmatter</code> parsing duplicated across packages</h5>
+<p><strong>Files:</strong> <code>internal/index/index.go:48-56</code>, <code>internal/wiki/titles.go:33-43</code></p>
+<p>Both packages read a file and call <code>document.ParseFrontmatter</code>, with divergent
+failure handling (index silently skips; wiki falls back to filename). Should be
+one helper <code>document.LoadFrontmatter(path string)</code> with a single documented
+error contract.</p>
+<h5 id="f22-three-different-regexes-for-is-this-a-docz-file">F22. Three different regexes for &quot;is this a docz file&quot;</h5>
+<p><strong>Files:</strong> <code>internal/wiki/wiki.go:12</code> (<code>^\d{4,}-.*\.md$</code>),
+<code>internal/index/index.go:21</code> (<code>^\d+-.*\.md$</code>), <code>internal/document/create.go:36</code>
+(<code>^(\d+)-.*\.md$</code>)</p>
+<p>The wiki regex requires 4+ digits; the others accept 1+. A file <code>1-foo.md</code> would
+index but not appear in the wiki nav. Inconsistent invariant.</p>
+<p><strong>Fix:</strong> Single exported <code>document.DoczFilePattern</code> (or
+<code>document.IsDoczFile(name) bool</code>).</p>
+<h5 id="f23-two-slugify-functions-with-different-algorithms-multi-agent">F23. Two <code>Slugify</code> functions with different algorithms [multi-agent]</h5>
+<p><strong>Files:</strong> <code>internal/template/template.go:38-54</code>, <code>internal/toc/toc.go:38-56</code></p>
+<ul>
+<li><code>template.Slugify</code>: filename slug, strips to <code>[a-z0-9-]</code>, max 64 chars,
+word-boundary truncation.</li>
+<li><code>toc.Slugify</code>: GitHub anchor slug, keeps <code>[a-z0-9 -]</code>, no truncation.</li>
+</ul>
+<p>Both exported, both named <code>Slugify</code>. Confusing for any code that imports both.</p>
+<p><strong>Fix:</strong> Rename to <code>template.FilenameSlug</code> and <code>toc.AnchorSlug</code>. Document the
+GitHub anchor algorithm reference in the toc one.</p>
+</div>
+<div class="card" id="medium-stutter-and-naming">
+<p class="card-label">Medium: Stutter and naming</p>
+<h5 id="f24-templatetemplatedata-stutters-with-package-name-multi-agent">F24. <code>template.TemplateData</code> stutters with package name [multi-agent]</h5>
+<p><strong>File:</strong> <code>internal/template/template.go:14</code></p>
+<p>Reads as <code>template.TemplateData</code> — <code>templateTemplateData</code>. Per Go convention,
+the package's purpose is clear from the import path. Rename to <code>template.Data</code>.</p>
+<h5 id="f25-wikiindextype--wikiindexdata-stutter">F25. <code>WikiIndexType</code> / <code>WikiIndexData</code> stutter</h5>
+<p><strong>File:</strong> <code>internal/template/template.go:82,88</code></p>
+<p>Same as F24. Consider renaming or moving these to a sub-context.</p>
+<h5 id="f26-tocconfig--toc-inconsistent-initialism-casing">F26. <code>ToCConfig</code> / <code>ToC</code> inconsistent initialism casing</h5>
+<p><strong>File:</strong> <code>internal/config/config.go:50,62</code></p>
+<p>Per Uber style and Go convention, initialisms should be all uppercase:
+<code>TOCConfig</code>, <code>TOC</code>. Currently uses <code>ToC</code> which is inconsistent (would write
+<code>URLConfig</code>, not <code>UrlConfig</code>).</p>
+<p><strong>Fix:</strong> Rename <code>ToCConfig</code> → <code>TOCConfig</code>, field <code>ToC</code> → <code>TOC</code>. Keep YAML tag
+<code>&quot;toc&quot;</code> so users' config files don't break.</p>
+<h5 id="f27-named-return-values-used-as-variables-in-validate">F27. Named return values used as variables in <code>Validate()</code></h5>
+<p><strong>File:</strong> <code>internal/config/config.go:236</code></p>
+<pre><code class="language-go">func (c *Config) Validate() (warnings []string, err error) {
+</code></pre>
+<p>Named returns add no value here — every return statement names both explicitly.
+Per Uber guide, named returns should be reserved for clarification or <code>defer</code>
+use. Inverted footgun: a future bare <code>return</code> silently returns whatever was
+assigned.</p>
+</div>
+<div class="card" id="medium-mechanical--style-fixes">
+<p class="card-label">Medium: Mechanical / style fixes</p>
+<h5 id="f28-osisnotexisterr-instead-of-errorsiserr-fserrnotexist-multi-agent">F28. <code>os.IsNotExist(err)</code> instead of <code>errors.Is(err, fs.ErrNotExist)</code> [multi-agent]</h5>
+<p><strong>Files:</strong> <code>cmd/wiki.go:120</code>, <code>internal/index/index.go:36,95,120</code></p>
+<p>The legacy form does not unwrap error chains. Modern idiom since Go 1.13 is
+<code>errors.Is(err, fs.ErrNotExist)</code>.</p>
+<h5 id="f29-sortslice-instead-of-slicessortfunc">F29. <code>sort.Slice</code> instead of <code>slices.SortFunc</code></h5>
+<p><strong>Files:</strong> <code>internal/index/index.go:64</code>,
+<code>internal/wiki/wiki.go:104,109,114,148</code>, <code>internal/wiki/mkdocs.go:123</code></p>
+<p>We're on Go 1.25.7; <code>slices.SortFunc</code> (generics, type-safe) is preferred over
+<code>sort.Slice</code> (interface-based).</p>
+<h5 id="f30-stringsnewreaderstringdata-instead-of-bytesnewreaderdata-multi-agent">F30. <code>strings.NewReader(string(data))</code> instead of <code>bytes.NewReader(data)</code> [multi-agent]</h5>
+<p><strong>File:</strong> <code>internal/wiki/titles.go:57</code></p>
+<pre><code class="language-go">scanner := bufio.NewScanner(strings.NewReader(string(data)))
+</code></pre>
+<p><code>data</code> is already <code>[]byte</code>. The conversion copies the entire file content into a
+new string allocation, then wraps it in <code>strings.Reader</code>. Use
+<code>bytes.NewReader(data)</code> directly.</p>
+<h5 id="f31-string-concatenation-for-paths-instead-of-filepathjoin-multi-agent">F31. String concatenation for paths instead of <code>filepath.Join</code> [multi-agent]</h5>
+<p><strong>Files:</strong> <code>internal/template/template.go:72,98</code></p>
+<pre><code class="language-go">localPath := docsDir + &#34;/templates/&#34; + docType + &#34;.md&#34;
+localPath := docsDir + &#34;/templates/wiki_index.md&#34;
+</code></pre>
+<p>Not portable (Windows uses <code>\</code>). Use <code>filepath.Join</code>. The
+<code>internal/template/embed.go</code> uses of <code>&quot;templates/&quot; + name</code> are correct because
+<code>embed.FS</code> always uses forward slashes.</p>
+<h5 id="f32-hand-rolled-itoa-instead-of-strconvitoa-multi-agent">F32. Hand-rolled <code>itoa</code> instead of <code>strconv.Itoa</code> [multi-agent]</h5>
+<p><strong>File:</strong> <code>internal/toc/toc.go:209-219</code></p>
+<pre><code class="language-go">// itoa converts a small integer to a string without importing strconv.
+func itoa(n int) string { ... }
+</code></pre>
+<p>The &quot;without importing strconv&quot; rationale saves nothing — <code>strconv</code> is already
+in the standard library and adds no binary weight. The custom implementation
+prepends bytes via <code>append([]byte{...}, digits...)</code> — worse than <code>strconv.Itoa</code>
+and has subtly different <code>n=0</code> behavior.</p>
+<h5 id="f33-defer-encclose-missing-in-cmdconfiggo">F33. <code>defer enc.Close()</code> missing in <code>cmd/config.go</code></h5>
+<p><strong>File:</strong> <code>cmd/config.go:24-30</code></p>
+<pre><code class="language-go">enc := yaml.NewEncoder(os.Stdout)
+enc.SetIndent(2)
+if err := enc.Encode(appCfg); err != nil {
+    return fmt.Errorf(&#34;encoding config: %w&#34;, err)  // enc.Close() never called
+}
+return enc.Close()
+</code></pre>
+<p>If <code>Encode</code> fails, <code>Close</code> is never called. Standard <code>defer enc.Close()</code> fixes
+it.</p>
+<h5 id="f34-magic-strings-adr-and-csv-without-constants">F34. Magic strings <code>&quot;adr&quot;</code> and <code>&quot;csv&quot;</code> without constants</h5>
+<p><strong>Files:</strong> <code>cmd/update.go:85-87</code>, <code>cmd/list.go:92</code></p>
+<pre><code class="language-go">heading := &#34;All &#34; + strings.ToUpper(typeName) + &#34;s&#34;
+if typeName == &#34;adr&#34; { heading = &#34;All ADRs&#34; }   // magic &#34;adr&#34;
+</code></pre>
+<pre><code class="language-go">case &#34;csv&#34;:  // formatJSON is a constant, but &#34;csv&#34; is inline
+</code></pre>
+<p>The &quot;adr&quot; branch is a special-case for English pluralization that should be a
+<code>PluralLabel</code> field on <code>TypeConfig</code>. The <code>&quot;csv&quot;</code> literal should be a <code>formatCSV</code>
+constant matching <code>formatJSON</code>.</p>
+<h5 id="f35-minheadings-3-magic-number">F35. <code>MinHeadings: 3</code> magic number</h5>
+<p><strong>File:</strong> <code>internal/config/config.go:141</code></p>
+<p>Should be <code>const defaultMinHeadings = 3</code> referenced from <code>DefaultConfig()</code>.</p>
+<h5 id="f36-file-mode-0o644--0o750-scattered-across-17-sites">F36. File mode <code>0o644</code> / <code>0o750</code> scattered across 17 sites</h5>
+<p><strong>Files:</strong> <code>cmd/init.go:46,177,204</code>, <code>cmd/template.go:127,131</code>,
+<code>internal/index/index.go:109,162,166</code>, <code>internal/document/create.go:43,78</code></p>
+<p>Define in a single location:</p>
+<pre><code class="language-go">const (
+    FileMode os.FileMode = 0o644
+    DirMode  os.FileMode = 0o750
+)
+</code></pre>
+<h5 id="f37-literal-filenames-doczyaml--readmemd--mkdocsyml--templates-scattered">F37. Literal filenames <code>&quot;.docz.yaml&quot;</code> / <code>&quot;README.md&quot;</code> / <code>&quot;mkdocs.yml&quot;</code> / <code>&quot;templates&quot;</code> scattered</h5>
+<p><strong>Files:</strong> <code>cmd/init.go:50,61</code>, <code>cmd/update.go:64</code>, <code>cmd/template.go:115</code>,
+<code>cmd/wiki.go:216,292</code>, <code>internal/config/config.go:134,163,169</code>,
+<code>internal/template/template.go:72,98</code></p>
+<p>Define filename constants once:</p>
+<pre><code class="language-go">const (
+    ConfigFileName = &#34;.docz.yaml&#34;
+    IndexFileName  = &#34;README.md&#34;
+    WikiIndexName  = &#34;index.md&#34;
+    MkDocsFileName = &#34;mkdocs.yml&#34;
+    TemplatesDir   = &#34;templates&#34;
+)
+</code></pre>
+</div>
+<div class="card" id="medium-duplication-patterns">
+<p class="card-label">Medium: Duplication patterns</p>
+<h5 id="f38-unknown-document-type-q-valid-types-s-error-repeated-4-times-multi-agent">F38. <code>unknown document type %q (valid types: %s)</code> error repeated 4 times [multi-agent]</h5>
+<p><strong>Files:</strong> <code>cmd/create.go:55-56</code>, <code>cmd/list.go:56-57</code>,
+<code>cmd/template.go:141-142</code>, <code>cmd/update.go:39-40</code></p>
+<p>Plus a fifth variation in <code>internal/config/config.go:249</code>.</p>
+<p><strong>Fix:</strong> <code>config.ValidateType(name string) (canonicalName string, err error)</code>
+that resolves alias, lowercases, validates, and returns a typed error. Single
+call site per command.</p>
+<h5 id="f39-doctype--configresolvetypealiasstringstolowerargs0-repeated-6-times">F39. <code>docType := config.ResolveTypeAlias(strings.ToLower(args[0]))</code> repeated 6 times</h5>
+<p><strong>Files:</strong> <code>cmd/create.go:50</code>, <code>cmd/list.go:54</code>, <code>cmd/update.go:37</code>,
+<code>cmd/template.go:71,86,110</code></p>
+<p>Roll into the <code>ValidateType</code> helper from F38 (lowercase internally).</p>
+<h5 id="f40-enabled-type-guard-block-repeated">F40. Enabled-type guard block repeated</h5>
+<p><strong>Files:</strong> <code>cmd/init.go:37-43</code>, <code>cmd/update.go:46-52</code>, <code>cmd/wiki.go:307-311</code></p>
+<pre><code class="language-go">tc, ok := appCfg.Types[typeName]
+if !ok || !tc.Enabled {
+    if verbose { fmt.Fprintf(os.Stderr, &#34;Type %s is disabled, skipping.\n&#34;, typeName) }
+    continue
+}
+</code></pre>
+<p><strong>Fix:</strong> <code>Config.EnabledTypes() []string</code> (see F15).</p>
+</div>
+<div class="card" id="medium-performance--actually-worth-fixing">
+<p class="card-label">Medium: Performance — actually worth fixing</p>
+<h5 id="f41-files-read-twice-during-docz-update-multi-agent">F41. Files read twice during <code>docz update</code> [multi-agent]</h5>
+<p><strong>Files:</strong> <code>cmd/update.go:70</code> + <code>cmd/update.go:113</code>,
+<code>internal/index/index.go:48</code></p>
+<p><code>ScanDocuments</code> reads every file to parse frontmatter, then <code>updateToCs</code> calls
+<code>os.ReadFile</code> again on the exact same files. For 1000 docs that's 2000
+<code>ReadFile</code> calls. The ToC update doesn't need the frontmatter, but the scan
+threw away the bytes after parsing.</p>
+<p><strong>Fix:</strong> Either cache <code>[]byte</code> on <code>DocEntry</code>, or restructure the call order so
+ToC update happens during scan.</p>
+<h5 id="f42-parseheadings-called-twice-on-dry-run-path-multi-agent">F42. <code>ParseHeadings</code> called twice on dry-run path [multi-agent]</h5>
+<p><strong>Files:</strong> <code>cmd/update.go:131-136</code>, <code>internal/toc/toc.go:181-206</code></p>
+<pre><code class="language-go">updated, found := toc.UpdateToC(string(data), ...)   // calls ParseHeadings internally
+...
+headings := toc.ParseHeadings(string(data))           // called again, same content
+</code></pre>
+<p><strong>Fix:</strong> Change <code>UpdateToC</code> to return headings:
+<code>UpdateToC(content string, minHeadings int) (updated string, headings []Heading, found bool)</code>.</p>
+</div>
+<div class="card" id="low-performance--leave-alone">
+<p class="card-label">Low: Performance — leave alone</p>
+<p>Per the performance review, these were considered and rejected as premature
+optimization for a CLI:</p>
+<ul>
+<li><code>internal/template/template.go:38</code> multi-pass <code>Slugify</code> — called once per
+create.</li>
+<li><code>internal/toc/toc.go:92</code> <code>strings.Split</code> on full content — appropriate for
+typical file sizes.</li>
+<li><code>internal/toc/toc.go:165</code> <code>strings.Repeat(&quot;  &quot;, ...)</code> in loop — under 100
+headings, unmeasurable.</li>
+<li><code>cmd/update.go:45</code> sequential type processing — parallelism adds complexity
+with no measurable gain.</li>
+<li><code>internal/wiki/wiki.go:24</code> sequential directory walk — OS page cache handles
+this efficiently.</li>
+</ul>
+</div>
+<div class="card" id="low-minor-cleanups">
+<p class="card-label">Low: Minor cleanups</p>
+<h5 id="f43-run-vs-rune-inconsistency">F43. <code>Run</code> vs <code>RunE</code> inconsistency</h5>
+<p><strong>File:</strong> <code>cmd/version.go:21</code> uses <code>Run</code>; everything else uses <code>RunE</code>.</p>
+<p>Use <code>RunE</code> consistently. Costs nothing, future-proofs error returns.</p>
+<h5 id="f44-missing-silenceusage-true-on-root-command">F44. Missing <code>SilenceUsage: true</code> on root command</h5>
+<p><strong>File:</strong> <code>cmd/root.go:36</code></p>
+<p>When <code>RunE</code> returns an error, Cobra prints the usage block in addition to the
+error. Production CLIs typically suppress this. Set <code>SilenceUsage: true</code> on
+<code>rootCmd</code>.</p>
+<h5 id="f45-package-comment-in-wrong-file">F45. Package comment in wrong file</h5>
+<p><strong>File:</strong> <code>internal/wiki/titles.go:1</code> (has the package doc) vs
+<code>internal/wiki/wiki.go</code> (does not)</p>
+<p>Convention places the canonical package comment in the file whose name matches
+the package.</p>
+<h5 id="f46-pointer-to-options-where-value-would-suffice">F46. <code>Pointer-to-options</code> where value would suffice</h5>
+<p><strong>Files:</strong> <code>internal/document/create.go:40</code> (<code>Create(opts *CreateOptions)</code>),
+<code>internal/template/template.go:123</code>
+(<code>Render(tmplContent string, data *TemplateData)</code>)</p>
+<p>Neither function mutates the input. Small structs (8 fields) can be passed by
+value without performance impact and clarify that the function is pure-in.</p>
+<h5 id="f47-no-input-validation-in-create">F47. No input validation in <code>Create</code></h5>
+<p><strong>File:</strong> <code>internal/document/create.go:40</code></p>
+<p>Doesn't check <code>opts.Title != &quot;&quot;</code>, <code>opts.Prefix != &quot;&quot;</code>, <code>opts.IDWidth &gt; 0</code>. Empty
+prefix produces filename <code>0001-.md</code>. Zero IDWidth produces <code>1-foo.md</code>.</p>
+<h5 id="f48-frontmatter-parse-misses-rn-line-endings">F48. Frontmatter parse misses <code>\r\n</code> line endings</h5>
+<p><strong>File:</strong> <code>internal/document/document.go:30-39</code></p>
+<p>Requires <code>---\n</code> (optionally with leading space/tab) — fails on <code>---\r\n</code>. Many
+markdown tools emit CRLF. Normalize or accept both.</p>
+<h5 id="f49-setdefaults-does-not-cover-all-config-fields">F49. <code>setDefaults</code> does not cover all <code>Config</code> fields</h5>
+<p><strong>File:</strong> <code>internal/config/config.go:291-319</code></p>
+<p>Missing <code>MarkdownExtensions</code>, <code>DocsDir</code>, <code>RepoURL</code>, <code>SiteURL</code>, <code>Theme</code> — added
+later but never wired into Viper defaults. This is a maintenance trap: adding a
+field to <code>Config</code> requires manually updating <code>setDefaults</code>.</p>
+<p><strong>Fix:</strong> Derive via reflection, or remove <code>setDefaults</code> and rely on
+pre-defaulted struct unmarshalling.</p>
+<h5 id="f50-existingnavorder-silently-drops-bare-string-nav-entries">F50. <code>ExistingNavOrder</code> silently drops bare-string nav entries</h5>
+<p><strong>File:</strong> <code>internal/wiki/mkdocs.go:66-89</code></p>
+<p>A nav entry can legally be a bare string in mkdocs.yml. The function only
+handles <code>map[string]any</code> items. A user-written <code>mkdocs.yml</code> with a top-level
+bare-string page could lose that entry on rewrite.</p>
+</div>
+<div class="card" id="whats-already-good">
+<p class="card-label">What's already good</p>
+<p>The reviews explicitly called out the following as well-done patterns that
+should not change:</p>
+<ul>
+<li>All regexes are compiled at package init (<code>var</code> declarations), never per-call.</li>
+<li><code>ParseFrontmatter</code> works directly on <code>[]byte</code> with <code>bytes.Cut</code> — no
+unnecessary string conversion.</li>
+<li><code>GenerateTable</code> and <code>GenerateToC</code> use <code>strings.Builder</code> throughout.</li>
+<li><code>spliceMarkers</code> uses <code>strings.Cut</code> (Go 1.18 idiomatic).</li>
+<li><code>MergeNavOrder</code> uses a map for O(1) lookup.</li>
+<li><code>NavToYAML</code> pre-allocates the result slice.</li>
+<li><code>%w</code> wrapping is used consistently for non-bare errors.</li>
+<li><code>embed.FS</code> usage is correct (forward slashes throughout).</li>
+<li>Test coverage is solid — golden files under <code>testdata/golden/</code>, table-driven
+tests, <code>t.TempDir()</code> for filesystem isolation.</li>
+<li>No goroutine sins, no resource leaks (no manual <code>os.Open</code> to leak).</li>
+<li>The <code>0o644</code> / <code>0o750</code> octal literal style is modern.</li>
+<li><code>filepath.ToSlash</code> is correctly used in <code>internal/wiki/wiki.go:86</code> for
+cross-platform nav paths.</li>
+</ul>
+</div>
+
+</section>
+<section class="panel" id="p-conclusion">
+<h2 class="panel-title" id="conclusion">Conclusion</h2>
+<div class="verdict yes"><p class="card-label">Answer</p><p>Yes — there is significant, well-defined cleanup opportunity. The</p></div>
+<ol>
+<li><strong>Testability debt</strong> — package globals in <code>cmd/</code>, direct <code>os.Stdout</code> writes,
+implicit working-directory dependencies, and uninjected side-effects (time,
+exec). This blocks <code>t.Parallel()</code> and makes every new feature add hidden
+state coupling.</li>
+<li><strong>Domain-modeling debt</strong> — <code>DocType</code> represented as scattered strings across
+config, aliases, templates, and help prose. Adding a new type requires
+changes in 6+ places with no compile-time enforcement.</li>
+<li><strong>Style and idiom debt</strong> — written before standardized style guides; contains
+stutter (<code>TemplateData</code>), legacy idioms (<code>os.IsNotExist</code>, <code>sort.Slice</code>,
+hand-rolled <code>itoa</code>), three-way duplication of defaults, and 50+ direct
+<code>fmt.Printf</code> writes that prevent test capture.</li>
+</ol>
+<p>None of these are blocking bugs in production usage today, but the
+defaults-drift category has already produced two real bugs (PR #30, PR #31) and
+will produce more. The testability and domain-modeling work unblocks future
+feature work.</p>
+<h3 id="recommendation">Recommendation</h3>
+<p>A phased refactor in five waves, ordered by impact-to-effort and by what
+unblocks subsequent work:</p>
+<h4 id="wave-1--mechanical-wins-1-pr-1-day">Wave 1 — Mechanical wins (1 PR, ~1 day)</h4>
+<p>Pure mechanical fixes with no design questions. Low risk, high readability gain.
+Can land as a single &quot;style sweep&quot; PR with focused commits.</p>
+<ul>
+<li>F28: <code>os.IsNotExist</code> → <code>errors.Is(err, fs.ErrNotExist)</code></li>
+<li>F29: <code>sort.Slice</code> → <code>slices.SortFunc</code></li>
+<li>F30: <code>strings.NewReader(string(data))</code> → <code>bytes.NewReader(data)</code></li>
+<li>F31: <code>filepath.Join</code> for paths in <code>internal/template/template.go</code></li>
+<li>F32: replace <code>itoa</code> with <code>strconv.Itoa</code></li>
+<li>F33: <code>defer enc.Close()</code> in <code>cmd/config.go</code></li>
+<li>F36: centralize file mode constants</li>
+<li>F37: centralize literal filename constants</li>
+<li>F35: <code>defaultMinHeadings</code> constant</li>
+<li>F43: <code>Run</code> → <code>RunE</code> in <code>cmd/version.go</code></li>
+<li>F44: <code>SilenceUsage: true</code> on root</li>
+<li>F45: move package doc-comment to <code>internal/wiki/wiki.go</code></li>
+<li>F27: drop named returns in <code>Validate()</code></li>
+<li>F9: <code>time.DateOnly</code> in <code>currentDate</code>; capture <code>t := timeNow()</code> once</li>
+</ul>
+<h4 id="wave-2--correctness-and-duplication-1-pr-1-day">Wave 2 — Correctness and duplication (1 PR, ~1 day)</h4>
+<p>Fix the active bug class: defaults drift and silent error swallowing.</p>
+<ul>
+<li>F12: derive <code>writeDefaultConfig</code> from <code>DefaultConfig()</code> via <code>yaml.Marshal</code></li>
+<li>F49: regenerate or remove <code>setDefaults</code> to cover all fields</li>
+<li>F7: propagate config validation error via <code>PersistentPreRunE</code></li>
+<li>F8: distinguish &quot;file missing&quot; from &quot;file unparseable&quot; in <code>mergeConfigFile</code></li>
+<li>F10: wrap all bare <code>return err</code> sites with context</li>
+<li>F38–F40: extract <code>ValidateType</code> helper and <code>EnabledTypes()</code> method; collapse
+the four &quot;unknown type&quot; sites and three enabled-type-guard sites.</li>
+<li>F34: special-case <code>&quot;adr&quot;</code> → <code>PluralLabel</code> field on <code>TypeConfig</code></li>
+</ul>
+<h4 id="wave-3--performance-worth-fixing-1-pr-half-day">Wave 3 — Performance worth fixing (1 PR, ~half day)</h4>
+<ul>
+<li>F41: cache <code>[]byte</code> on <code>DocEntry</code> to eliminate double file reads</li>
+<li>F42: change <code>UpdateToC</code> signature to return <code>[]Heading</code></li>
+</ul>
+<h4 id="wave-4--stranded-business-logic-2-prs-2-days--done-impl-0008">Wave 4 — Stranded business logic (2 PRs, ~2 days) — <strong>Done (IMPL-0008)</strong></h4>
+<p>Move logic out of <code>cmd/</code> into testable <code>internal/</code> packages. These changes
+landed in IMPL-0008 PRs #44, #45, #46 (all merged with <code>dont-release</code>; the
+release cut bundled with IMPL-0009).</p>
+<ul>
+<li><strong>PR A (Phases 1–3)</strong> — merged at #44
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F17: <code>writeMkDocsYAML</code> → <code>internal/wiki.CreateMkDocs</code></div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F18: <code>updateToCs</code> → <code>internal/toc.UpdateFiles</code> (with categorized
+<code>UpdateReport</code>)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F19: <code>wiki.BuildNav</code> extracted; cmd functions &lt;30 lines</div></li>
+</ul>
+</li>
+<li><strong>PR B (Phases 4–10)</strong> — merged at #45, #46
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F20: <code>internal/index</code> split — <code>ScanDocuments</code> + <code>DocEntry</code> moved to
+<code>internal/document/scan.go</code></div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F21: <code>document.LoadFrontmatter(path)</code> — single read+parse site</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F22: single <code>document.DoczFilePattern</code> + <code>IsDoczFile</code></div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F23: <code>template.Slugify</code> → <code>FilenameSlug</code>,
+<code>toc.Slugify</code> → <code>AnchorSlug</code>, <code>nonAlphanumHyphen</code> → <code>nonSlugChar</code></div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F11: <code>DocTitle</code> returns strict <code>(string, error)</code> per Decisions §3</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F13: typed <code>index.UpdateOutcome</code> + <code>UpdateAction</code> enum</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F24: <code>template.TemplateData</code> → <code>template.Data</code></div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F25: <code>WikiIndexType</code> / <code>WikiIndexData</code> left as-is per Decisions §4</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F26: <code>ToCConfig</code> → <code>TOCConfig</code>, field <code>ToC</code> → <code>TOC</code> (YAML tag
+stays <code>toc:</code> for back-compat — guarded by <code>TestLoad_TOCConfig</code>)</div></li>
+</ul>
+</li>
+</ul>
+<h4 id="wave-5--architecture-refactor--done-design-0004--impl-0009">Wave 5 — Architecture refactor — <strong>Done (DESIGN-0004 + IMPL-0009)</strong></h4>
+<p>Designed in DESIGN-0004 and implemented across IMPL-0009 Phases 2–10.
+The single PR covering phases 2–11 stacks behind the DESIGN-0004 PR per
+IMPL-0009 Decisions §6.</p>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F1: <code>Runner</code> struct + per-command options. <code>cmd.Runner</code> (runner.go)
+bundles config + Out/Err writers + slog logger + <code>Now func()</code> +
+<code>GitResolver</code>; handlers are <code>(*Runner).Foo</code> methods. Per-command
+options structs (<code>createOpts</code>, <code>updateOpts</code>, <code>listOpts</code>, …) carry
+flag values into methods.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F2: all <code>fmt.Printf</code> / <code>os.Stdout</code> writes go through <code>r.Out</code>/<code>r.Err</code>
+(IMPL-0009 Phase 3); tests pass <code>bytes.Buffer</code> writers.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F3: <code>log/slog</code> logger; <code>if verbose { fmt.Fprintf(os.Stderr, ... )}</code>
+sites are gone. <code>--verbose</code>, <code>--log-level</code>, <code>--log-format</code> resolve
+in <code>buildLogger</code>; default is TextHandler at LevelInfo. (Phase 4)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F4: <code>document.CreateOptions.CreatedAt</code> accepts a <code>time.Time</code>;
+<code>internal/document/time.go</code> and the <code>timeNow</code> global are deleted.
+(Phase 5)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F5: <code>GitResolver.UserName(ctx context.Context)</code> interface; <code>realGit</code>
+shells out via <code>exec.CommandContext</code>, <code>staticGit</code> powers tests.
+(Phase 6)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F6: <code>config.Load(configFile, repoRoot string)</code>; cmd/root.go passes
+<code>os.Getwd()</code> once. Tests pass a <code>t.TempDir()</code> instead of
+<code>os.Chdir</code>. (Phase 7)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F14: <code>DocTypeDef</code> registry struct in <code>internal/config/doctype.go</code>.
+<code>allDocTypes</code> is the single source of truth — <code>DefaultConfig</code>,
+<code>DefaultNavTitles</code>, <code>typeAliases</code>, and <code>DocTypeNames</code> all derive
+from it. <code>TestDocTypeRegistry_AllHaveEmbeddedTemplate</code> /
+<code>_AllHaveEmbeddedIndexHeader</code> plus seven more invariants guard
+consistency. (Phase 8)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F15: <code>Config.EnabledTypes()</code> iterates the registry in declaration
+order; <code>cmd/list.go</code> calls it instead of <code>ValidTypes()</code>. The old
+<code>ValidTypes()</code> shim is deleted. (Phase 9)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">F16: <code>type DocType string</code> and <code>type Status string</code> in
+<code>internal/config/doctype.go</code> flow through <code>document.CreateOptions.Type</code>,
+<code>template.Data.{Type,Status}</code>, <code>template.EmbeddedDocumentTemplate</code>,
+and <code>document.Frontmatter.Status</code>. yaml/v3 round-trips them with
+no custom unmarshaler (DESIGN-0004 §F revises Decision §3).
+(Phase 10)</div></li>
+</ul>
+<h4 id="low-priority--defer">Low priority / defer</h4>
+<p>The performance review explicitly flagged these as &quot;do not optimize&quot;: multi-pass
+<code>Slugify</code>, <code>strings.Split</code> of full content, <code>strings.Repeat</code> in tight loops,
+sequential directory walking, sequential type processing. Honor that judgment —
+they're fine for CLI scale.</p>
+<p>F47 (<code>Create</code> input validation) and F48 (CRLF frontmatter) are nice-to-have
+robustness fixes; bundle into Wave 2 or land opportunistically.</p>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>INV-0001: Wiki Init Template and Init Enabled Fix — earlier dogfooding pass
+that surfaced related issues</li>
+<li>PR #30 (<code>fix/version-and-mkdocs-extensions</code>) — instance of three-way defaults
+drift</li>
+<li>PR #31 (<code>fix/update-skips-disabled-types</code>) — instance of <code>ValidTypes()</code>
+iteration vs config-map disconnect</li>
+<li>Uber Go Style Guide — naming, error handling, initialism, defer, named returns</li>
+<li>Effective Go — package layout, interface design, error wrapping</li>
+<li><code>cmd/</code> source — all command files reviewed</li>
+<li><code>internal/config/config.go</code> — config struct, defaults, validation</li>
+<li><code>internal/document/{document,create,time}.go</code> — frontmatter, create, time</li>
+<li><code>internal/index/index.go</code> — scanning, table generation, README splicing</li>
+<li><code>internal/template/{template,embed}.go</code> — template resolution and rendering</li>
+<li><code>internal/toc/toc.go</code> — table-of-contents generation</li>
+<li><code>internal/wiki/{wiki,titles,mkdocs}.go</code> — MkDocs nav generation</li>
+<li>Review agents used: <code>go-development:go-architect</code>, <code>go-development:go-style</code>,
+<code>go-development:go-performance</code>, and a general-purpose idiomatic Go review</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../investigation/testdata/docz-inv-0002.orig.md</code>, sha256 <code>5a02c976c1cda15a0596d8ff493800ae041d2b50cb772d92be1f312b5ecd6b3c</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

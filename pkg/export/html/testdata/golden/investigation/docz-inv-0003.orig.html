@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="INV-0003">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>INV-0003: Init and Update Should Respect Config-Listed Types Only</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Investigation</p>
+<h1>Init and Update Should Respect Config-Listed Types Only</h1>
+<p class="summary"><strong>Status:</strong> Concluded
+<strong>Author:</strong> Donald Gifford
+<strong>Date:</strong> 2026-05-20</p>
+<div class="meta">
+<span class="pill">INV-0003</span>
+<span class="pill st-accepted">Concluded</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-05-20</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
+<button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
+<button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
+<button type="button" data-tab="options" aria-controls="p-options">Options</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<p><strong>Resolution:</strong> Option A (replace-on-presence) implemented as IMPL-0006
+Phase 5. <code>internal/config.applyTypesReplaceOnPresence</code> filters
+<code>cfg.Types</code> to the user-listed set when the repo-root <code>.docz.yaml</code>
+declares a top-level <code>types:</code> block. Guarded by the five e2e tests
+enumerated in this doc, now living in <code>cmd/inv0003_test.go</code>.</p>
+<ul>
+<li><a href="#question">Question</a></li>
+<li><a href="#hypothesis">Hypothesis</a></li>
+<li><a href="#context">Context</a></li>
+<li><a href="#approach">Approach</a></li>
+<li><a href="#environment">Environment</a></li>
+<li><a href="#findings">Findings</a>
+<ul>
+<li><a href="#reproduction">Reproduction</a></li>
+<li><a href="#root-cause">Root cause</a></li>
+<li><a href="#why-impl-0006-alone-does-not-fix-this">Why IMPL-0006 alone does not fix this</a></li>
+</ul>
+</li>
+<li><a href="#conclusion">Conclusion</a></li>
+<li><a href="#options">Options</a>
+<ul>
+<li><a href="#a-replace-on-presence">A. Replace-on-presence</a></li>
+<li><a href="#b-disabled-by-default-seeds">B. Disabled-by-default seeds</a></li>
+<li><a href="#c-per-type-opt-in-flag">C. Per-type opt-in flag</a></li>
+</ul>
+</li>
+<li><a href="#recommendation">Recommendation</a>
+<ul>
+<li><a href="#tests-to-add-drives-the-e2e-portion-of-the-users-request">Tests to add (drives the e2e portion of the user's request)</a></li>
+</ul>
+</li>
+<li><a href="#references">References</a></li>
+</ul>
+<h3 id="question">Question</h3>
+<p>When <code>.docz.yaml</code> lists only a subset of doc types (e.g. only <code>rfc</code>), should
+<code>docz init</code> and <code>docz update</code> operate on only those listed types? If so, what
+is the smallest change that yields that behavior without breaking the &quot;no
+config file → scaffold everything&quot; default?</p>
+<p>The user-facing concern is concrete: a project that only wants <code>rfc</code> runs
+<code>docz init</code> and watches all six default type directories (<code>rfc</code>, <code>adr</code>,
+<code>design</code>, <code>impl</code>, <code>plan</code>, <code>investigation</code>) get scaffolded anyway.</p>
+<h3 id="hypothesis">Hypothesis</h3>
+<p>Init and update both iterate <code>config.ValidTypes()</code> (the hardcoded built-in
+list) and check <code>appCfg.Types[name].Enabled</code>. Because <code>DefaultConfig()</code>
+pre-seeds every built-in type with <code>enabled: true</code>, and Viper deep-merges the
+user's config onto those defaults, omitting a type from <code>.docz.yaml</code> does not
+disable it — the default seed survives the merge.</p>
+<p>If the hypothesis is correct, the fix is a semantics change at the config
+layer, not at the command sites.</p>
+<h3 id="context">Context</h3>
+<p>A user noticed that <code>docz init</code> and <code>docz update</code> ignore the apparent intent
+of their <code>.docz.yaml</code>: even when only <code>rfc</code> is listed, every type is
+scaffolded and indexed. They asked whether they were misconfiguring the file.</p>
+<p><strong>Triggered by:</strong> User report in repo working session, 2026-05-20.</p>
+<p>INV-0002 (Wave 2) already flagged the underlying defaults-drift issue as
+finding F1 and routed the fix into IMPL-0006 Phase 1. This investigation
+narrows the scope to the <em>user-visible</em> symptom and asks whether IMPL-0006
+as written actually closes the loop, or whether a follow-up is needed.</p>
+
+</section>
+<section class="panel" id="p-approach">
+<h2 class="panel-title" id="approach">Approach</h2>
+<ol>
+<li>Reproduce the bug in an empty temp directory with an rfc-only
+<code>.docz.yaml</code>.</li>
+<li>Trace the data flow through <code>config.Load</code>, viper's merge, and the
+command-side iteration in <code>cmd/init.go</code>, <code>cmd/update.go</code>, <code>cmd/wiki.go</code>,
+<code>cmd/list.go</code>.</li>
+<li>Compare against IMPL-0006's planned changes (defaults template, sparse
+<code>setDefaults</code>, <code>EnabledTypes()</code> helper) to determine which planned step,
+if any, actually disables a type omitted from the user's config.</li>
+<li>Enumerate options for fixing the semantics and pick a recommendation.</li>
+</ol>
+<h3 id="environment">Environment</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Version / Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>docz binary</td>
+<td><code>v0.0.12-8-gf29a7b8</code> (post-IMPL-0005 merge)</td>
+</tr>
+<tr>
+<td>Go runtime</td>
+<td>1.25.7</td>
+</tr>
+<tr>
+<td>Config layer</td>
+<td><code>viper v1.21.0</code></td>
+</tr>
+<tr>
+<td>Branch</td>
+<td><code>docs/inv-0003-init-respects-config</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-findings">
+<h2 class="panel-title" id="findings">Findings</h2>
+<div class="card" id="reproduction">
+<p class="card-label">Reproduction</p>
+<p>Empty temp dir, <code>.docz.yaml</code> mentions only <code>rfc</code>, then <code>docz init</code>:</p>
+<pre><code class="language-yaml"># .docz.yaml
+docs_dir: docs
+types:
+  rfc:
+    enabled: true
+    dir: rfc
+    id_prefix: &#34;RFC&#34;
+    id_width: 4
+    statuses: [Draft, Accepted]
+    status_field: status
+</code></pre>
+<pre><code class="language-text">$ docz init
+Created docs/rfc/README.md
+Created docs/adr/README.md
+Created docs/design/README.md
+Created docs/impl/README.md
+Created docs/plan/README.md
+Created docs/investigation/README.md
+Initialized docz successfully.
+</code></pre>
+<p><code>docz config</code> confirms the resolved config has all six types with
+<code>enabled: true</code>. The user's omissions had no effect.</p>
+</div>
+<div class="card" id="root-cause">
+<p class="card-label">Root cause</p>
+<p>Three contributing facts:</p>
+<ol>
+<li><code>config.DefaultConfig()</code> at <code>internal/config/config.go:66</code> returns a
+<code>Config</code> value with every built-in type pre-populated and
+<code>Enabled: true</code>.</li>
+<li><code>setDefaults()</code> at <code>internal/config/config.go:291</code> calls
+<code>v.SetDefault(&quot;types.&lt;name&gt;.enabled&quot;, true)</code> for every type in the
+defaults map. Viper's merge semantics are &quot;fill in missing keys from
+defaults&quot; — there is no opt-out path. A type omitted from the user file
+inherits the default seed.</li>
+<li><code>cmd/init.go:36</code>, <code>cmd/update.go:35</code>, <code>cmd/list.go:52</code>, <code>cmd/wiki.go:309</code>
+all iterate <code>config.ValidTypes()</code> (the hardcoded list of all six). They
+gate work on <code>appCfg.Types[name].Enabled</code>, which is <code>true</code> for every
+default-seeded type.</li>
+</ol>
+<p>The net effect: only an <em>explicit</em> <code>enabled: false</code> in the user's config
+suppresses a type. Omission is treated as &quot;use the default&quot;, and the default
+is <code>enabled: true</code>.</p>
+</div>
+<div class="card" id="why-impl-0006-alone-does-not-fix-this">
+<p class="card-label">Why IMPL-0006 alone does not fix this</p>
+<p>IMPL-0006 Phase 1 swaps <code>DefaultConfig()</code> from a hand-built Go struct to a
+parse of the embedded <code>.docz.yaml.tmpl</code> template. That fixes drift between
+the in-binary defaults and what <code>init</code> writes to disk, but the template
+itself ships with every type <code>enabled: true</code>. So the merge result is
+unchanged: omitted types remain enabled.</p>
+<p>IMPL-0006 Phase 5's planned <code>EnabledTypes()</code> helper centralizes the
+iteration, but the predicate it applies (<code>Enabled == true</code>) still passes
+every default-seeded type. The CLI commands switch to a tidier loop but
+operate on the same set.</p>
+<p>Therefore: IMPL-0006 as written normalizes the <em>plumbing</em>. The semantic
+question this investigation raises — does omission mean &quot;skip&quot; or &quot;use the
+default&quot; — is orthogonal and must be answered separately.</p>
+</div>
+
+</section>
+<section class="panel" id="p-conclusion">
+<h2 class="panel-title" id="conclusion">Conclusion</h2>
+<div class="verdict yes"><p class="card-label">Answer</p><p>Yes, the user's report is a real bug-shaped behavior, not a</p></div>
+<p>IMPL-0006 in its current form does not change this contract. A separate
+decision is required.</p>
+<h3 id="recommendation">Recommendation</h3>
+<p>Adopt option <strong>A</strong>, and ship it as a small, standalone follow-up — call it
+IMPL-0010 — that lands <em>after</em> IMPL-0006 Phase 1 (so the defaults template
+is already the source of truth) and <em>before</em> IMPL-0006 Phase 5 (so
+<code>EnabledTypes()</code> lands on the corrected semantics).</p>
+<p>Scope of the IMPL-0010 follow-up:</p>
+<ol>
+<li>In <code>config.Load</code>, after merging the file, detect whether the user file
+had a <code>types:</code> key at all. If yes, intersect <code>appCfg.Types</code> with the
+user's listed type names — drop any default-seeded types the user did
+not mention.</li>
+<li>Document the new contract in <code>internal/config/config.go</code> and in the
+<code>docz init</code> long-help text: &quot;If <code>.docz.yaml</code> lists <code>types:</code>, only those
+types are scaffolded and updated. Omit the <code>types:</code> block to fall back
+to the full default set.&quot;</li>
+<li>Add the e2e tests requested by the user (see &quot;Tests to add&quot; below).</li>
+<li>Update INV-0002 Wave 2 cross-references so future readers see the
+complete picture.</li>
+</ol>
+<h4 id="tests-to-add-drives-the-e2e-portion-of-the-users-request">Tests to add (drives the e2e portion of the user's request)</h4>
+<ul>
+<li>E2E: temp dir + rfc-only <code>.docz.yaml</code> + <code>docz init</code> → assert that only
+<code>docs/rfc/</code> exists and no other type dirs were created.</li>
+<li>E2E: same fixture + <code>docz update</code> → assert only <code>docs/rfc/README.md</code>
+is touched; no <code>docs/adr/README.md</code> etc. is created.</li>
+<li>E2E: no <code>.docz.yaml</code> present + <code>docz init</code> → assert all six default type
+dirs scaffolded (regression guard for the green-field UX).</li>
+<li>E2E: <code>.docz.yaml</code> with <code>types: {rfc: {...}, adr: {enabled: false}}</code> →
+assert only rfc is created and adr is <em>not</em> (existing semantics
+preserved).</li>
+<li>E2E: incremental scenario — start with rfc-only, run <code>docz init</code>, then
+append an <code>adr:</code> block to <code>.docz.yaml</code>, re-run <code>docz init</code>, assert
+<code>docs/adr/</code> is added without disturbing <code>docs/rfc/</code>.</li>
+</ul>
+<p>These belong in <code>cmd/init_test.go</code> and <code>cmd/update_test.go</code> as
+<code>TestInit_RespectsListedTypes_*</code> cases using <code>t.TempDir()</code>.</p>
+
+</section>
+<section class="panel" id="p-options">
+<h2 class="panel-title" id="options">Options</h2>
+<h4 id="a-replace-on-presence">A. Replace-on-presence</h4>
+<p>If the user's <code>.docz.yaml</code> contains a <code>types:</code> block, treat it as a
+<em>replacement</em> for the default types map rather than a merge target.
+Omission → not configured → skipped. Absent <code>types:</code> block → fall through
+to the full default set.</p>
+<ul>
+<li><strong>Pros:</strong> Matches user mental model. One narrow change in <code>Load()</code> (use
+<code>Set</code> instead of <code>SetDefault</code> for the <code>types</code> key when the user's file
+has it, or skip the per-type <code>SetDefault</code> calls when a user <code>types:</code> map
+is detected). Keeps &quot;no config&quot; UX (<code>docz init</code> on a green field scaffolds
+everything).</li>
+<li><strong>Cons:</strong> Diverges from Viper's normal merge story; needs a clear test
+matrix to prevent regressions. Users who relied on &quot;list rfc, get all
+six&quot; (unlikely but possible) would see a behavior change.</li>
+</ul>
+<h4 id="b-disabled-by-default-seeds">B. Disabled-by-default seeds</h4>
+<p>Flip the template / defaults so every type ships with <code>enabled: false</code>. The
+user opts in by setting <code>enabled: true</code>.</p>
+<ul>
+<li><strong>Pros:</strong> Mechanically simple. Existing <code>EnabledTypes()</code> planning works
+unchanged.</li>
+<li><strong>Cons:</strong> Catastrophic for first-run UX: <code>docz init</code> on a fresh repo with
+no config does nothing. Forces every user to learn the toggle. Strongly
+recommended against.</li>
+</ul>
+<h4 id="c-per-type-opt-in-flag">C. Per-type opt-in flag</h4>
+<p>Add a new field, e.g. <code>configured: bool</code>, that the user must set explicitly.
+Init/update gate on <code>configured &amp;&amp; enabled</code>. Defaults seed <code>configured: false</code>.</p>
+<ul>
+<li><strong>Pros:</strong> Backward-compatible — a config that sets both flags continues
+to work; a config that sets neither acts like option B (silent init).</li>
+<li><strong>Cons:</strong> Two flags is one too many. Confusing to document. Same UX
+failure mode as option B on first run.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>INV-0002 — Architectural Review and Cleanup Opportunities, finding F1
+(defaults drift) and Wave 2 recommendation</li>
+<li>IMPL-0006 — Correctness and Duplication Cleanup, Phases 1 and 5</li>
+<li><code>internal/config/config.go:66</code> — <code>DefaultConfig()</code></li>
+<li><code>internal/config/config.go:291</code> — <code>setDefaults</code></li>
+<li><code>cmd/init.go:36</code>, <code>cmd/update.go:35</code>, <code>cmd/list.go:52</code>, <code>cmd/wiki.go:309</code></li>
+<li>Viper merge semantics — <a href="https://github.com/spf13/viper#establishing-defaults">https://github.com/spf13/viper#establishing-defaults</a></li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../investigation/testdata/docz-inv-0003.orig.md</code>, sha256 <code>f4cd7afaf258fbe1def0b95a8c809eca9ed187a5553ac17bc904a73bdd008f3e</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

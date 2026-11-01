@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="INV-0004">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>INV-0004: v1 Release Plan: TUI, Markdown Preview, and CLI Parity</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Investigation</p>
+<h1>v1 Release Plan: TUI, Markdown Preview, and CLI Parity</h1>
+<p class="summary"><strong>Status:</strong> Open
+<strong>Author:</strong> Donald Gifford
+<strong>Date:</strong> 2026-05-22</p>
+<div class="meta">
+<span class="pill">INV-0004</span>
+<span class="pill st-active">Open</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-05-22</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
+<button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
+<button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<ul>
+<li><a href="#question">Question</a></li>
+<li><a href="#hypothesis">Hypothesis</a></li>
+<li><a href="#context">Context</a></li>
+<li><a href="#approach">Approach</a></li>
+<li><a href="#environment">Environment</a></li>
+<li><a href="#findings">Findings</a>
+<ul>
+<li><a href="#bubble-tea-v2--what-changed-and-what-we-need">Bubble Tea v2 — what changed and what we need</a></li>
+<li><a href="#bubbles-v2-components-catalog-vs-docz-workflows">Bubbles v2 components catalog vs docz workflows</a></li>
+<li><a href="#glow--glamour-for-in-tui-markdown-rendering">Glow / Glamour for in-TUI markdown rendering</a></li>
+<li><a href="#mdp-integration-approach">mdp integration approach</a></li>
+<li><a href="#lstk-reference-architecture">lstk reference architecture</a></li>
+<li><a href="#mapping-docz-workflows-to-tui-screens">Mapping docz workflows to TUI screens</a></li>
+<li><a href="#proposed-package-layout">Proposed package layout</a></li>
+<li><a href="#tui-vs-cli-mode-selection">TUI vs CLI mode selection</a></li>
+</ul>
+</li>
+<li><a href="#conclusion">Conclusion</a></li>
+<li><a href="#recommendation">Recommendation</a>
+<ul>
+<li><a href="#prerequisites-hard-gate">Prerequisites (hard gate)</a></li>
+<li><a href="#phasing-into-impl-docs">Phasing into IMPL docs</a></li>
+<li><a href="#out-of-scope-for-v1">Out of scope for v1</a></li>
+<li><a href="#decisions">Decisions</a></li>
+</ul>
+</li>
+<li><a href="#references">References</a></li>
+</ul>
+<h3 id="question">Question</h3>
+<p>What does v1 of docz need to ship — and in what order — to give us a CLI
+that also opens a Bubble Tea v2 TUI when run interactively, with in-TUI
+markdown preview (Glow/Glamour) and a &quot;press a key to open this in the
+browser&quot; preview powered by mdp? Specifically:</p>
+<ol>
+<li>Is Bubble Tea v2 + Bubbles v2 the right TUI foundation today, given
+their stability and breaking-change story?</li>
+<li>How do CLI subcommands (Cobra) and the TUI coexist — is the model &quot;no
+args → TUI; args → CLI&quot;, or do we need a <code>docz tui</code> subcommand?</li>
+<li>Should mdp be linked as a library, vendored, or shelled out from docz?</li>
+<li>What's the minimum TUI surface that earns the v1 label — and what
+intentionally waits for v1.x?</li>
+</ol>
+<h3 id="hypothesis">Hypothesis</h3>
+<ul>
+<li>Bubble Tea v2 is stable enough (v2.0.6, April 2026) and lstk is a
+proven production reference, so the framework choice is low-risk.</li>
+<li>The lstk pattern — TUI when interactive, plain CLI when piped or when
+<code>--non-interactive</code> is passed — is the right default. A bare <code>docz</code>
+opens the TUI; every existing subcommand keeps working unchanged.</li>
+<li>Glamour (Glow's underlying renderer) is the right in-TUI viewer: it's
+the library Glow ships and is import-friendly. The Glow binary itself
+is too heavyweight to embed.</li>
+<li>mdp ships its server in <code>internal/server</code>, which is not importable
+today. The preferred long-term path is to factor a shared package
+out of mdp that docz can link against. That work is mdp-side and
+needs its own investigation; v1's integration approach is left
+open here as a result.</li>
+<li>v1 is realistic in <strong>4 IMPL waves</strong>: finish IMPL-0006/0007/0008/0009
+to land the architectural cleanup, then layer the TUI in IMPL-0010
+(preview integration) and IMPL-0011 (full TUI surface).</li>
+</ul>
+<h3 id="context">Context</h3>
+<p>The user wants docz to feel modern: keep the scriptable CLI for CI and
+power-use, but pop into a real TUI when you launch it from a terminal.
+The TUI should be able to do everything the CLI does (create docs, list,
+filter, update indexes, run wiki nav generation) and add things the CLI
+can't easily express (preview a doc inline, jump to it in a browser via
+mdp, filter as you type).</p>
+<p><strong>Triggered by:</strong> Direct user request, 2026-05-22, with named
+dependencies (Bubble Tea v2, Bubbles, Glow) and reference projects
+(localstack/lstk, donaldgifford/mdp).</p>
+<p>The existing IMPL-0009 (Runner Pattern and DocType Registry Refactor)
+already calls for evaluating <code>charmbracelet/fang</code> and Bubble Tea v2 in
+its Phase 1 DESIGN doc. This investigation supersedes that evaluation
+with a v1-scoped roadmap.</p>
+
+</section>
+<section class="panel" id="p-approach">
+<h2 class="panel-title" id="approach">Approach</h2>
+<ol>
+<li>Confirm current versions of every named dependency via <code>gh repo view</code>.</li>
+<li>Walk lstk's repo (<code>internal/ui/</code>, <code>internal/ui/components/</code>,
+<code>cmd/root.go</code>) to extract the proven CLI+TUI hybrid pattern.</li>
+<li>Walk mdp's repo (<code>internal/server/</code>, <code>internal/cli/</code>) to determine
+whether the server can be imported, vendored, or only invoked as a
+subprocess.</li>
+<li>Map each existing docz CLI command (<code>create</code>, <code>list</code>, <code>update</code>,
+<code>template</code>, <code>wiki</code>, <code>config</code>) to either a TUI screen, a TUI action,
+or a CLI-only operation.</li>
+<li>Sketch the package layout and the CLI/TUI handoff.</li>
+<li>Phase the work into IMPL docs.</li>
+</ol>
+<h3 id="environment">Environment</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Version / Value</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>charmbracelet/bubbletea</code></td>
+<td>v2.0.6 (2026-04-16)</td>
+<td>v2 line, breaking changes from v1 — see Findings</td>
+</tr>
+<tr>
+<td><code>charmbracelet/bubbles</code></td>
+<td>v2.1.0 (2026-03-26)</td>
+<td>Tracks Bubble Tea v2</td>
+</tr>
+<tr>
+<td><code>charmbracelet/glow</code></td>
+<td>v2.1.2 (2026-04-09)</td>
+<td>We consume <code>glamour</code> (Glow's renderer), not the binary</td>
+</tr>
+<tr>
+<td><code>donaldgifford/mdp</code></td>
+<td>v0.1.8 (2026-04-03)</td>
+<td>Server is in <code>internal/server</code> — not a public API</td>
+</tr>
+<tr>
+<td><code>localstack/lstk</code></td>
+<td>v0.9.0 (2026-05-21)</td>
+<td>Reference architecture</td>
+</tr>
+<tr>
+<td>docz baseline</td>
+<td>post-IMPL-0005 merge</td>
+<td>INV-0003 outstanding</td>
+</tr>
+<tr>
+<td>Go runtime</td>
+<td>1.25.7</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-findings">
+<h2 class="panel-title" id="findings">Findings</h2>
+<ul class="heading-list">
+<li><a href="#bubble-tea-v2--what-changed-and-what-we-need">Bubble Tea v2 — what changed and what we need</a></li>
+<li><a href="#bubbles-v2-components-catalog-vs-docz-workflows">Bubbles v2 components catalog vs docz workflows</a></li>
+<li><a href="#glow--glamour-for-in-tui-markdown-rendering">Glow / Glamour for in-TUI markdown rendering</a></li>
+<li><a href="#mdp-integration-approach">mdp integration approach</a></li>
+<li><a href="#lstk-reference-architecture">lstk reference architecture</a></li>
+<li><a href="#mapping-docz-workflows-to-tui-screens">Mapping docz workflows to TUI screens</a></li>
+<li><a href="#proposed-package-layout">Proposed package layout</a></li>
+<li><a href="#tui-vs-cli-mode-selection">TUI vs CLI mode selection</a></li>
+</ul>
+<div class="card" id="bubble-tea-v2--what-changed-and-what-we-need">
+<p class="card-label">Bubble Tea v2 — what changed and what we need</p>
+<p>Bubble Tea v2 is a stable line as of April 2026. The breakage from v1 is
+manageable and well-documented: imports move from
+<code>github.com/charmbracelet/bubbletea</code> (still works but resolves to v2 via
+the major-version suffix), the <code>tea.KeyMsg.Type</code> switch shifts to
+explicit <code>key.Matches</code>, and the renderer is more strict about commands
+returning <code>tea.Cmd</code> not <code>tea.Msg</code>. We never adopted v1 in docz, so we
+pay the migration cost zero times.</p>
+<p>The v2 API still centers on the Elm-architecture triple: <code>Init() Cmd</code>,
+<code>Update(Msg) (Model, Cmd)</code>, <code>View() string</code>. Compared to v1, v2 added
+first-class cell-based input handling, mouse support, and tighter
+integration with <code>lipgloss</code> for theming.</p>
+<p><strong>Implication:</strong> picking v2 today is the correct call. There's no
+&quot;should we wait for v3&quot; risk on a v2.0.x line that's already shipping.</p>
+</div>
+<div class="card" id="bubbles-v2-components-catalog-vs-docz-workflows">
+<p class="card-label">Bubbles v2 components catalog vs docz workflows</p>
+<p>The components docz will actually use:</p>
+<ul>
+<li><code>list.Model</code> — for <code>docz list</code> filtered by type/status; for the
+per-type browse screen; for the &quot;pick a doc to view/edit&quot; picker.</li>
+<li><code>textinput.Model</code> — for the create flow (title input).</li>
+<li><code>textarea.Model</code> — optional, if we ever want inline edit; <strong>out of
+scope for v1</strong>.</li>
+<li><code>viewport.Model</code> — to host Glamour's rendered markdown for the
+in-TUI preview.</li>
+<li><code>spinner.Model</code> — for the long-running ops (wiki update on big
+repos, mdp launch).</li>
+<li><code>help.Model</code> — keybindings hint at the bottom of every screen.</li>
+<li><code>key.Binding</code> — for declarative key maps.</li>
+</ul>
+<p>We do not need <code>table.Model</code> — <code>list.Model</code> with custom delegate
+covers the table-ish &quot;rows of docs&quot; view at lower complexity.</p>
+</div>
+<div class="card" id="glow--glamour-for-in-tui-markdown-rendering">
+<p class="card-label">Glow / Glamour for in-TUI markdown rendering</p>
+<p>Glow itself is a TUI binary. Its underlying renderer is
+<code>github.com/charmbracelet/glamour</code>, which Glow exports for import. We
+want the renderer, not Glow. Glamour:</p>
+<ul>
+<li>Takes markdown bytes + a style (<code>dark</code>, <code>light</code>, <code>notty</code>, or a custom
+JSON) and returns ANSI-styled text.</li>
+<li>Pairs naturally with <code>viewport.Model</code> from Bubbles: render once,
+stuff into the viewport, let the user scroll.</li>
+<li>Has known weak spots: long fenced code blocks wrap awkwardly, tables
+beyond a few columns are unreadable below ~80 columns. Acceptable
+for v1; documented as a known limitation.</li>
+</ul>
+</div>
+<div class="card" id="mdp-integration-approach">
+<p class="card-label">mdp integration approach</p>
+<p>Originally there were three options here (shell out, vendor, public
+API) because mdp's server lived under <code>internal/server</code> and was not
+importable. That blocker is now gone: mdp <code>main</code> has factored the
+library-consumable pieces into the public <code>pkg/</code> tree —
+<code>pkg/livereload</code>, <code>pkg/parser</code>, and <code>pkg/theme</code> — at
+<a href="https://github.com/donaldgifford/mdp/tree/main/pkg">https://github.com/donaldgifford/mdp/tree/main/pkg</a>. docz can link
+those packages directly.</p>
+<p><strong>Decision:</strong> option 3 (library import) is the v1 path. docz adds
+<code>github.com/donaldgifford/mdp</code> as a go.mod dependency and IMPL-0010
+builds <code>internal/preview/</code> on top of <code>mdp/pkg/parser</code> and
+<code>mdp/pkg/theme</code> (for rendering) and <code>mdp/pkg/livereload</code> (for the
+browser preview lifecycle). No subprocess, no PATH dependency, no
+vendored copy.</p>
+<p>The shell-out and vendor options are retained here only as historical
+context — they are no longer on the table for v1.</p>
+<p><strong>Status:</strong> resolved. Non-blocking for v1 — mdp's <code>pkg/</code> is available
+on <code>main</code> today; no coordinated mdp release is required before
+IMPL-0010 starts. The remaining IMPL-0010 work is docz-side: choosing
+which <code>pkg/</code> symbols to depend on, designing <code>internal/preview/</code>'s
+public surface, and wiring the TUI <code>p</code> key to it.</p>
+</div>
+<div class="card" id="lstk-reference-architecture">
+<p class="card-label">lstk reference architecture</p>
+<p>lstk's pattern is the one to copy:</p>
+<ul>
+<li><code>cmd/</code> holds Cobra commands as today (<code>root.go</code>, <code>start.go</code>,
+<code>status.go</code>, etc.). Root's <code>RunE</code> decides whether to open the TUI or
+emit plain output based on terminal detection and the
+<code>--non-interactive</code> flag.</li>
+<li><code>internal/ui/app.go</code> defines the top-level Bubble Tea model.</li>
+<li><code>internal/ui/run.go</code> has the program entry — <code>tea.NewProgram(app)</code>
+and a <code>Run(ctx, RunOptions)</code> that wraps everything.</li>
+<li><code>internal/ui/run_&lt;command&gt;.go</code> — one file per command-shaped UI flow
+(<code>run_login.go</code>, <code>run_status.go</code>). For docz we'd map this to
+<code>run_list.go</code>, <code>run_create.go</code>, <code>run_view.go</code>, etc.</li>
+<li><code>internal/ui/components/</code> — reusable widgets (<code>header.go</code>,
+<code>spinner.go</code>, <code>input_prompt.go</code>, <code>error_display.go</code>,
+<code>message.go</code>). Each has a <code>_test.go</code>. docz copies this pattern.</li>
+<li><code>internal/ui/styles/</code> and <code>internal/ui/wrap/</code> — theming and ANSI
+width-aware text helpers.</li>
+<li><code>internal/terminal/</code> — terminal capability detection (TTY, color,
+size).</li>
+</ul>
+<p>Key insight from lstk: <strong>the TUI is <em>one</em> tea.Program that hosts
+many &quot;screens&quot; via a router</strong>, not a fresh program per command. The
+top-level model holds a current-screen variant and dispatches
+<code>Update</code> to it. We adopt this pattern verbatim.</p>
+</div>
+<div class="card" id="mapping-docz-workflows-to-tui-screens">
+<p class="card-label">Mapping docz workflows to TUI screens</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>docz operation</th>
+<th>CLI today</th>
+<th>TUI v1 plan</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docz list</code></td>
+<td>Tabular stdout</td>
+<td>List screen with type/status filter, fuzzy search</td>
+</tr>
+<tr>
+<td><code>docz create &lt;type&gt; &quot;&lt;title&gt;&quot;</code></td>
+<td>Prompts via flags</td>
+<td>Create screen: type picker → title input → preview → confirm</td>
+</tr>
+<tr>
+<td><code>docz update [type]</code></td>
+<td>Stdout summary</td>
+<td>Update screen with progress spinner and per-type report</td>
+</tr>
+<tr>
+<td><code>docz template show &lt;type&gt;</code></td>
+<td>Stdout template</td>
+<td>View screen using Glamour</td>
+</tr>
+<tr>
+<td><code>docz template export/override</code></td>
+<td>CLI only</td>
+<td>CLI only for v1</td>
+</tr>
+<tr>
+<td><code>docz wiki init/update</code></td>
+<td>Stdout summary</td>
+<td>Wiki screen with the nav tree visible during build</td>
+</tr>
+<tr>
+<td><code>docz config</code></td>
+<td>YAML to stdout</td>
+<td>Config screen, read-only YAML view</td>
+</tr>
+<tr>
+<td><code>docz version</code></td>
+<td>One line</td>
+<td>About modal</td>
+</tr>
+<tr>
+<td>Preview a doc</td>
+<td>Not in CLI</td>
+<td>View screen: Glamour viewport, <code>p</code> key launches mdp</td>
+</tr>
+<tr>
+<td>Browse all docs across types</td>
+<td>Not in CLI</td>
+<td>&quot;All docs&quot; screen sorted by ID</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="card" id="proposed-package-layout">
+<p class="card-label">Proposed package layout</p>
+<pre><code class="language-text">cmd/
+  root.go              # Cobra root; RunE decides TUI vs CLI
+  create.go list.go update.go template.go wiki.go config.go version.go
+internal/
+  config/  document/  index/  template/  toc/  wiki/   # existing
+  preview/             # NEW. Owns the mdp integration. Concrete
+                       # shape (library import vs subprocess) is
+                       # decided in IMPL-0010.
+  terminal/            # NEW. TTY/size/color detection — small,
+                       # ~50 LOC over x/term.
+  tui/                 # NEW. Bubble Tea program + screens + components.
+    app.go             # top-level model + screen router
+    run.go             # tea.NewProgram entry
+    screen_list.go screen_create.go screen_view.go
+    screen_update.go screen_wiki.go screen_config.go
+    components/        # header, footer, help, spinner, error
+    styles/            # lipgloss styles
+    keys/              # key bindings
+</code></pre>
+</div>
+<div class="card" id="tui-vs-cli-mode-selection">
+<p class="card-label">TUI vs CLI mode selection</p>
+<p>The decision tree at root command's <code>RunE</code>:</p>
+<ol>
+<li>Subcommand present? → Cobra dispatches normally.</li>
+<li><code>--non-interactive</code> flag or <code>DOCZ_NON_INTERACTIVE=1</code>? → Print short
+usage and exit 0.</li>
+<li>stdout is not a TTY (piped / redirected)? → Same as above.</li>
+<li>stdin is not a TTY? → Same as above.</li>
+<li>Otherwise → call <code>tui.Run(ctx)</code> and exit on the model's quit.</li>
+</ol>
+<p>Match lstk exactly. Document the env var alongside the flag in
+<code>--help</code>.</p>
+</div>
+
+</section>
+<section class="panel" id="p-conclusion">
+<h2 class="panel-title" id="conclusion">Conclusion</h2>
+<div class="verdict yes"><p class="card-label">Answer</p><p>Yes, v1 is well-shaped and reachable. The TUI work is real</p></div>
+<p>The two leverage points are:</p>
+<ol>
+<li><strong>Adopt lstk's pattern verbatim.</strong> A <code>cmd/root.go</code> that dispatches
+to TUI on a bare invocation, an <code>internal/tui/</code> with one
+<code>tea.Program</code> hosting many screens, and <code>internal/ui/components/</code>
+for reusable widgets.</li>
+<li><strong>Land the TUI on top of clean ground.</strong> Don't pile a TUI onto the
+current <code>cmd/</code> package with its global <code>appCfg</code>. IMPL-0009 (Runner
+pattern, output injection, slog) is a prerequisite.</li>
+</ol>
+<p>The previously-open item was the mdp integration shape; it is now
+resolved. mdp's <code>pkg/</code> namespace exists on <code>main</code> today, so IMPL-0010
+lands the library-import path directly — no shell-out fallback, no
+mdp-side prerequisite, no coordinated release.</p>
+<h3 id="recommendation">Recommendation</h3>
+<h4 id="prerequisites-hard-gate">Prerequisites (hard gate)</h4>
+<p><strong>No design or implementation work for v1 starts until IMPL-0006,
+IMPL-0007, IMPL-0008, and IMPL-0009 are all merged to <code>main</code> with
+their status set to <code>Completed</code>.</strong></p>
+<p>Reasons:</p>
+<ul>
+<li>IMPL-0006 settles the config semantics (defaults drift, INV-0003's
+config-listed-types fix, <code>EnabledTypes</code> helper). The TUI surfaces
+the type list directly — building on the current behavior would
+bake the bug into the UI.</li>
+<li>IMPL-0007 cuts the file-read/parse cost in <code>docz update</code>. The TUI
+exposes update as an interactive screen with progress feedback; a
+slow update path is much more visible there than at the CLI.</li>
+<li>IMPL-0008 moves business logic out of <code>cmd/</code> into stable internal
+packages. TUI screens need to call those packages without
+re-importing <code>cmd/</code> or duplicating logic.</li>
+<li>IMPL-0009 introduces the Runner pattern, <code>io.Writer</code> injection,
+and <code>log/slog</code>. Without it, the TUI cannot capture command output
+cleanly — it would have to redirect <code>os.Stdout</code> for every screen.</li>
+</ul>
+<p>Concretely, the gate is: <code>IMPL-0006 ∧ IMPL-0007 ∧ IMPL-0008 ∧ IMPL-0009</code> all show <code>status: Completed</code> in their frontmatter and
+have a merged PR linked from their Phase-N PR task. Until that is
+true, the DESIGN doc for IMPL-0011 (TUI) is not opened and IMPL-0010
+(mdp preview) does not begin coding.</p>
+<p>mdp is no longer part of the gate: its <code>pkg/</code> surface is published on
+<code>main</code> (<code>pkg/livereload</code>, <code>pkg/parser</code>, <code>pkg/theme</code>), so IMPL-0010 can
+proceed via library import as soon as IMPL-0006..0009 are merged.
+There is no mdp-side prerequisite work left to track.</p>
+<h4 id="phasing-into-impl-docs">Phasing into IMPL docs</h4>
+<p>The path to v1 is six implementation waves. Three exist; three are new:</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>IMPL</th>
+<th>Title</th>
+<th>Status</th>
+<th>Why for v1</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IMPL-0006</td>
+<td>Correctness and Duplication Cleanup</td>
+<td>Drafted</td>
+<td>Defaults drift + INV-0003 semantics fix</td>
+</tr>
+<tr>
+<td>IMPL-0007</td>
+<td>Eliminate Redundant File Reads and Heading Parses</td>
+<td>Drafted</td>
+<td>Update performance for big repos</td>
+</tr>
+<tr>
+<td>IMPL-0008</td>
+<td>Move Stranded Business Logic Into Internal Packages</td>
+<td>Drafted</td>
+<td>Stable seams the TUI screens will call</td>
+</tr>
+<tr>
+<td>IMPL-0009</td>
+<td>Runner Pattern and DocType Registry Refactor</td>
+<td>Completed</td>
+<td>Output routing for the TUI, no globals</td>
+</tr>
+<tr>
+<td><strong>IMPL-0010</strong></td>
+<td><strong>mdp Preview Integration</strong></td>
+<td>NEW</td>
+<td>Browser preview via library import of <code>mdp/pkg/{parser,theme,livereload}</code> (no shell-out, no vendoring); now non-blocking — proceeds as soon as IMPL-0006..0009 are merged</td>
+</tr>
+<tr>
+<td><strong>IMPL-0011</strong></td>
+<td><strong>Bubble Tea v2 TUI Layer</strong></td>
+<td>NEW</td>
+<td>The actual v1 user-facing change</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The choice to slot IMPL-0010 before IMPL-0011 is deliberate: getting
+the preview pipeline working as a <code>docz preview &lt;path&gt;</code> CLI verb
+first lets us validate it without dragging the TUI into the same PR.
+The TUI then wires a key binding to the existing preview verb. The
+integration shape is decided: IMPL-0010 imports <code>mdp/pkg/</code>
+(parser/theme/livereload) directly.</p>
+<p>A separate <strong>IMPL-0012: v1 release engineering</strong> wraps it: changelog,
+goreleaser polish, semver bump to v1.0.0, the v1 README rewrite, and
+the migration notes for any user who built scripts against v0
+behavior.</p>
+<h4 id="out-of-scope-for-v1">Out of scope for v1</h4>
+<ul>
+<li>Inline editing inside the TUI (<code>textarea.Model</code>). Open the file in
+<code>$EDITOR</code> instead; lstk-style.</li>
+<li>A <code>docz tui</code> explicit subcommand. We use bare-invocation dispatch
+exclusively; <code>--non-interactive</code> is the escape hatch.</li>
+<li>Vendoring mdp's server. mdp now exposes <code>pkg/livereload</code>,
+<code>pkg/parser</code>, and <code>pkg/theme</code> on <code>main</code>, so IMPL-0010 takes a direct
+library import — no vendor copy, no shell-out fallback.</li>
+<li>Multi-pane layouts. v1 is one screen at a time.</li>
+<li>Custom Glamour themes. Ship with <code>dark</code> / <code>light</code> / <code>notty</code>; let
+v1.x add user themes if asked.</li>
+</ul>
+<h4 id="decisions">Decisions</h4>
+<p>Resolved during design review on 2026-05-23.</p>
+<ol>
+<li><strong>Cobra + Bubble Tea coexistence:</strong> keep stock Cobra. No fang.
+lstk's pattern translates directly; fang offers no v1-blocking
+capability we'd miss.</li>
+<li><strong>TUI keybindings:</strong> the proposed set is accepted (<code>q</code> quit,
+<code>?</code> help, <code>/</code> filter, <code>enter</code> select, <code>p</code> preview-in-browser).
+No conflict surfaced; revisit if a screen needs a sixth chord.</li>
+<li><strong>mdp dependency:</strong> <strong>resolved — library import.</strong> mdp's <code>pkg/</code>
+namespace exists on <code>main</code> (<code>pkg/livereload</code>, <code>pkg/parser</code>,
+<code>pkg/theme</code>) at
+<a href="https://github.com/donaldgifford/mdp/tree/main/pkg">https://github.com/donaldgifford/mdp/tree/main/pkg</a>. docz takes a
+direct go.mod dependency on <code>github.com/donaldgifford/mdp</code> and
+builds <code>internal/preview/</code> on top of those packages. No subprocess,
+no PATH dependency, no vendored copy. Non-blocking for v1 — the
+integration begins as soon as IMPL-0006..0009 are merged.</li>
+<li><strong>State persistence:</strong> v1 starts fresh every invocation. No
+<code>$XDG_STATE_HOME/docz/</code> writes. Deferred entirely; revisit only
+if users ask for sticky filters.</li>
+<li><strong>Telemetry:</strong> none. docz v1 ships with zero phone-home.</li>
+<li><strong>Windows support:</strong> <strong>out of scope for v1.</strong> Document that the
+TUI is Unix-only (macOS, Linux, *BSD). Re-evaluate when there's
+user demand; the Bubble Tea side already works on Windows, so the
+work would be confined to the mdp shell-out path and <code>$EDITOR</code>
+conventions.</li>
+</ol>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>Bubble Tea v2 — <a href="https://github.com/charmbracelet/bubbletea">https://github.com/charmbracelet/bubbletea</a> v2.0.6</li>
+<li>Bubbles v2 — <a href="https://github.com/charmbracelet/bubbles">https://github.com/charmbracelet/bubbles</a> v2.1.0</li>
+<li>Glamour — <a href="https://github.com/charmbracelet/glamour">https://github.com/charmbracelet/glamour</a> (Glow's renderer)</li>
+<li>Glow — <a href="https://github.com/charmbracelet/glow">https://github.com/charmbracelet/glow</a> v2.1.2</li>
+<li>mdp — <a href="https://github.com/donaldgifford/mdp">https://github.com/donaldgifford/mdp</a> v0.1.8</li>
+<li>localstack/lstk — <a href="https://github.com/localstack/lstk">https://github.com/localstack/lstk</a> v0.9.0</li>
+<li>INV-0002 — Architectural review (sets up the cleanup waves)</li>
+<li>INV-0003 — Config-listed types semantics (must resolve before TUI
+surfaces the type list)</li>
+<li>IMPL-0009 — Runner pattern, DocType registry; Phase 1 DESIGN doc
+evaluated fang/Bubble Tea — superseded by this investigation</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../investigation/testdata/docz-inv-0004.md</code>, sha256 <code>358d4fc7b8cabfc4929545aa4f2d881044465219401f5d84fdd3eeb20003f825</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

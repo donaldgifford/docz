@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="ADR-0001">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>ADR-0001: Use JWT for v1 agent capability tokens; defer SPIFFE to v2</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · ADR</p>
+<h1>Use JWT for v1 agent capability tokens; defer SPIFFE to v2</h1>
+<p class="summary">The Agent Capability Tokens RFC (sibling, RFC-NNNN) specifies a signed-token
+model for tool / egress / filesystem / Vault JIT / budget authorization. The
+token format is a load-bearing choice with three realistic candidates:</p>
+<div class="meta">
+<span class="pill">ADR-0001</span>
+<span class="pill st-proposed">Proposed</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-05-10</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="status" aria-controls="p-status">Status</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="decision" aria-controls="p-decision">Decision</button>
+<button type="button" data-tab="consequences" aria-controls="p-consequences">Consequences</button>
+<button type="button" data-tab="alternatives" aria-controls="p-alternatives">Alternatives</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-status">
+<h2 class="panel-title" id="status">Status</h2>
+<p>Proposed</p>
+
+</section>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="context">Context</h3>
+<ol>
+<li><strong>JWT</strong> signed by Vault Transit, verified against Vault Transit's public-key
+endpoint</li>
+<li><strong>SPIFFE JWT-SVID</strong> issued by a SPIRE server, verified via SPIRE agents on
+each node</li>
+<li><strong>Macaroon / Biscuit</strong> capability tokens with native attenuation (the holder
+can derive more-restricted tokens without involving the issuer)</li>
+</ol>
+<p>The v1 use case is single-cluster: ADK controller issues, framework verifies,
+Vault verifies, egress proxy verifies. All trust roots are inside the same
+Kubernetes cluster or the same Vault instance. There is no federation
+requirement (cross-cluster identity, external workload identity) for v1.</p>
+<p>SPIFFE/SPIRE is the industry-standard answer for workload identity and would
+slot into the capability model identically — JWT-SVIDs are a real SPIFFE shape,
+and the claim structure in the RFC works in either form. The cost of SPIFFE is
+operational: running SPIRE servers (highly-available), SPIRE agents on every
+node, the registration API, the trust-domain configuration, the federation
+design.</p>
+<p>Macaroons and Biscuit support delegation/attenuation natively, which is
+interesting for future scenarios where agent A delegates a subset of its
+capability to a downstream agent B. The v1 case does not need this.</p>
+
+</section>
+<section class="panel" id="p-decision">
+<h2 class="panel-title" id="decision">Decision</h2>
+<div class="callout">
+<p>Use <strong>Vault-Transit-signed JWT</strong> as the v1 capability token format. Defer
+SPIFFE/SPIRE migration to v2, conditional on a real federation or cross-cluster
+identity requirement emerging.</p>
+</div>
+<p>Specifically:</p>
+<ul>
+<li>Signing: Vault Transit, key <code>agent-capability-token-v1</code></li>
+<li>Verification: public-key fetch from Vault Transit's
+<code>/transit/keys/agent-capability-token-v1</code> endpoint, cached with 5-minute TTL</li>
+<li>Algorithm: ES256 (ECDSA P-256, SHA-256) — small signatures, fast verification,
+supported natively by Vault Transit</li>
+<li>Token shape: standard RFC 7519 JWT with the claim structure defined in the
+sibling RFC</li>
+</ul>
+<p>The SPIFFE migration path is preserved by:</p>
+<ul>
+<li>Keeping the JWT verification logic behind an <code>Authenticator</code> interface in the
+framework's <code>auth/</code> package</li>
+<li>Designing the claim structure to be SPIFFE-SVID-compatible (the RFC's claims
+map cleanly onto SPIFFE JWT-SVID claims with minimal renaming)</li>
+<li>Documenting the migration as a v2 candidate in the RFC's References</li>
+</ul>
+
+</section>
+<section class="panel" id="p-consequences">
+<h2 class="panel-title" id="consequences">Consequences</h2>
+<div class="grid g3">
+<div class="card ok" id="positive">
+<p class="card-label">Positive</p>
+<ul>
+<li><strong>No new operational footprint.</strong> Vault is already in the stack (existing
+Vault JIT pattern). Using Vault Transit for signing adds one secrets-engine
+mount; no new servers, no new agents.</li>
+<li><strong>Familiar trust model.</strong> JWTs are well-understood across the team; the
+verification story is &quot;fetch public key, validate signature&quot; —
+straightforward.</li>
+<li><strong>Direct Vault JWT-auth integration.</strong> Vault's existing <code>jwt</code>/<code>oidc</code> auth
+method consumes our tokens natively for STS issuance, no glue code.</li>
+<li><strong>Lower learning curve.</strong> No SPIFFE concepts (trust domains, federation,
+SVIDs, registration entries) to onboard new team members to.</li>
+<li><strong>Faster v1.</strong> Phase 2 of the capability RFC (controller as token issuer) is
+days of work with JWT; would be weeks with SPIFFE bootstrapping.</li>
+</ul>
+</div>
+<div class="card bad" id="negative">
+<p class="card-label">Negative</p>
+<ul>
+<li><strong>No native federation.</strong> Cross-cluster or external-workload identity will
+require a migration. The RFC documents that migration target as v2 work.</li>
+<li><strong>No native attenuation.</strong> If we want delegated capability tokens later (agent
+A → agent B with subset scopes), we'd need either controller-mediated
+re-issuance (works fine, less elegant) or a migration to Macaroons / Biscuit
+(heavier change). For v1's single-agent-per-run model, this doesn't bite.</li>
+<li><strong>Revocation is partial.</strong> Vault Transit doesn't natively revoke JWTs. The RFC
+handles this with a small Redis-backed <code>jti</code> revocation set with TTL ≤ max
+token lifetime. SPIFFE has the same limitation; not a meaningful
+differentiator.</li>
+<li><strong>Public-key cache is a soft consistency point.</strong> Verifiers cache the Vault
+Transit public key with a 5-minute TTL. During key rotation, there is a window
+where a verifier might still trust the old key. SPIFFE has analogous
+trust-bundle caching.</li>
+</ul>
+</div>
+<div class="card neutral" id="neutral">
+<p class="card-label">Neutral</p>
+<ul>
+<li><strong>Both options end up with claim-bearing tokens.</strong> The capability RFC's claim
+structure works in either JWT or JWT-SVID form. The migration cost is mostly
+issuer / verifier infrastructure, not the claim schema.</li>
+<li><strong>Performance is comparable.</strong> Both verify in microseconds. The difference is
+operational complexity, not runtime cost.</li>
+</ul>
+</div>
+</div>
+
+</section>
+<section class="panel" id="p-alternatives">
+<h2 class="panel-title">Alternatives</h2>
+<h3 id="alternatives-considered">Alternatives Considered</h3>
+<p><strong>SPIFFE / SPIRE with JWT-SVIDs.</strong> The industry-standard option. Right answer
+for federated / multi-cluster workload identity. Deferred for v1 — no federation
+requirement, operational cost unjustified at current scale. Migration path
+documented in the RFC's References.</p>
+<p><strong>Macaroons or Biscuit.</strong> Both support attenuation natively, which would matter
+if v1 needed delegation. It doesn't. Single-agent-per- run is the model. If
+delegated capabilities become a real need (an agent calling another agent with a
+restricted token), revisit at that point.</p>
+<p><strong>OAuth 2.0 access tokens.</strong> Effectively the same as JWT when using JWT-shaped
+access tokens, with additional ceremony around token endpoints and grant flows.
+No advantage for our internal-only, controller-issued case.</p>
+<p><strong>X.509 certificates as the credential.</strong> SPIFFE SVID's other form. Requires
+mTLS at every enforcement point, which is heavy for in- process tool dispatch
+(the primary enforcement point). Rejected.</p>
+<p><strong>Custom signed-blob format.</strong> Roll our own. Rejected on principle — JWT exists,
+has libraries in every language we'll need, has well-understood verification
+semantics, and has Vault-side infrastructure.</p>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>Sibling: RFC-NNNN Agent Capability Tokens — specifies the full capability
+model this ADR implements the token format for</li>
+<li>Sibling: ADR-NNNN Use OPA for scope policy evaluation — the policy engine the
+verified claims feed into</li>
+<li>Internal: Agent platform RFC + DESIGN suite — existing Vault integration this
+builds on</li>
+<li>External:
+<a href="https://datatracker.ietf.org/doc/html/rfc7519">RFC 7519: JSON Web Token</a></li>
+<li>External:
+<a href="https://developer.hashicorp.com/vault/docs/secrets/transit">Vault Transit secrets engine</a></li>
+<li>External: <a href="https://spiffe.io/docs/">SPIFFE / SPIRE documentation</a> — deferred
+to v2</li>
+<li>External:
+<a href="https://research.google/pubs/macaroons-cookies-with-contextual-caveats-for-decentralized-authorization-in-the-cloud/">Macaroons paper</a>
+— for future-attenuation-needs reference</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../adr/testdata/booty-adr-0001.md</code>, sha256 <code>8188ee9693d39eddf63e1ec00c8b7f0a6ce53e9118fcb8f1eecb9d731e8c2293</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

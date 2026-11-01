@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="RUNBOOK-0003">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>RUNBOOK-0003: Onboard a repository to docz-api</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Runbook</p>
+<h1>Onboard a repository to docz-api</h1>
+<p class="summary">Adds a repository to docz-api without waiting for the GitHub App's
+installation event.</p>
+<div class="meta">
+<span class="pill">RUNBOOK-0003</span>
+<span class="pill st-active">Active</span>
+<span class="pill">Jane Operator</span>
+<span class="pill">2025-11-12</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="procedures" aria-controls="p-procedures">Procedures</button>
+<button type="button" data-tab="scenarios" aria-controls="p-scenarios">Scenarios</button>
+<button type="button" data-tab="escalation" aria-controls="p-escalation">Escalation</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<div class="card" id="last-verified">
+<p class="card-label">Last Verified</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th>PR</th>
+<th>Commit</th>
+<th>Verified by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2025-11-12</td>
+<td>#41</td>
+<td>9f2c1ab</td>
+<td>@jane, @sam</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Notes:</strong> Onboarded <code>acme/widgets</code> by hand while the App install was
+broken.</p>
+</div>
+<h3 id="overview">Overview</h3>
+<p><strong>Service:</strong> docz-api</p>
+<p><strong>Owner:</strong> Platform team</p>
+<h3 id="when-to-use">When to Use</h3>
+<ul>
+<li>A repository was added to the App but never appeared in docz-site</li>
+</ul>
+<h3 id="prerequisites">Prerequisites</h3>
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>kubectl</code> access to the docz namespace</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">The App's installation ID</span></li>
+</ul>
+
+</section>
+<section class="panel" id="p-procedures">
+<h2 class="panel-title">Procedures</h2>
+<h3 id="procedures">Procedures</h3>
+<h4 id="procedure-1-onboard-by-hand">Procedure 1: Onboard by hand</h4>
+<p>Written before the template, so its steps are headings.</p>
+<h5 id="steps">Steps</h5>
+<h6 id="step-1-find-the-installation-id">Step 1: Find the installation ID</h6>
+<p>Open the App's settings and copy the ID from the URL.</p>
+<h6 id="step-2-run-the-onboard-flag">Step 2: Run the onboard flag</h6>
+<pre><code class="language-sh">docz-api -onboard acme/widgets@12345
+</code></pre>
+<h5 id="verification">Verification</h5>
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><span class="text">The repository is listed by <code>GET /api/v1/repos</code></span></li>
+</ul>
+<h5 id="rollback">Rollback</h5>
+<ol>
+<li>Delete the repository row; the next install event re-adds it.</li>
+</ol>
+<h4 id="procedure-2-re-index-search">Procedure 2: Re-index search</h4>
+<h5 id="steps-1">Steps</h5>
+<ul>
+<li>Restart the API so it re-applies the index settings</li>
+<li>Push any change under <code>docs/</code> to trigger an ingest</li>
+</ul>
+
+</section>
+<section class="panel" id="p-scenarios">
+<h2 class="panel-title">Scenarios</h2>
+<h3 id="troubleshooting">Troubleshooting</h3>
+<details class="expand" id="scenario-the-onboard-flag-exits-with-repo-not-found"><summary>The onboard flag exits with &#34;repo not found&#34;</summary>
+<div class="body">
+<dl>
+<dt>Symptom</dt><dd>The onboard flag exits with &quot;repo not found&quot;</dd>
+<dt>Alert</dt><dd>none</dd>
+<dt>Likely cause</dt><dd>the App is not installed on the repository</dd>
+</dl>
+<h5 id="steps-2">Steps</h5>
+<ol>
+<li><p>Diagnose: list the installation's repositories.</p>
+<pre><code class="language-sh">gh api /installation/repositories --jq &#39;.repositories[].full_name&#39;
+</code></pre>
+</li>
+<li><p>Resolve: add the repository to the installation, then retry Procedure 1.</p>
+</li>
+</ol>
+</div>
+</details>
+
+</section>
+<section class="panel" id="p-escalation">
+<h2 class="panel-title" id="escalation">Escalation</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Who</th>
+<th>When</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Platform on-call</td>
+<td>The onboard flag fails twice</td>
+<td>#platform in Slack</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li><a href="https://example.com/docz-api/onboarding">docz-api onboarding</a></li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../runbook/testdata/legacy-onboarding.orig.md</code>, sha256 <code>f5440abfaa9b578d7ec218a25f6b28e0132e9c42c5f5869a4d9c111c60a19500</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="INV-0002">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>INV-0002: Why the nightly rebuild flakes</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Investigation</p>
+<h1>Why the nightly rebuild flakes</h1>
+<p class="summary">Why does the nightly documentation rebuild job fail intermittently,
+roughly one run in five, with no obvious pattern in the commit history
+that triggered it? We need a concrete root cause, not just a retry
+workaround, because the flake is starting to erode trust in the
+pipeline's status checks.</p>
+<div class="meta">
+<span class="pill">INV-0002</span>
+<span class="pill st-accepted">Concluded</span>
+<span class="pill">Parity Fixture</span>
+<span class="pill">2026-03-04</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
+<button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
+<button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="question">Question</h3>
+<h3 id="hypothesis">Hypothesis</h3>
+<p>Two concurrent nightly jobs (the docs rebuild and the link checker) are
+racing on a shared cache directory. If the theory holds, failures
+should cluster on nights when both jobs happen to overlap in their
+scheduling window, and the failure signature should point at a missing
+or partially written file rather than a network timeout.</p>
+<h3 id="context">Context</h3>
+<p>The nightly rebuild has been in place for about six months without
+issue. Failures started showing up after we added a second scheduled
+job (the link checker) that runs on an overlapping cron window and
+reuses the same build cache mount to save on cold-start time.</p>
+<p><strong>Triggered by:</strong> issue #412</p>
+
+</section>
+<section class="panel" id="p-approach">
+<h2 class="panel-title" id="approach">Approach</h2>
+<ol>
+<li>Reproduce the flake locally by running both jobs concurrently
+against a shared cache directory and watching for corrupted or
+half-written cache entries.</li>
+<li>Add verbose logging around cache reads and writes in the rebuild
+job, then trigger ten consecutive nightly runs and capture the
+full logs for each.</li>
+<li>Compare timestamps between the two jobs' cache writes on failing
+runs versus passing runs to confirm the race window.</li>
+</ol>
+<h3 id="environment">Environment</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CI runner</td>
+<td>GitHub Actions, ubuntu-22.04</td>
+</tr>
+<tr>
+<td>Cache path</td>
+<td><code>/opt/build-cache/docs</code></td>
+</tr>
+<tr>
+<td>Rebuild job schedule</td>
+<td><code>17 2 * * *</code> (cron, UTC)</td>
+</tr>
+<tr>
+<td>Link checker schedule</td>
+<td><code>20 2 * * *</code> (cron, UTC)</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-findings">
+<h2 class="panel-title" id="findings">Findings</h2>
+<p>The failures were not random. Once we had logging in place, a clear
+pattern emerged within three nights.</p>
+<div class="card" id="cache-directory-is-shared-across-jobs">
+<p class="card-label">Cache directory is shared across jobs</p>
+<p>Both the rebuild job and the link checker mount the same
+<code>/opt/build-cache/docs</code> path, and neither job takes a lock before
+writing to it. When their schedules overlap by even a few minutes, one
+job can delete or truncate a file the other is mid-write on.</p>
+</div>
+<div class="card" id="failure-signature-matches-a-truncated-manifest-read">
+<p class="card-label">Failure signature matches a truncated manifest read</p>
+<p>The rebuild job's crash log consistently points at a JSON decode
+error on the cache manifest, not a missing file. That is consistent
+with a partial write being read by the other process.</p>
+<pre><code class="language-text">2026-03-02T02:19:44Z ERROR rebuild: failed to parse cache manifest
+    /opt/build-cache/docs/manifest.json: unexpected end of JSON input
+2026-03-02T02:19:44Z ERROR rebuild: falling back to cold cache
+2026-03-02T02:19:47Z ERROR rebuild: exit status 1 (nondeterministic)
+</code></pre>
+</div>
+<div class="card" id="overlap-window-correlates-with-failure-nights">
+<p class="card-label">Overlap window correlates with failure nights</p>
+<p>Cross-referencing job start times against the incident log confirmed
+the race window directly.</p>
+<ul>
+<li>Nights with a rebuild failure: link checker start time was within
+90 seconds of the rebuild's cache-write phase.</li>
+<li>Nights with a clean rebuild: link checker either finished before
+the rebuild started or started more than five minutes after it.</li>
+<li>No failure was correlated with network errors, disk pressure, or a
+specific commit range.</li>
+</ul>
+</div>
+
+</section>
+<section class="panel" id="p-conclusion">
+<h2 class="panel-title" id="conclusion">Conclusion</h2>
+<div class="verdict"><p class="card-label">Answer</p><p>Confirmed. The nightly rebuild flakes because the rebuild</p></div>
+<h3 id="recommendation">Recommendation</h3>
+<p>Give each job its own cache subdirectory (for example
+<code>/opt/build-cache/docs-rebuild</code> and <code>/opt/build-cache/link-checker</code>)
+so the two jobs never touch the same files, and stagger the cron
+schedules by at least ten minutes as a defense-in-depth measure while
+the subdirectory change rolls out.</p>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li><a href="https://github.com/example/docz/issues/412">issue #412</a></li>
+<li><a href="https://ci.example.com/dashboards/nightly-docs">CI runner logs dashboard</a></li>
+<li><a href="https://wiki.example.com/build-cache">Build cache design notes</a></li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../../test/parity/fixtures/investigation/docs/investigation/0002-why-the-nightly-rebuild-flakes.md</code>, sha256 <code>0c1a5c34ba68c82287e9d81e0f424c39f84065536341d6a48b44c5751ae4368b</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

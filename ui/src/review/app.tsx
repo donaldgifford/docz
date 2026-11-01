@@ -1,13 +1,15 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
+import { refreshMermaidTheme } from "@/markdown/mermaid-block";
 import {
   newSubmissionId,
   StaleError,
   type ReviewClient,
   type ReviewDocument,
 } from "@/review/api";
-import { ReviewButton } from "@/review/controls";
+import { useAppearance } from "@/review/appearance";
+import { AppearanceControls, ReviewButton } from "@/review/controls";
 import { DocumentReview } from "@/review/document-review";
 import { emptyDraft, type Draft } from "@/review/draft";
 
@@ -39,6 +41,7 @@ const statusOf = (doc: ReviewDocument) => doc.inspect.frontmatter?.status ?? "";
 
 export function ReviewApp({ client }: { client: ReviewClient }) {
   const queryClient = useQueryClient();
+  const appearance = useAppearance(refreshMermaidTheme);
   const session = useQuery({
     queryKey: SESSION_KEY,
     queryFn: () => client.session(),
@@ -154,8 +157,10 @@ export function ReviewApp({ client }: { client: ReviewClient }) {
             {d.key} · {d.state}
           </ReviewButton>
         ))}
+        <div className="ml-auto flex items-center gap-2">
+          <AppearanceControls appearance={appearance} />
+        </div>
         <ReviewButton
-          className="ml-auto"
           onClick={() => {
             if (
               !dirty ||

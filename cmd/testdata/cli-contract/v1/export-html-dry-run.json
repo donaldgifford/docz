@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "out": "build/html",
+  "dry_run": true,
+  "pages": [
+    {
+      "id": "IMPL-0001",
+      "type": "impl",
+      "source": "docs/impl/0001-phase-out-the-legacy-scanner.md",
+      "path": "impl/0001-phase-out-the-legacy-scanner.html",
+      "action": "wrote",
+      "hash": "sha256:2435ea8bb973b08cb6950ade9638f05a32375226afca2e8851b0daafdcbae9ea",
+      "unresolved_links": [],
+      "problems": []
+    }
+  ],
+  "total": {
+    "pages": 1,
+    "wrote": 1,
+    "unchanged": 0,
+    "failed": 0
+  }
+}

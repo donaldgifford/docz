@@ -1,10 +1,10 @@
 // Package cli holds the JSON Schemas for the docz CLI's machine-readable
 // outputs (DESIGN-0024 §3).
 //
-// Five documents are governed: `docz inspect --format json`,
+// Six documents are governed: `docz inspect --format json`,
 // `docz validate --format json` (with and without --fix), `docz create
-// --format json`, `docz list --format json`, and the review record
-// docz-review writes. Each schema is draft 2020-12 with
+// --format json`, `docz list --format json`, the review record docz-review
+// writes, and `docz export html --format json`. Each schema is draft 2020-12 with
 // additionalProperties false on every object, which is the producer's view:
 // the contract test in cmd/ validates the CLI's real output against these
 // bytes, so an added, renamed, or removed field fails it. A consumer derives
@@ -29,10 +29,12 @@ const (
 	SchemaVersionValidate = 1
 	SchemaVersionCreate   = 1
 	SchemaVersionReview   = 1
+	// SchemaVersionExportHTML is docz export html --format json's.
+	SchemaVersionExportHTML = 1
 )
 
 // Names lists the governed schemas, in the order the design tabulates them.
-var Names = []string{"inspect", "validate", "create", "list", "review"}
+var Names = []string{"inspect", "validate", "create", "list", "review", "export-html"}
 
 //go:embed *.schema.json
 var schemas embed.FS

@@ -293,6 +293,21 @@ docs-list: build
 docs-config: build
     @{{ bin }} config
 
+# Vendor mermaid for docz export html from ui/node_modules, at the
+# version ui/bun.lock pins (IMPL-0028 question 1). Run `just ui install`
+# first; gzip -n keeps the file byte-stable across runs.
+[group('build')]
+vendor-mermaid:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    src=ui/node_modules/mermaid/dist/mermaid.min.js
+    if [ ! -f "$src" ]; then
+        echo "✗ $src is missing; run: just ui install" >&2
+        exit 1
+    fi
+    gzip -9 -n -c "$src" > pkg/export/html/assets/mermaid.min.js.gz
+    echo "✓ mermaid $(sed -n 's/.*"version": "\(.*\)".*/\1/p' ui/node_modules/mermaid/package.json | head -1) vendored"
+
 # ─── License compliance ────────────────────────────────────────────
 
 # Check dependency licenses against the allow list

@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="IMPL-0017">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>IMPL-0017: v1.3.0 — updated frontmatter field and the docz update stamp pass</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Implementation plan</p>
+<h1>v1.3.0 — updated frontmatter field and the docz update stamp pass</h1>
+<div class="meta">
+<span class="pill">IMPL-0017</span>
+<span class="pill st-draft">Draft</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-09-12</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="phases" aria-controls="p-phases">Phases</button>
+<button type="button" data-tab="changes" aria-controls="p-changes">Changes</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
+<button type="button" data-tab="dependencies" aria-controls="p-dependencies">Dependencies</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
+<button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<ul>
+<li><a href="#objective">Objective</a></li>
+<li><a href="#scope">Scope</a>
+<ul>
+<li><a href="#in-scope">In Scope</a></li>
+<li><a href="#out-of-scope">Out of Scope</a></li>
+</ul>
+</li>
+<li><a href="#implementation-phases">Implementation Phases</a>
+<ul>
+<li><a href="#phase-1-docwritesetupdated">Phase 1: docwrite.SetUpdated</a>
+<ul>
+<li><a href="#tasks">Tasks</a></li>
+<li><a href="#success-criteria">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-2-read-side-and-the-updated-config-block">Phase 2: read side and the updated: config block</a>
+<ul>
+<li><a href="#tasks-1">Tasks</a></li>
+<li><a href="#success-criteria-1">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-3-git-resolver-and-the-stream-parser">Phase 3: git resolver and the stream parser</a>
+<ul>
+<li><a href="#tasks-2">Tasks</a></li>
+<li><a href="#success-criteria-2">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-4-cli-integration">Phase 4: CLI integration</a>
+<ul>
+<li><a href="#tasks-3">Tasks</a></li>
+<li><a href="#success-criteria-3">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-5-living-docs-consumer-contract-release-dogfood">Phase 5: living docs, consumer contract, release, dogfood</a>
+<ul>
+<li><a href="#tasks-4">Tasks</a></li>
+<li><a href="#success-criteria-4">Success Criteria</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#file-changes">File Changes</a></li>
+<li><a href="#testing-plan">Testing Plan</a></li>
+<li><a href="#dependencies">Dependencies</a></li>
+<li><a href="#open-questions">Open Questions</a>
+<ul>
+<li><a href="#1-where-does-the-git-log--p-stream-parser-live">1. Where does the git log -p stream parser live?</a></li>
+<li><a href="#2-pr-and-release-strategy">2. PR and release strategy?</a></li>
+<li><a href="#3-does-the-real-git-integration-test-cover-the-shallow-clone-path">3. Does the real-git integration test cover the shallow-clone path?</a></li>
+<li><a href="#4-should-docz-update-get-a-flag-to-skip-the-stamp-pass">4. Should docz update get a flag to skip the stamp pass?</a></li>
+<li><a href="#5-does-the-updated-column-also-appear-in-docz-list---formatcsv">5. Does the Updated column also appear in docz list --format=csv?</a></li>
+<li><a href="#6-where-does-the-dogfood-backfill-in-this-repo-land">6. Where does the dogfood backfill in this repo land?</a></li>
+<li><a href="#7-does-the-resolver-stop-reading-git-log--p-early">7. Does the resolver stop reading git log -p early?</a></li>
+<li><a href="#8-what-clock-does-today-use-for-an-edit-time-stamp">8. What clock does &quot;today&quot; use for an edit-time stamp?</a></li>
+</ul>
+</li>
+<li><a href="#decisions">Decisions</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+<h3 id="objective">Objective</h3>
+<p>Implement DESIGN-0012: an opt-in <code>updated:</code> config block and an
+<code>updated: YYYY-MM-DD</code> frontmatter field that <code>docz update</code> backfills from git
+and keeps current, stamped at edit time so the pass converges without
+bookkeeping commits. Ships as docz <code>v1.3.0</code> (a <code>minor</code>: new public field,
+config block, and <code>docwrite</code> function), ratified for consumers as
+DESIGN-0008 R12, with docz-api #36 waiting on the tag.</p>
+<p><strong>Implements:</strong> DESIGN-0012 (all eight decisions locked 2026-09-12), scoped
+by INV-0008 (Concluded).</p>
+<h3 id="scope">Scope</h3>
+<div class="grid g2">
+<div class="card ok" id="in-scope">
+<p class="card-label">In Scope</p>
+<ul>
+<li><code>docwrite.SetUpdated</code> — the package's first upsert (rewrite in place, or
+insert after <code>created:</code>), plus <code>ErrUpdatedFieldUnsupported</code>.</li>
+<li><code>document.Frontmatter.Updated</code> and <code>config.UpdatedConfig</code> /
+<code>Config.Updated</code>, dormant by default, rendered into <code>docz init</code> output.</li>
+<li><code>GitResolver</code> growth (<code>Shallow</code>, <code>State</code>, <code>LastChange</code>) with the
+<code>git log -p</code> stream parser and its bookkeeping-commit filter.</li>
+<li>The stamp pass in <code>docz update</code> (once-per-invocation git probe, per-doc
+stamping model, dry-run lines, shallow-clone warning, table
+write-through); stamps in <code>docz create</code> and <code>docz status set</code>.</li>
+<li>The enabled-only index layout (<code>Created</code> + <code>Updated</code> columns) and the
+matching <code>docz list</code> column; <code>updated</code> in <code>docz list</code> JSON.</li>
+<li>Living docs (README, CLAUDE.md), DESIGN-0008 R12, the external-consumer
+proof, the <code>v1.3.0</code> release, the post-tag flips <strong>and</strong> dogfooding the
+block in this repo.</li>
+</ul>
+</div>
+</div>
+<h4 id="out-of-scope">Out of Scope</h4>
+<ul>
+<li>The commit sha (<code>updated_sha:</code>) — deferred by INV-0008; DESIGN-0012
+Non-Goals. <code>Change.SHA</code> is populated by the resolver but nothing reads it.</li>
+<li>Template changes (DESIGN-0012 Decision 2) and any per-type key name
+(INV-0008 Decision 3).</li>
+<li>docz-api / docz-site work — tracked in docz-api #36.</li>
+<li>Any general frontmatter editor, <code>--repo-root</code> cleanup beyond what the git
+path routing needs, or changes to <code>created</code>.</li>
+<li>A <code>--no-stamp</code> / <code>--no-updated</code> flag on <code>docz update</code> (Decision 4): the
+config block is the switch and a shallow clone already skips with a
+warning.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phases">
+<h2 class="panel-title">Phases</h2>
+<h3 id="implementation-phases">Implementation Phases</h3>
+<p>Each phase builds on the previous one. A phase is complete when all its
+tasks are checked off and its success criteria are met. Phases are commit
+boundaries inside one <code>minor</code> PR (Decision 2); every phase ends with
+<code>make fmt</code>, <code>make lint</code>, <code>make ci</code> green and a go-review pass over the
+phase's diff.</p>
+<div class="filters" role="group" aria-label="Show tasks"><button type="button" data-filter="all">All</button><button type="button" data-filter="open">Open</button><button type="button" data-filter="done">Done</button></div>
+<div class="card phase" id="phase-1-docwritesetupdated">
+<div class="phase-head"><h3>Phase 1: <code>docwrite.SetUpdated</code></h3><span class="progress">0 / 10</span></div>
+<div class="bar"><i style="width: 0%"></i></div>
+<p>The byte-level write primitive, in <code>pkg/doczcore/docwrite</code>. Built first
+because Phases 4 and 5 call it and its golden suite is the proof that the
+status locator refactor changed nothing.</p>
+<ul class="tasks" id="tasks">
+<li data-state="open"><input type="checkbox" disabled><span class="text">go-architect pass on the insert design before coding: confirm the generalized locator's shape, the insertion rules, and that a purpose-named <code>SetUpdated</code> (not a generic <code>SetScalar</code>) is what ships (DESIGN-0012 §<code>docwrite.SetUpdated</code>, ADR-0001 Decision 5).</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Generalize the status locator: <code>findStatusValue</code> becomes <code>findScalarValue(content []byte, keyRE *regexp.Regexp) (start, end int, value string, err error)</code>; <code>parseStatusValue</code> becomes <code>parseScalarValue</code>, returning a <strong>bare</strong> <code>errUnsupportedShape</code> / <code>errFieldMissing</code> that each caller wraps with its own sentinel so <code>errors.Is(err, ErrStatusFieldMissing)</code> keeps working for existing consumers. <code>statusKeyRE</code> stays; add <code>updatedKeyRE = ^updated:[ \t]*</code> and <code>createdKeyRE = ^created:</code>.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Rewire <code>SetStatus</code> onto the generalized locator. <strong>Behavior and error messages must not change</strong> — the 12 fixtures under <code>testdata/golden/status/</code> are the proof and must not be regenerated.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Add the insert helper: <code>insertFrontmatterLine(content []byte, blockStart, blockEnd int, afterKeyRE *regexp.Regexp, line string) []byte</code>. Inserts <code>line + &quot;\n&quot;</code> immediately after the first line in the block matching <code>afterKeyRE</code> (the <code>created:</code> line); when no line matches, appends it as the last line of the block, just before the closing <code>---</code>. <code>frontmatterBounds</code> already tolerates the one leading blank line; reuse it, do not re-derive the bounds.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Add <code>ErrUpdatedFieldUnsupported</code> and <code>SetUpdated(path, date string) (old string, err error)</code>: read; reject CR/CRLF with <code>ErrUnsupportedLineEndings</code>; <code>document.ErrNoFrontmatter</code> when no block; locate <code>^updated:</code> — supported shape → splice the value bytes only (return the old value); unsupported shape → <code>ErrUpdatedFieldUnsupported</code> <strong>before any write</strong> (never a duplicate key); absent → insert a bare <code>updated: &lt;date&gt;</code> line after <code>created:</code> (return <code>&quot;&quot;</code>). Write with <code>config.FileMode</code>; wrap IO errors with the path. No value validation, matching <code>SetStatus</code>.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Golden suite <code>TestSetUpdated_Golden</code> mirroring <code>TestSetStatus_Golden</code> (<code>testdata/golden/updated/&lt;case&gt;.input.md</code> / <code>.output.md</code>, <code>-update</code> regenerates): <code>bare</code>, <code>double-quoted</code>, <code>single-quoted</code>, <code>trailing-comment</code>, <code>insert-after-created</code>, <code>insert-no-created</code> (goes last in the block), <code>insert-created-last-line</code>, <code>leading-blank-line</code>, <code>same-value</code> (output byte-identical to input), and one fixture per built-in type's real template output so the insert lands where a real document expects it.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Error-table test: CRLF → <code>ErrUnsupportedLineEndings</code>; no frontmatter → <code>document.ErrNoFrontmatter</code>; block scalar / flow mapping / flow sequence / anchor / alias → <code>ErrUpdatedFieldUnsupported</code> <strong>and the file on disk is byte-identical afterward</strong>; unterminated quote → <code>ErrUpdatedFieldUnsupported</code>; unreadable path → wrapped IO error naming the path.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>FuzzSetUpdated</code> pinning: never panics; when it returns nil the output contains exactly one <code>^updated:</code> line inside the frontmatter block; and when <code>document.ParseFrontmatter(input)</code> succeeded, <code>ParseFrontmatter(output)</code> succeeds with <code>Updated == date</code> and every other field unchanged. If the fuzzer finds a YAML shape where a column-0 insert breaks the parse, <strong>refuse with <code>ErrUpdatedFieldUnsupported</code></strong> rather than weaken the invariant.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Package doc (<code>doc.go</code>): &quot;three operations&quot; becomes four; describe the upsert and why it is not a general editor. Godoc on every new exported symbol.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>make fmt</code>, <code>make lint</code>, <code>make ci</code> green; go-review pass on the diff.</span></li>
+</ul>
+<h5 id="success-criteria">Success Criteria</h5>
+<ul>
+<li><code>git diff --stat pkg/doczcore/docwrite/testdata/golden/status/</code> is empty
+after the refactor — the locator generalization is provably
+byte-preserving.</li>
+<li><code>TestSetStatus_*</code> pass unchanged; <code>TestSetUpdated_Golden</code>, the error
+table, and <code>FuzzSetUpdated</code> (≥ 1M execs locally, seed corpus committed)
+green.</li>
+<li>A document written by <code>SetUpdated</code> round-trips through
+<code>document.ParseFrontmatter</code> with <code>Updated</code> set and no other field changed.</li>
+<li><code>make ci</code> green.</li>
+</ul>
+</div>
+<div class="card phase" id="phase-2-read-side-and-the-updated-config-block">
+<div class="phase-head"><h3>Phase 2: read side and the <code>updated:</code> config block</h3><span class="progress">0 / 7</span></div>
+<div class="bar"><i style="width: 0%"></i></div>
+<p><code>document.Frontmatter.Updated</code>, <code>config.UpdatedConfig</code>, defaults, the
+generated-config template, and the JSON data field in <code>docz list</code>. Nothing
+here changes runtime behavior; it is the schema Phases 4 and 5 build on.</p>
+<ul class="tasks" id="tasks-1">
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>document.Frontmatter</code> gains <code>Updated string \</code>yaml:&quot;updated&quot;`<code>with a doc comment stating the</code>YYYY-MM-DD<code>raw-string contract and the</code>&quot;&quot;<code>-means-unknown rule (DESIGN-0012 §The field). </code>DocEntry<code>inherits. Tests: present, absent →</code>&quot;&quot;`, quoted, and unknown-key leniency still holds.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>config.UpdatedConfig{Enabled bool}</code> with <code>yaml:&quot;enabled&quot; json:&quot;enabled&quot;</code>; <code>Config.Updated UpdatedConfig</code> with <code>yaml:&quot;updated&quot; json:&quot;updated&quot;</code>, placed after <code>API</code>. <code>DefaultConfig()</code> sets <code>Enabled: false</code>. No <code>mapstructure</code> tags (vestigial post-viper). Nothing to normalize or validate — <code>Validate()</code> is untouched.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Add the block to <code>internal/template/templates/docz_yaml.tmpl</code> after <code>api:</code>, rendered from <code>DefaultConfig()</code> with the DESIGN-0012 §Config comment (needs git history, rewrites every document once). <strong>Do this in the same commit as the struct:</strong> <code>TestDoczYAMLTemplate_RoundTripsToDefaultConfig</code> fails the moment a default field has no template line (IMPL-0015 / IMPL-0016 precedent).</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Add the block to <code>.docz.example.yaml</code> with the same comment, and to this repo's <code>.docz.yaml</code> as <code>enabled: false</code> (enabling is Phase 5's dogfood step).</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Config tests: decode (full / <code>enabled</code> only / absent); defaults; merge (repo <code>updated.enabled</code> wins over global); dormancy — a config with the block enabled <strong>and</strong> disabled both pass <code>Validate()</code> since there are no rules; <code>parity_baseline_test.go</code> case pinning that a dormant <code>updated:</code> block now decodes rather than being ignored. Confirm <code>TestJSONTags_MirrorYAML</code> and <code>TestConfigJSON_MarshaledShape</code> cover the new struct — the shape pin needs its expected JSON extended by one block.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>docz list</code>: <code>listEntry.Updated string \</code>json:&quot;updated,omitempty&quot;`<code>populated from</code>doc.Updated`; JSON output only in this phase (the text and CSV columns are layout and land in Phase 4). Test: a doc with the field emits it; one without omits the key.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Godoc on every new exported symbol; <code>make fmt</code>, <code>make lint</code>, <code>make ci</code> green; go-review pass.</span></li>
+</ul>
+<h5 id="success-criteria-1">Success Criteria</h5>
+<ul>
+<li><code>docz config</code> prints the resolved <code>updated:</code> block with no <code>cmd/</code> change.</li>
+<li><code>docz init</code> output contains the disabled block with its comment, and
+round-trips to <code>DefaultConfig()</code>.</li>
+<li><code>TestJSONTags_MirrorYAML</code> green with the new struct, and
+<code>TestConfigJSON_MarshaledShape</code> pins <code>&quot;updated&quot;: {&quot;enabled&quot;: …}</code>.</li>
+<li><code>docz list --format=json</code> on a fixture with <code>updated:</code> emits the key; on
+one without, omits it.</li>
+<li><code>make ci</code> green.</li>
+</ul>
+</div>
+<div class="card phase" id="phase-3-git-resolver-and-the-stream-parser">
+<div class="phase-head"><h3>Phase 3: git resolver and the stream parser</h3><span class="progress">0 / 10</span></div>
+<div class="bar"><i style="width: 0%"></i></div>
+<p>Everything that talks to git, in <code>cmd/</code> — plus the pure <code>git log -p</code>
+stream parser in its own <code>internal/gitlog</code> package (Decision 1). Built before the CLI
+integration so Phase 4 is wired against a tested resolver and a scriptable
+stub.</p>
+<ul class="tasks" id="tasks-2">
+<li data-state="open"><input type="checkbox" disabled><span class="text">go-architect pass before the new package (Decision 1: <code>internal/gitlog</code>): confirm the parser's signature and that it is bytes-in/values-out with no <code>exec</code> inside it.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Stream parser <code>gitlog.FirstSubstantiveCommit(r io.Reader, ignore *regexp.Regexp) (Commit{SHA, Date string}, ok bool, err error)</code> over <code>git log --format=%x00%H%x09%cs -p</code> output: split on the NUL record marker; for each commit scan patch lines; a line is a <em>change</em> when it starts with <code>+</code> or <code>-</code> and is not a <code>+++ </code> / <code>--- </code> file header; the commit is substantive when any change line's text after the marker does <strong>not</strong> match <code>ignore</code> (<code>^updated:</code>); return the first substantive commit. Pure-rename commits (no change lines) are skipped. <code>\ No newline at end of file</code> lines are ignored. Truncated input never panics; empty input → <code>ok == false</code>.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Parser tests (parallel, table-driven) on committed fixtures under <code>testdata/</code>: a real <code>git log -p</code> capture from this repo (DESIGN-0011's two-commit history); synthetic cases — first commit substantive; first commit <code>updated:</code>-only → second returned; <code>updated:</code>-only insertion (<code>+updated: …</code> with no <code>-</code> line) skipped; <code>status:</code> flip counted as substantive; pure rename skipped; headers and <code>\ No newline</code> ignored; empty; truncated mid-record. <code>FuzzFirstSubstantiveCommit</code> pins never-panic.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>cmd/git.go</code>: add <code>WorkTreeState</code> (<code>StateUnavailable</code>, <code>StateClean</code>, <code>StateModified</code>, <code>StateUntracked</code>), <code>Change{SHA, Date}</code>, and grow <code>GitResolver</code> with <code>Shallow(ctx) (bool, error)</code>, <code>State(ctx, path) WorkTreeState</code>, <code>LastChange(ctx, path) (Change, bool, error)</code>. Doc comments carry the DESIGN-0012 §Git resolver command table.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>realGit</code> gains a <code>Dir string</code> (the repo root every command runs in) and implements the three methods with <code>exec.CommandContext</code>: <code>rev-parse --is-shallow-repository</code>; <code>status --porcelain --untracked-files=all -- &lt;path&gt;</code> (empty → Clean, <code>??</code> → Untracked, else Modified; exit 128 / missing binary → Unavailable); <code>log --follow --format=%x00%H%x09%cs -p -- &lt;path&gt;</code> streamed through the parser with early stop (Decision 7: once the parser returns, close the process's stdout and <code>Wait</code>, treating the broken-pipe exit as success). Wire <code>Dir</code> in <code>loadAndValidateConfig</code> where <code>RepoRoot</code> is resolved, so <code>NewRunner</code>'s default <code>realGit{}</code> still means &quot;cwd&quot;.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Route the path handed to git through the same resolution as the file path: git runs in <code>RepoRoot</code>, so pass the doc path relative to <code>RepoRoot</code> (<code>filepath.Rel</code> when the path is absolute). Add one test with <code>RepoRoot ≠ cwd</code> — the pre-existing looseness DESIGN-0012 calls out, closed only as far as this feature needs.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>staticGit</code> becomes scriptable <strong>without breaking the ~20 existing <code>staticGit{Name: …}</code> / <code>staticGit{}</code> literals</strong>: add <code>ShallowFn func() (bool, error)</code>, <code>StateFn func(path string) WorkTreeState</code>, <code>LastChangeFn func(path string) (Change, bool, error)</code>, and a <code>Calls []string</code> recorder (method name + path) for the dormancy proof. Nil functions return <code>(false, nil)</code>, <code>StateUnavailable</code>, and <code>(Change{}, false, nil)</code>.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Real-git integration test, one file (<code>cmd/git_integration_test.go</code>), guarded by <code>exec.LookPath(&quot;git&quot;)</code> and hermetic: <code>GIT_CONFIG_GLOBAL=/dev/null</code>, <code>GIT_CONFIG_NOSYSTEM=1</code>, <code>GIT_AUTHOR_DATE</code> / <code>GIT_COMMITTER_DATE</code> pinned with an explicit offset, <code>-c user.name -c user.email -c commit.gpgsign=false -c init.defaultBranch=main</code>. Scenarios: <code>State</code> classifies clean / modified / untracked (and a file added but not yet committed → Modified); <code>LastChange</code> returns the pinned committer date; an <code>updated:</code>-only follow-up commit is skipped; <code>git mv</code> + a content edit is followed across the rename; <code>Shallow</code> is false; and (Decision 3) a <code>git clone --depth 1 file://…</code> of that repo reports <code>Shallow</code> true, with the update pass run against it printing the single warning and writing nothing.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Context-cancellation tests for the three new <code>realGit</code> methods, matching <code>TestRealGit_UserName_CtxCancel</code>.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Godoc; <code>make fmt</code>, <code>make lint</code>, <code>make ci</code> green; go-review pass.</span></li>
+</ul>
+<h5 id="success-criteria-2">Success Criteria</h5>
+<ul>
+<li>Parser table + fuzz green in parallel; the captured real-history fixture
+returns <code>004491f…</code> / <code>2026-08-30</code> for DESIGN-0011 (its latest commit is a
+<code>status:</code> flip and therefore substantive — the filter is narrow by design).</li>
+<li>Integration test green locally and in the <code>Test Go</code> CI job (Ubuntu runner
+git ≥ 2.21 for <code>%cs</code>).</li>
+<li>Every pre-existing <code>cmd/</code> test compiles and passes with the grown
+interface and stub.</li>
+<li><code>make ci</code> green.</li>
+</ul>
+</div>
+<div class="card phase" id="phase-4-cli-integration">
+<div class="phase-head"><h3>Phase 4: CLI integration</h3><span class="progress">0 / 11</span></div>
+<div class="bar"><i style="width: 0%"></i></div>
+<p>The stamp pass, the two command-time stamps, and the enabled-only layouts.
+This is where DESIGN-0012's convergence table becomes a test table.</p>
+<ul class="tasks" id="tasks-3">
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>Runner.Update</code>: when <code>r.Cfg.Updated.Enabled</code>, probe git <strong>once per invocation</strong>: <code>State</code> unavailable → debug log, pass disabled; <code>Shallow</code> true → exactly one warning on <code>r.Err</code> (<code>Warning: shallow clone; skipping updated-field pass (clone with full history, e.g. fetch-depth: 0)</code>), pass disabled. Carry the result into <code>updateType</code> as a small <code>stampGate</code> value rather than a Runner field.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>Runner.updateType</code>: after the ToC pass and before <code>index.GenerateTable</code>, call <code>r.stampUpdated(typeDir, docs, dryRun, gate)</code> implementing DESIGN-0012 §The stamping model: <code>State</code> → today (<code>r.Now().Format(time.DateOnly)</code>, the local date — Decision 8) for Modified/Untracked, <code>LastChange</code> date for Clean, skip with debug when no history; compare against the scan's parsed <code>doc.Updated</code> (cmd owns the no-op short-circuit); on a difference, dry-run prints <code>Would set updated in &lt;path&gt;: &lt;old|(absent)&gt; -&gt; &lt;want&gt;</code>, otherwise <code>docwrite.SetUpdated</code>. Copy the new value into <code>docs[i].Updated</code> so the table rendered next sees it. Silent on success with a debug log per document (Decision 7); write errors are warnings on <code>r.Err</code> and the pass continues.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>index.GenerateTable(docs, heading, layout index.Layout)</code> with <code>Layout{Updated bool}</code>: zero value renders today's header byte-for-byte; <code>Updated: true</code> renders <code>| ID | Title | Status | Created | Updated | Author | Link |</code> (Decisions 5 and 6). <code>updateType</code> passes <code>Layout{Updated: r.Cfg.Updated.Enabled}</code>. Existing <code>TestGenerateTable_*</code> pass unchanged; add the enabled-layout cases.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>docz create</code>: when enabled, after <code>docwrite.Create</code>, call <code>SetUpdated(result.FilePath, today)</code>; <code>--no-update</code> does <strong>not</strong> skip it (creation metadata, not index maintenance). The <code>Created …</code> output line is unchanged.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>docz status set</code>: when enabled and <code>res.changed &amp;&amp; !opts.dryRun</code>, call <code>SetUpdated(docPath, today)</code> after a successful <code>SetStatus</code>; a failure goes through <code>statusWriteError</code> (exit 1). <code>statusResult</code> and <code>statusJSON</code> gain <code>Updated string \</code>json:&quot;updated,omitempty&quot;`<code>; the text line is unchanged (Decision 4). </code>--quiet` behavior unchanged.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>docz list</code>: <code>outputTable</code> and <code>outputCSV</code> gain an <code>UPDATED</code> column after <code>DATE</code> only when enabled (Decision 5 — the three formats agree). JSON is done (Phase 2).</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">cmd tests for the pass with the scripted stub, one subtest per row of DESIGN-0012's convergence table: same-day edit; create-then-clean; status-set-then-clean; commit-without-update (git-derived write); backfill of a multi-doc fixture; day-boundary (one write). Each runs the pass <strong>twice</strong> and asserts the second run writes nothing (file bytes identical, dry-run prints nothing).</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">The dormancy proof: with the block disabled, <code>docz update</code>, <code>create</code>, and <code>status set</code> make <strong>zero</strong> <code>GitResolver</code> calls beyond <code>UserName</code> (assert <code>staticGit.Calls</code>), write no <code>updated:</code> line, and render the pre-existing README layout byte-for-byte.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Guard tests: shallow → one warning, no writes, README still updated; git unavailable → silent skip; write error on one doc → warning, other docs still stamped; <code>docz update --dry-run</code> lines pinned; <code>docz update &lt;type&gt;</code> stamps only that type; table write-through (the README rendered in the same run shows the new date).</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>create</code> / <code>status set</code> tests: enabled → <code>updated:</code> equals the pinned <code>Now</code> date; disabled → absent; <code>create --no-update</code> still stamps; <code>status set --dry-run</code> and same-value no-op stamp nothing; JSON shape with and without <code>updated</code>.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Godoc; <code>make fmt</code>, <code>make lint</code>, <code>make ci</code> green; go-review pass over the whole phase (the largest diff in the plan).</span></li>
+</ul>
+<h5 id="success-criteria-3">Success Criteria</h5>
+<ul>
+<li>All convergence-table subtests green, each proving a zero-write second
+run.</li>
+<li>Dormancy proof green: a disabled repo is byte-identical in every file and
+every README after <code>docz update</code>, <code>create</code>, and <code>status set</code>.</li>
+<li><code>docz update --dry-run</code> on a fixture prints exactly the pinned lines and
+nothing else; a real run prints only the README lines.</li>
+<li><code>cmd/</code> tests remain serial; <code>internal/*</code> and <code>pkg/*</code> tests remain parallel.</li>
+<li><code>make ci</code> green.</li>
+</ul>
+</div>
+<div class="card phase" id="phase-5-living-docs-consumer-contract-release-dogfood">
+<div class="phase-head"><h3>Phase 5: living docs, consumer contract, release, dogfood</h3><span class="progress">0 / 9</span></div>
+<div class="bar"><i style="width: 0%"></i></div>
+<p>Ships <code>v1.3.0</code>, then flips statuses and enables the block in this repo.</p>
+<ul class="tasks" id="tasks-4">
+<li data-state="open"><input type="checkbox" disabled><span class="text">README: the Features bullet lists <code>updated</code>; the Configuration example gains the block; new <code>### Updated</code> subsection after <code>### API</code> covering the semantics (edit-time stamp vs committer date, the substantive-commit rule), the one-time backfill diff on enabling, the shallow-clone warning and <code>fetch-depth: 0</code>, that <code>create</code> / <code>status set</code> stamp too, and the <code>Created</code> / <code>Updated</code> table layout; <code>docz update</code> Flags section notes the pass; &quot;Using docz as a Go Library&quot; table gains <code>SetUpdated</code>; Index Tables section notes the enabled layout.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">CLAUDE.md architecture map: <code>docwrite</code> (SetUpdated, upsert rules), <code>document</code> (Updated field), <code>config</code> (UpdatedConfig, dormancy), <code>cmd/</code> (stamp pass, GitResolver growth, stub shape), <code>internal/index</code> (Layout), and <code>internal/gitlog</code> (Decision 1).</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">DESIGN-0008: add R12 verbatim from DESIGN-0012 §Consumer contract with <code>v1.3.0</code> filled in, and extend the &quot;R10 raises that pin…&quot; sentence.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>test/consumer/consumer_v13_test.go</code> (one file per release): parse a document carrying <code>updated:</code> and assert <code>Frontmatter.Updated</code>; decode <code>updated: {enabled: true}</code> into <code>config.Config</code>; call <code>docwrite.SetUpdated</code> on a temp file and assert <code>errors.Is(err, docwrite.ErrUpdatedFieldUnsupported)</code> on a block-scalar fixture. Verify it goes <strong>red</strong> when <code>Frontmatter.Updated</code> is temporarily renamed, then restore — this module sits outside root <code>./...</code>, so only <code>make test-consumer</code> / <code>make ci</code> catches it.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Open the release PR with the <code>minor</code> label carrying Phases 1–5, a <code>### RELEASE NOTES</code> section (new field, block, <code>SetUpdated</code>, the enabled-only layout, the R12 pin, and that <code>v1.2.2</code> already changed <code>config_snapshot</code> spellings for anyone bumping from <code>v1.2.1</code>). Merge when green; <code>pr-semver-bump</code> + goreleaser cut <code>v1.3.0</code>.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">After the tag: fix the release body with the extracted notes (<code>gh release edit</code>), since goreleaser overwrote them on <code>v1.2.0</code> and <code>v1.2.2</code>; verify <code>go list -m github.com/donaldgifford/docz@v1.3.0</code> resolves from the proxy.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Post-tag <code>dont-release</code> PR (Decision 6 — one bookkeeping PR carrying both the flips and the backfill): flip DESIGN-0012 → Implemented and IMPL-0017 → Completed; set <code>updated: enabled: true</code> in this repo's <code>.docz.yaml</code>; run <code>docz update</code> and commit the backfill (every document gains <code>updated:</code>, every README re-renders with the <code>Created</code> / <code>Updated</code> layout); run <code>docz update --dry-run</code> again on the result and confirm it prints nothing — the convergence proof on real history.</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Comment on docz-api #36 with the tag, the R12 text, and the <code>config_snapshot</code> key; note on claude-skills #95 that the config and workflow references need the block (templates unchanged).</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>make ci</code> green at the end; go-review pass on the docs diff.</span></li>
+</ul>
+<h5 id="success-criteria-4">Success Criteria</h5>
+<ul>
+<li><code>v1.3.0</code> tagged, published with the real release notes, and resolvable
+from <code>proxy.golang.org</code>.</li>
+<li><code>make test-consumer</code> green against the promoted surface, and proven red
+on a rename.</li>
+<li>DESIGN-0012 Implemented, IMPL-0017 Completed, this repo enabled and
+converged (<code>docz update --dry-run</code> silent on <code>main</code>).</li>
+<li>docz-api #36 unblocked with everything it needs to start.</li>
+</ul>
+</div>
+
+</section>
+<section class="panel" id="p-changes">
+<h2 class="panel-title">Changes</h2>
+<h3 id="file-changes">File Changes</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pkg/doczcore/docwrite/status.go</code></td>
+<td>Modify</td>
+<td><code>findScalarValue</code> / <code>parseScalarValue</code> generalization; <code>SetStatus</code> becomes a wrapper</td>
+</tr>
+<tr>
+<td><code>pkg/doczcore/docwrite/updated.go</code></td>
+<td>Create</td>
+<td><code>SetUpdated</code>, <code>ErrUpdatedFieldUnsupported</code>, <code>insertFrontmatterLine</code></td>
+</tr>
+<tr>
+<td><code>pkg/doczcore/docwrite/updated_test.go</code></td>
+<td>Create</td>
+<td>Golden harness, error table, <code>FuzzSetUpdated</code></td>
+</tr>
+<tr>
+<td><code>pkg/doczcore/docwrite/testdata/golden/updated/</code></td>
+<td>Create</td>
+<td>Input/output fixtures</td>
+</tr>
+<tr>
+<td><code>pkg/doczcore/docwrite/doc.go</code></td>
+<td>Modify</td>
+<td>Four operations, upsert rationale</td>
+</tr>
+<tr>
+<td><code>pkg/doczcore/document/document.go</code></td>
+<td>Modify</td>
+<td><code>Frontmatter.Updated</code></td>
+</tr>
+<tr>
+<td><code>pkg/doczcore/document/document_test.go</code></td>
+<td>Modify</td>
+<td>Field parse cases</td>
+</tr>
+<tr>
+<td><code>pkg/doczcore/config/config.go</code></td>
+<td>Modify</td>
+<td><code>UpdatedConfig</code>, <code>Config.Updated</code>, default</td>
+</tr>
+<tr>
+<td><code>pkg/doczcore/config/config_test.go</code>, <code>parity_baseline_test.go</code>, <code>json_test.go</code></td>
+<td>Modify</td>
+<td>Decode / merge / dormancy / parity / shape pin</td>
+</tr>
+<tr>
+<td><code>internal/template/templates/docz_yaml.tmpl</code></td>
+<td>Modify</td>
+<td>Dormant <code>updated:</code> block</td>
+</tr>
+<tr>
+<td><code>.docz.example.yaml</code>, <code>.docz.yaml</code></td>
+<td>Modify</td>
+<td>The block (disabled until Phase 5)</td>
+</tr>
+<tr>
+<td><code>internal/gitlog/gitlog.go</code> (+ tests, testdata)</td>
+<td>Create</td>
+<td><code>git log -p</code> stream parser (Decision 1)</td>
+</tr>
+<tr>
+<td><code>cmd/git.go</code></td>
+<td>Modify</td>
+<td><code>WorkTreeState</code>, <code>Change</code>, grown <code>GitResolver</code>, <code>realGit.Dir</code>, scriptable <code>staticGit</code></td>
+</tr>
+<tr>
+<td><code>cmd/git_test.go</code>, <code>cmd/git_integration_test.go</code></td>
+<td>Modify / Create</td>
+<td>Stub tests; hermetic real-git test</td>
+</tr>
+<tr>
+<td><code>cmd/root.go</code></td>
+<td>Modify</td>
+<td>Wire <code>realGit{Dir: repoRoot}</code></td>
+</tr>
+<tr>
+<td><code>cmd/update.go</code></td>
+<td>Modify</td>
+<td>Once-per-run probe, <code>stampUpdated</code>, layout selection</td>
+</tr>
+<tr>
+<td><code>cmd/create.go</code>, <code>cmd/status.go</code>, <code>cmd/list.go</code></td>
+<td>Modify</td>
+<td>Command-time stamps; JSON/text/CSV columns</td>
+</tr>
+<tr>
+<td><code>cmd/update_test.go</code>, <code>create_test.go</code>, <code>status_test.go</code>, <code>list_test.go</code></td>
+<td>Modify</td>
+<td>Convergence table, dormancy proof, guards, shapes</td>
+</tr>
+<tr>
+<td><code>internal/index/index.go</code> (+ test)</td>
+<td>Modify</td>
+<td><code>Layout</code> parameter, enabled header</td>
+</tr>
+<tr>
+<td><code>test/consumer/consumer_v13_test.go</code></td>
+<td>Create</td>
+<td>R12 proof</td>
+</tr>
+<tr>
+<td><code>README.md</code>, <code>CLAUDE.md</code></td>
+<td>Modify</td>
+<td>Living docs</td>
+</tr>
+<tr>
+<td><code>docs/design/0008-*.md</code></td>
+<td>Modify</td>
+<td>R12 clause</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-plan">Testing Plan</h3>
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><div class="text"><code>docwrite</code>: status goldens byte-identical; updated goldens; error
+table with on-disk-unchanged assertions; <code>FuzzSetUpdated</code></div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text"><code>document</code>: <code>Updated</code> present / absent / quoted; leniency unchanged</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text"><code>config</code>: decode / defaults / merge / dormancy / parity; json tag and
+shape pins extended</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text"><code>internal/gitlog</code>: parser table on real + synthetic captures; fuzz</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text"><code>cmd</code>: convergence rows (each with a zero-write second run); dormancy
+proof via <code>staticGit.Calls</code>; shallow / unavailable / write-error
+guards; dry-run pins; <code>create</code> and <code>status set</code> stamps; layout tests</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text">Real git: hermetic <code>git init</code> integration test incl. rename and
+shallow clone</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text"><code>test/consumer</code>: R12 proof, verified red on rename</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text">Dogfood: <code>docz update --dry-run</code> silent on <code>main</code> after the post-tag PR</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text"><code>make ci</code> green at the end of every phase</div></li>
+</ul>
+
+</section>
+<section class="panel" id="p-dependencies">
+<h2 class="panel-title" id="dependencies">Dependencies</h2>
+<ul>
+<li><strong>DESIGN-0012</strong> — approved; all eight decisions locked 2026-09-12</li>
+<li><strong>INV-0008</strong> — Concluded; the convergence analysis and Decisions 1–6</li>
+<li><strong><code>v1.2.2</code></strong> — this branch's base; nothing else is in flight, so the next
+<code>minor</code> is <code>v1.3.0</code> (the R12 text assumes it)</li>
+<li><strong>git ≥ 2.21</strong> on developer machines and CI runners (<code>%cs</code>); no new Go
+module dependencies — <code>go.mod</code> stays cobra + yaml</li>
+<li><strong>docz-api #36</strong> — downstream, blocked on the tag; nothing here waits on it</li>
+</ul>
+
+</section>
+<section class="panel" id="p-open-questions">
+<h2 class="panel-title" id="open-questions">Open questions</h2>
+<ul class="heading-list">
+<li><a href="#1-where-does-the-git-log--p-stream-parser-live">1. Where does the git log -p stream parser live?</a></li>
+<li><a href="#2-pr-and-release-strategy">2. PR and release strategy?</a></li>
+<li><a href="#3-does-the-real-git-integration-test-cover-the-shallow-clone-path">3. Does the real-git integration test cover the shallow-clone path?</a></li>
+<li><a href="#4-should-docz-update-get-a-flag-to-skip-the-stamp-pass">4. Should docz update get a flag to skip the stamp pass?</a></li>
+<li><a href="#5-does-the-updated-column-also-appear-in-docz-list---formatcsv">5. Does the Updated column also appear in docz list --format=csv?</a></li>
+<li><a href="#6-where-does-the-dogfood-backfill-in-this-repo-land">6. Where does the dogfood backfill in this repo land?</a></li>
+<li><a href="#7-does-the-resolver-stop-reading-git-log--p-early">7. Does the resolver stop reading git log -p early?</a></li>
+<li><a href="#8-what-clock-does-today-use-for-an-edit-time-stamp">8. What clock does &#34;today&#34; use for an edit-time stamp?</a></li>
+</ul>
+<p>All eight resolved <strong>(a)</strong> on 2026-09-12; see <a href="#decisions">Decisions</a>. The
+options are kept for the alternatives, which record what was weighed. Each
+question lists the recommended option first as <strong>(a)</strong>.</p>
+<details class="expand" id="1-where-does-the-git-log--p-stream-parser-live" open>
+<summary>1. Where does the <code>git log -p</code> stream parser live?</summary>
+<div class="body">
+<p><strong>Resolved: (a)</strong> — locked 2026-09-12; see <a href="#decisions">Decisions</a>.</p>
+<p>The parser is pure (reader in, <code>Commit</code> out, no <code>exec</code>), the only
+non-trivial logic in the git work, and the thing most worth fuzzing.</p>
+<ul>
+<li class="option recommended"><strong>a. (Recommended)</strong> A new <code>internal/gitlog</code> package. Bytes-in/values-out
+like the rest of the module, parallel tests (<code>cmd/</code> tests must stay
+serial), a fuzz target, and <code>cmd/git.go</code> stays what it is today — process
+plumbing. Private, so it adds nothing to the semver surface.</li>
+<li class="option">b. In <code>cmd/</code> next to <code>realGit</code>. One fewer package, but the parser's tests
+join the serial <code>cmd/</code> suite and the fuzz target sits beside Cobra globals.</li>
+<li class="option">c. In <code>pkg/doczcore</code>. Rejected by construction: the public core is
+git-free (ADR-0001 Decision 5), and the parser only exists because of git.</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="2-pr-and-release-strategy" open>
+<summary>2. PR and release strategy?</summary>
+<div class="body">
+<p><strong>Resolved: (a)</strong> — locked 2026-09-12; see <a href="#decisions">Decisions</a>.</p>
+<ul>
+<li class="option recommended"><strong>a. (Recommended)</strong> One <code>minor</code> PR carrying all five phases, phases as
+commit boundaries, then the post-tag <code>dont-release</code> PR — the IMPL-0015 and
+IMPL-0016 shape (#78 → <code>v1.1.0</code> → #79; #84 → <code>v1.2.0</code> → #90), which has
+now worked cleanly twice. Review still reads phase by phase.</li>
+<li class="option">b. Per-phase <code>dont-release</code> PRs with a final <code>minor</code>. More checkpoints,
+five times the CI and merge overhead, and the stacked-PR auto-close gotcha
+to manage.</li>
+<li class="option">c. Two releases: Phases 1–2 as a <code>minor</code> (the library surface), Phases 3–5
+as a second <code>minor</code> (the CLI). Would ship a public <code>SetUpdated</code> and
+<code>Frontmatter.Updated</code> that nothing populates — a contract without a
+producer.</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="3-does-the-real-git-integration-test-cover-the-shallow-clone-path" open>
+<summary>3. Does the real-git integration test cover the shallow-clone path?</summary>
+<div class="body">
+<p><strong>Resolved: (a)</strong> — locked 2026-09-12; see <a href="#decisions">Decisions</a>.</p>
+<ul>
+<li class="option recommended"><strong>a. (Recommended)</strong> Yes — <code>git clone --depth 1 file://&lt;tmp repo&gt;</code> inside
+the same test, assert <code>Shallow()</code> is true there, and run the update pass
+against it to see the single warning and zero writes end to end. It is
+the one failure mode that writes <em>plausible</em> wrong dates silently, so it
+deserves a real-git proof, not just a stub.</li>
+<li class="option">b. Stub only: <code>staticGit.ShallowFn</code> returns true in a <code>cmd/update</code> test.
+Cheaper, but never exercises <code>rev-parse --is-shallow-repository</code> for real.</li>
+<li class="option">c. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="4-should-docz-update-get-a-flag-to-skip-the-stamp-pass" open>
+<summary>4. Should <code>docz update</code> get a flag to skip the stamp pass?</summary>
+<div class="body">
+<p><strong>Resolved: (a)</strong> — locked 2026-09-12; see <a href="#decisions">Decisions</a>.</p>
+<ul>
+<li class="option recommended"><strong>a. (Recommended)</strong> No flag. The config block is the switch, a shallow
+clone already skips with a warning, and <code>--dry-run</code> shows what would
+happen. Every flag is contract; add one when a user needs it, not before.</li>
+<li class="option">b. Add <code>--no-updated</code> (or <code>--no-stamp</code>) for one-off runs — e.g. a CI drift
+check that wants a quiet run on a shallow clone.</li>
+<li class="option">c. An environment variable (<code>DOCZ_NO_STAMP=1</code>) for CI without touching the
+CLI contract.</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="5-does-the-updated-column-also-appear-in-docz-list---formatcsv" open>
+<summary>5. Does the <code>Updated</code> column also appear in <code>docz list --format=csv</code>?</summary>
+<div class="body">
+<p><strong>Resolved: (a)</strong> — locked 2026-09-12; see <a href="#decisions">Decisions</a>.</p>
+<p>DESIGN-0012 specifies text (enabled-only) and JSON (<code>omitempty</code>); CSV was
+not mentioned.</p>
+<ul>
+<li class="option recommended"><strong>a. (Recommended)</strong> Yes, under the same enabled-only rule as the text
+table, so the three formats agree on what a document has.</li>
+<li class="option">b. CSV unchanged; JSON is the machine-readable path and CSV consumers get
+a stable column set.</li>
+<li class="option">c. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="6-where-does-the-dogfood-backfill-in-this-repo-land" open>
+<summary>6. Where does the dogfood backfill in this repo land?</summary>
+<div class="body">
+<p><strong>Resolved: (a)</strong> — locked 2026-09-12; see <a href="#decisions">Decisions</a>.</p>
+<p>Enabling the block here rewrites every document (35+ files) and every
+README table.</p>
+<ul>
+<li class="option recommended"><strong>a. (Recommended)</strong> In the same post-tag <code>dont-release</code> PR as the status
+flips — one bookkeeping PR per release, matching DESIGN-0012's rollout
+item 4 and the #79 / #90 pattern. The diff is large but mechanical and
+reviewable by <code>docz update --dry-run</code> being silent afterward.</li>
+<li class="option">b. A separate PR so the backfill reviews alone and the status flips stay
+a two-line change.</li>
+<li class="option">c. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="7-does-the-resolver-stop-reading-git-log--p-early" open>
+<summary>7. Does the resolver stop reading <code>git log -p</code> early?</summary>
+<div class="body">
+<p><strong>Resolved: (a)</strong> — locked 2026-09-12; see <a href="#decisions">Decisions</a>.</p>
+<p>A full history is unbounded, but the answer is almost always in the first
+or second commit.</p>
+<ul>
+<li class="option recommended"><strong>a. (Recommended)</strong> Stop early: once the parser returns, close the
+process's stdout and <code>Wait</code>, treating the resulting broken-pipe exit as
+success. Cost stays proportional to the answer, not the history.</li>
+<li class="option">b. Read to EOF. Simplest process handling — no special-cased exit status
+— with cost bounded by history size (8 ms for 594 lines here). Fine
+today; grows with every commit to every document.</li>
+<li class="option">c. Cap with <code>-n 50</code> and fall back to an uncapped read when nothing
+substantive is found. Bounded and simple, at the cost of a rare second
+process.</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="8-what-clock-does-today-use-for-an-edit-time-stamp" open>
+<summary>8. What clock does &quot;today&quot; use for an edit-time stamp?</summary>
+<div class="body">
+<p><strong>Resolved: (a)</strong> — locked 2026-09-12; see <a href="#decisions">Decisions</a>.</p>
+<ul>
+<li class="option recommended"><strong>a. (Recommended)</strong> The local date from <code>r.Now()</code> — the same source and
+zone <code>created</code> already uses, and the same convention as git's <code>%cs</code>,
+which reports the committer's local date. A developer stamping at 23:00
+local and committing at 23:30 gets the same date from both paths.</li>
+<li class="option">b. UTC. Deterministic across machines, but disagrees with both <code>created</code>
+and <code>%cs</code> near midnight, which manufactures exactly the one-write churn
+case Decision 3 tolerates only as rare.</li>
+<li class="option">c. Other.</li>
+</ul>
+</div>
+</details>
+
+</section>
+<section class="panel" id="p-decisions">
+<h2 class="panel-title" id="decisions">Decisions</h2>
+<p>All eight open questions resolved <strong>(a)</strong> on 2026-09-12.</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Question</th>
+<th>Resolution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Stream parser home</td>
+<td>New <code>internal/gitlog</code> package — pure, parallel tests, fuzzable, private; <code>cmd/git.go</code> stays process plumbing</td>
+</tr>
+<tr>
+<td>2</td>
+<td>PR / release strategy</td>
+<td>One <code>minor</code> PR carrying all five phases as commit boundaries → <code>v1.3.0</code>, then a post-tag <code>dont-release</code> PR (the #84 → #90 shape)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Shallow-clone integration proof</td>
+<td>Yes — <code>git clone --depth 1 file://…</code> in the real-git test; assert <code>Shallow()</code> true and the pass warns once and writes nothing</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Skip flag on <code>docz update</code></td>
+<td>No flag — the config block is the switch; a shallow clone already skips with a warning; <code>--dry-run</code> previews</td>
+</tr>
+<tr>
+<td>5</td>
+<td>CSV <code>Updated</code> column</td>
+<td>Yes, under the same enabled-only rule as the text table, so text, CSV, and JSON agree</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Dogfood backfill placement</td>
+<td>Same post-tag <code>dont-release</code> PR as the status flips — one bookkeeping PR per release, verified by a silent <code>docz update --dry-run</code> afterward</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Early stop on <code>git log -p</code></td>
+<td>Stop early — close the process's stdout after the first substantive commit and <code>Wait</code>, treating the broken-pipe exit as success</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Clock for edit-time stamps</td>
+<td>Local date from <code>r.Now()</code> — the same source and zone as <code>created</code>, matching git's committer-local <code>%cs</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>DESIGN-0012
+— the design this implements; Decisions 1–8</li>
+<li>INV-0008
+— scoping; Observation 6 (convergence), Observation 9 (sizing)</li>
+<li>IMPL-0016 / IMPL-0015 — the phase, PR, and post-tag flip shape this
+follows</li>
+<li>IMPL-0011 / DESIGN-0005 — <code>SetStatus</code>, whose locator and goldens Phase 1
+generalizes without changing</li>
+<li>DESIGN-0008 — R7, R10, R11 and the R12 clause Phase 5 adds</li>
+<li>DESIGN-0004 §A / §H — <code>Runner</code> and the <code>GitResolver</code> seam</li>
+<li>ADR-0001 Decision 5 — bytes-in/values-out; narrow write helpers</li>
+<li><a href="https://github.com/donaldgifford/docz-api/issues/36">docz-api #36</a> — the
+downstream follow-up blocked on <code>v1.3.0</code></li>
+<li>claude-skills #95 — plugin references to update after release</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../impl/testdata/docz-impl-0017.orig.md</code>, sha256 <code>f20613f54b8aba14bcc622684f97b7139209457ca6e0fa392d369ea35138033d</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

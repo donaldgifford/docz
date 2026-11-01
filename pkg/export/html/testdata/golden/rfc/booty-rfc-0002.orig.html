@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="RFC-0002">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>RFC-0002: AWS Access Triage Slack Bot</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · RFC</p>
+<h1>AWS Access Triage Slack Bot</h1>
+<p class="summary"><strong>Status:</strong> Draft <strong>Author:</strong> Donald Gifford <strong>Date:</strong> 2026-05-10</p>
+<div class="meta">
+<span class="pill">RFC-0002</span>
+<span class="pill st-draft">Draft</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-05-10</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="problem" aria-controls="p-problem">Problem</button>
+<button type="button" data-tab="proposal" aria-controls="p-proposal">Proposal</button>
+<button type="button" data-tab="design" aria-controls="p-design">Design</button>
+<button type="button" data-tab="alternatives" aria-controls="p-alternatives">Alternatives</button>
+<button type="button" data-tab="implementation-phases" aria-controls="p-implementation-phases">Implementation Phases</button>
+<button type="button" data-tab="risks" aria-controls="p-risks">Risks</button>
+<button type="button" data-tab="success" aria-controls="p-success">Success</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<ul>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#problem-statement">Problem Statement</a></li>
+<li><a href="#proposed-solution">Proposed Solution</a></li>
+<li><a href="#design">Design</a>
+<ul>
+<li><a href="#architecture">Architecture</a></li>
+<li><a href="#conversation-flow">Conversation flow</a></li>
+<li><a href="#identity-resolution">Identity resolution</a></li>
+<li><a href="#pattern-classifier-phase-1-coverage">Pattern classifier (Phase 1 coverage)</a></li>
+<li><a href="#agent-loop-and-tool-belt">Agent loop and tool belt</a></li>
+<li><a href="#three-outcome-paths">Three outcome paths</a></li>
+<li><a href="#persistence-and-audit">Persistence and audit</a></li>
+<li><a href="#privacy-and-safety-controls">Privacy and safety controls</a></li>
+</ul>
+</li>
+<li><a href="#alternatives-considered">Alternatives Considered</a></li>
+<li><a href="#implementation-phases">Implementation Phases</a>
+<ul>
+<li><a href="#phase-1-deterministic-core-no-llm">Phase 1: Deterministic core (no LLM)</a></li>
+<li><a href="#phase-2-agent-loop">Phase 2: Agent loop</a></li>
+<li><a href="#phase-3-deep-investigation-tool">Phase 3: Deep investigation tool</a></li>
+<li><a href="#phase-4-exception-workflow-integration">Phase 4: Exception workflow integration</a></li>
+</ul>
+</li>
+<li><a href="#risks-and-mitigations">Risks and Mitigations</a></li>
+<li><a href="#success-criteria">Success Criteria</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+<h3 id="summary">Summary</h3>
+<p>Stand up a Slack bot in <code>#aws-access-support</code> that triages AWS access errors
+pasted by developers, resolves their identity context (Slack → Okta → AWS roles
+via SSO), and either provides self-serve guidance, files a routed JSM ticket
+with full context, or initiates an exception process for compliance-blocked
+requests. The bot is <strong>triage-only</strong> — it never modifies IAM directly. It is
+optimized for the long tail of operational errors (wrong profile, expired SSO,
+wrong region, SCP blocks) that make up the bulk of access support volume, not
+for the rare deep policy-chain analysis case.</p>
+
+</section>
+<section class="panel" id="p-problem">
+<h2 class="panel-title">Problem</h2>
+<h3 id="problem-statement">Problem Statement</h3>
+<p>The org has ~1,500 developers across 200+ AWS accounts authenticating via
+Okta-federated SSO, with permissions enforced through a mix of permission sets,
+identity-based policies, resource policies, permissions boundaries, and SCPs
+from Control Tower. When a developer hits an <code>AccessDenied</code> or related error,
+the current paths are:</p>
+<ol>
+<li>Ask in <code>#aws-access-support</code> and wait for a human triager</li>
+<li>File a JSM ticket and wait for the platform team</li>
+<li>Try to self-diagnose against runbooks scattered across docz wikis, Backstage,
+and Confluence</li>
+</ol>
+<p>Empirically, the majority of these issues are not policy-chain problems that
+require deep IAM analysis. They are operational:</p>
+<ul>
+<li>Expired SSO session</li>
+<li>Wrong AWS profile selected for the target account</li>
+<li>Wrong region (e.g., resource is in <code>us-east-2</code>, request hit <code>us-east-1</code>)</li>
+<li>Cross-account access where the user picked the wrong assumable role</li>
+<li>Action blocked by an SCP from Control Tower (Tier-2 OUs in particular)</li>
+<li>Action blocked by a permissions boundary on a developer-bootstrap role</li>
+<li>MFA-required action without an MFA-authenticated session</li>
+<li>Encoded authorization failure messages that haven't been decoded</li>
+<li>Resource genuinely doesn't exist (typo'd ARN, deleted resource)</li>
+<li>Service-linked role not yet created in the account</li>
+</ul>
+<p>A handful of these patterns cover most of the support load. The pattern match
+plus the user's identity context is enough to fully resolve the question for
+most threads — without needing an LLM, IAM simulation, or human triager. The
+remaining cases break down into:</p>
+<ul>
+<li><strong>Genuinely missing permission</strong> — the user has the right permission set but a
+specific action is missing; they need a policy update</li>
+<li><strong>Wrong access path</strong> — the user has another permission set or assumable role
+that already covers the action; they should use that instead</li>
+<li><strong>Exception required</strong> — the action is intentionally blocked at the org level
+(SCP, boundary, framework), and granting it requires an exception process</li>
+</ul>
+<p>In all three cases the bot's job is to <strong>identify which path applies and route
+correctly with full context attached</strong>, not to grant access.</p>
+<p>Today, that routing is done entirely by humans, and the routing decision is the
+slowest part of the pipeline. A 1-minute self-serve answer becomes a 4-hour wait
+for a human to read the same error and reach the same conclusion.</p>
+
+</section>
+<section class="panel" id="p-proposal">
+<h2 class="panel-title">Proposal</h2>
+<h3 id="proposed-solution">Proposed Solution</h3>
+<p>A Slack bot in <code>#aws-access-support</code> (and bot-allowed in any team channel on
+@-mention) that:</p>
+<ol>
+<li><strong>Detects access-error pastes</strong> automatically via patterns, or responds to
+explicit <code>@aws-helper</code> mentions</li>
+<li><strong>Parses the paste</strong> with deterministic extractors to pull error code,
+service, API call, principal ARN, resource ARN, account, region, and any SCP
+/ boundary / MFA indicators</li>
+<li><strong>Resolves the developer's identity</strong> (Slack user → Okta → AWS roles
+accessible via SSO + Backstage team ownership)</li>
+<li><strong>Classifies against known patterns</strong> (deterministic-first; ~70% of threads
+should match a known pattern and never invoke an LLM)</li>
+<li><strong>Falls back to an agent loop</strong> for ambiguous cases, with a bounded tool
+budget and structured tool I/O</li>
+<li><strong>Routes to one of three outcomes</strong>:
+<ul>
+<li><strong>Self-serve</strong>: bot replies in-thread with the fix or runbook link</li>
+<li><strong>Ticket with suggestion</strong>: bot drafts a JSM ticket with the specific
+access change needed, routed to the right component, with this thread
+linked</li>
+<li><strong>Exception process</strong>: bot identifies the org-level block (SCP, boundary,
+framework) and starts the documented exception workflow with the right
+approver chain</li>
+</ul>
+</li>
+</ol>
+<p>The bot <strong>never modifies IAM</strong>, <strong>never grants permission sets</strong>, and <strong>never
+approves anything</strong>. It is a fast, contextful triager that shortens the gap
+between &quot;developer is blocked&quot; and &quot;the right human is working on the right
+ticket.&quot;</p>
+
+</section>
+<section class="panel" id="p-design">
+<h2 class="panel-title" id="design">Design</h2>
+<ul class="heading-list">
+<li><a href="#architecture">Architecture</a></li>
+<li><a href="#conversation-flow">Conversation flow</a></li>
+<li><a href="#identity-resolution">Identity resolution</a></li>
+<li><a href="#pattern-classifier-phase-1-coverage">Pattern classifier (Phase 1 coverage)</a></li>
+<li><a href="#agent-loop-and-tool-belt">Agent loop and tool belt</a></li>
+<li><a href="#three-outcome-paths">Three outcome paths</a></li>
+<li><a href="#persistence-and-audit">Persistence and audit</a></li>
+<li><a href="#privacy-and-safety-controls">Privacy and safety controls</a></li>
+</ul>
+<h4 id="architecture">Architecture</h4>
+<pre class="mermaid">flowchart TB
+    subgraph Slack[&#34;Slack&#34;]
+        Channel[&#34;#aws-access-support&lt;br/&gt;+ @-mentions&#34;]
+        Thread[Thread state]
+    end
+
+    subgraph Adapter[&#34;Slack Adapter (Go)&#34;]
+        Events[slack-go events API]
+        Secret[Secret scanner&lt;br/&gt;pre-process]
+        Threads[(Thread context&lt;br/&gt;Postgres)]
+    end
+
+    subgraph Resolve[&#34;Identity Resolution&#34;]
+        Okta[Okta SCIM lookup]
+        SSO[SSO permission set&lt;br/&gt;mapping]
+        Backstage[Backstage team&lt;br/&gt;+ resource ownership]
+    end
+
+    subgraph Triage[&#34;Deterministic Triage&#34;]
+        Parse[Error parser&lt;br/&gt;regex + structured]
+        Classify[Pattern classifier&lt;br/&gt;known-cases registry]
+    end
+
+    subgraph Agent[&#34;Agent Loop&#34;]
+        Loop[Claude tool-use loop&lt;br/&gt;bounded budget]
+    end
+
+    subgraph Tools[&#34;Tool Belt&#34;]
+        direction TB
+        T1[decode_auth_message&lt;br/&gt;sts:DecodeAuthorizationMessage]
+        T2[lookup_principal_summary]
+        T3[recent_denies_for_principal&lt;br/&gt;CloudTrail last 1h]
+        T4[lookup_scp_for_account]
+        T5[lookup_boundary_for_role]
+        T6[backstage_resource_owner]
+        T7[kb_search&lt;br/&gt;docz wiki + runbooks]
+        T8[deep_investigate&lt;br/&gt;access-undenied core]
+        T9[draft_jsm_ticket]
+        T10[start_exception_workflow]
+    end
+
+    subgraph Out[&#34;Outputs&#34;]
+        SelfServe[Self-serve&lt;br/&gt;reply in thread]
+        Ticket[Drafted JSM ticket&lt;br/&gt;+ thread linked]
+        Exception[Exception workflow&lt;br/&gt;started, approvers paged]
+    end
+
+    Channel --&gt; Events
+    Events --&gt; Secret
+    Secret --&gt;|clean| Resolve
+    Secret --&gt;|secrets detected| Redact[Redact + warn user]
+    Resolve --&gt; Parse
+    Parse --&gt; Classify
+    Classify --&gt;|matched + clear path| Out
+    Classify --&gt;|ambiguous| Loop
+    Loop &lt;--&gt;|tool use| Tools
+    Tools --&gt; Loop
+    Loop --&gt; Out
+
+    style Classify fill:#e1f5ff
+    style Loop fill:#f0e1ff
+    style Secret fill:#ffe1e1
+</pre>
+<h4 id="conversation-flow">Conversation flow</h4>
+<p>A typical thread proceeds as:</p>
+<ol>
+<li>Developer pastes error or <code>@aws-helper</code> mentions with a question</li>
+<li>Bot runs the secret scanner; if anything looks like a credential, replies
+with a redacted warning, instructs rotation, and stops</li>
+<li>Bot resolves developer identity (cached per Slack user, refreshed hourly)</li>
+<li>Bot runs the parser and classifier</li>
+<li>If the classifier matches a known pattern with high confidence: bot posts the
+answer in-thread, optionally with a 👍 reaction action to take a follow-up
+step (file a ticket, etc.)</li>
+<li>If ambiguous or no match: bot enters the agent loop with a 12-call tool
+budget and 60-second wall-clock budget</li>
+<li>Agent emits a structured outcome: <code>SELF_SERVE</code>, <code>DRAFT_TICKET</code>,
+<code>START_EXCEPTION</code>, or <code>ESCALATE_TO_HUMAN</code></li>
+<li>Bot acts on the outcome (post message, draft ticket on user confirmation,
+page on-call)</li>
+<li>Thread is persisted with the outcome, all tool calls, and the linked identity
+for audit and future evals</li>
+</ol>
+<h4 id="identity-resolution">Identity resolution</h4>
+<p>Identity is the feature that distinguishes this bot from a generic
+LLM-with-AWS-docs helper. Resolution chain on every thread:</p>
+<ol>
+<li><strong>Slack user → Okta identity</strong>: Slack ID maps to Okta user via the existing
+Slack-Okta integration. Okta user has email, manager, department, and Okta
+group memberships</li>
+<li><strong>Okta groups → SSO permission sets</strong>: each Okta group maps to one or more
+permission sets in SSO, scoped to specific accounts. From this we know every
+(account, permission set) pair the developer can currently assume</li>
+<li><strong>Slack user → Backstage team</strong>: Backstage IDP catalog has team membership
+and resource ownership. From this we know which AWS accounts and resources
+the developer's team owns, vs. what they're trying to access</li>
+<li><strong>Cache</strong> the resolution result per Slack user with a 1-hour TTL, refreshed
+lazily</li>
+</ol>
+<p>This context is attached to every tool call as structured metadata, not as
+free-text in the model prompt. The agent loop never gets to decide who someone
+is; it gets a typed <code>UserContext</code> and reasons over it.</p>
+<h4 id="pattern-classifier-phase-1-coverage">Pattern classifier (Phase 1 coverage)</h4>
+<p>The classifier runs deterministic pattern matchers in priority order. A match
+short-circuits the pipeline and the bot replies without invoking the LLM.
+Day-one patterns:</p>
+<ul>
+<li><strong>Expired SSO session</strong>: error mentions <code>ExpiredToken</code>,
+<code>InvalidClientTokenId</code>, or
+<code>The security token included in the request is expired</code> → reply with the
+correct <code>aws sso login --profile X</code> command, where <code>X</code> comes from the user's
+SSO config</li>
+<li><strong>Wrong account</strong>: account ID in error ARN ≠ account ID resolvable from the
+user's likely profile → suggest the correct profile from their SSO permission
+sets</li>
+<li><strong>Wrong region</strong>: error mentions a region; resource ARN has a different region
+(or is in a global service the user wouldn't expect regional behavior on) →
+flag the mismatch</li>
+<li><strong>SCP explicit deny</strong>: error message contains
+<code>with an explicit deny in a service control policy</code> → look up the SCP for the
+target account, identify the specific deny statement, name the SCP and the
+owning OU, route to the SCP exception process</li>
+<li><strong>Permissions boundary deny</strong>: error message contains
+<code>with an explicit deny in a permissions boundary</code> → identify the boundary
+policy attached to the role, name the deny statement, route to the team that
+owns the bootstrap role</li>
+<li><strong>MFA required</strong>: error message contains <code>MultiFactorAuthentication</code> or
+condition key <code>aws:MultiFactorAuthPresent</code> → guide to MFA- authenticated
+session</li>
+<li><strong>Encoded auth message</strong>: response contains an
+<code>Encoded authorization failure message</code> → call
+<code>sts:DecodeAuthorizationMessage</code> server-side, re-classify against the decoded
+structured message</li>
+<li><strong>NoSuchEntity / NoSuchBucket / ResourceNotFound</strong>: not actually an IAM
+problem; either typo or stale reference. Reply asking the user to verify the
+ARN, optionally check Backstage for the canonical name</li>
+<li><strong>Service-linked role missing</strong>: specific error patterns per service (e.g.,
+<code>AWSServiceRoleFor*</code> not present) → guide to the one-time bootstrap</li>
+</ul>
+<p>Each pattern is a Go struct implementing a <code>Pattern</code> interface with
+<code>Match(ctx, ParsedError) (Verdict, bool)</code>. New patterns ship as code PRs with
+tests, not as runtime config.</p>
+<h4 id="agent-loop-and-tool-belt">Agent loop and tool belt</h4>
+<p>When the classifier doesn't match cleanly, the agent loop takes over. The loop
+is bounded:</p>
+<ul>
+<li>Max 12 tool calls per thread</li>
+<li>60-second total wall clock</li>
+<li>Structured tool I/O — every tool returns typed Go structs that are serialized
+to the model as JSON; no free-text tool returns</li>
+<li>All claims about specific SCPs, roles, policies, or owners must be grounded in
+a tool result; the model cannot assert specifics from general knowledge</li>
+</ul>
+<p>The tool belt splits into three categories:</p>
+<p><strong>Context-gathering (read-only, side-effect-free):</strong></p>
+<ul>
+<li><code>decode_auth_message</code> — wraps <code>sts:DecodeAuthorizationMessage</code></li>
+<li><code>lookup_principal_summary</code> — IAM role summary, attached policies, boundary,
+recent assume-role activity</li>
+<li><code>recent_denies_for_principal</code> — CloudTrail denies for this principal in the
+last hour, helps identify pattern of failed attempts</li>
+<li><code>lookup_scp_for_account</code> — walks org tree, returns SCPs and the OU attachment
+chain</li>
+<li><code>lookup_boundary_for_role</code> — fetches and parses the boundary policy</li>
+<li><code>backstage_resource_owner</code> — given a resource ARN, returns the owning team and
+on-call rotation</li>
+<li><code>kb_search</code> — hybrid keyword + vector search over docz wiki and runbooks</li>
+</ul>
+<p><strong>Deep analysis (heavy, only for residual cases):</strong></p>
+<ul>
+<li><code>deep_investigate</code> — calls the access-undenied-aws Go port (separate RFC); the
+deterministic policy walker. Only invoked when other tools haven't produced a
+clear cause and the case looks like an actual policy-chain problem, which
+empirically is the minority of cases</li>
+</ul>
+<p><strong>Action (gated, never modifies IAM):</strong></p>
+<ul>
+<li><code>draft_jsm_ticket</code> — creates a draft JSM ticket with the thread linked, the
+user's context attached, and a specific suggestion (which permission set,
+which policy statement, etc.). Requires user confirmation (👍 reaction) before
+submission</li>
+<li><code>start_exception_workflow</code> — files the exception workflow ticket with the
+framework owner team for SCP / boundary / framework blocks</li>
+</ul>
+<h4 id="three-outcome-paths">Three outcome paths</h4>
+<p>Every thread terminates in one of:</p>
+<ol>
+<li><strong>Self-serve resolution</strong> — bot's reply in-thread is the answer. User
+unblocks themselves. Bot reacts ✅ on the user's first confirmation message,
+or auto-closes after 24h of inactivity</li>
+<li><strong>Drafted ticket with suggestion</strong> — bot identified that the user needs an
+access change, knows which one, and drafts the JSM ticket with the specific
+permission set or policy change needed. The ticket is created on user 👍,
+routed to the right component, with the Slack thread linked as evidence</li>
+<li><strong>Exception process</strong> — bot identified an org-level block. The exception
+workflow ticket is filed with the framework owner team (e.g., platform-aws
+for SCP exceptions, security for boundary exceptions), with the original
+error, the specific SCP/boundary statement, and the user's identity context
+attached</li>
+</ol>
+<h4 id="persistence-and-audit">Persistence and audit</h4>
+<p>Every thread persists to Postgres with:</p>
+<ul>
+<li>Slack thread ID, channel ID, parent message ID</li>
+<li>Resolved Okta identity at the time of the thread</li>
+<li>Parsed error structure</li>
+<li>All tool calls (name, input, output, latency, cost)</li>
+<li>All model invocations (prompt, response, tokens, cost)</li>
+<li>Final outcome and any tickets / actions filed</li>
+<li>User reactions (acceptance signal for evals)</li>
+</ul>
+<p>This data feeds Langfuse traces for evals and future fine-tuning, and provides a
+full audit trail when security needs to review what the bot did or didn't say.</p>
+<h4 id="privacy-and-safety-controls">Privacy and safety controls</h4>
+<ul>
+<li><strong>Secret scanner</strong> runs on every paste before any other processing. Detects
+AWS access keys, session tokens, JWTs, and common credential formats. On
+detection: the original message is logged only with the secret redacted, the
+user is warned in-thread, and rotation instructions are linked. The bot stops
+processing that paste</li>
+<li><strong>Identity-aware filtering</strong> on every tool result. The bot will not surface
+details about resources, principals, or accounts the asking developer is not
+entitled to know about. A junior dev asking about an unrelated production
+account gets &quot;I can't share details about that account; ask your team lead&quot;</li>
+<li><strong>Prompt injection resistance</strong>: pasted content is treated as untrusted user
+input. It is provided to the model as tool-result data with structural
+separation, never appended to the system prompt</li>
+<li><strong>No live IAM modification</strong> under any circumstance, regardless of what the
+user asks for or the error suggests. Action paths produce drafted tickets and
+exception workflows only</li>
+<li><strong>Per-channel allowlist</strong>: bot only operates in <code>#aws-access-support</code> and
+channels that have explicitly opted in via a slash command, to prevent
+accidental cross-team data exposure</li>
+</ul>
+
+</section>
+<section class="panel" id="p-alternatives">
+<h2 class="panel-title">Alternatives</h2>
+<h3 id="alternatives-considered">Alternatives Considered</h3>
+<p><strong>Generic LLM-with-AWS-docs helper bot.</strong> Off-the-shelf chatbots can explain
+what <code>s3:CreateBucket</code> does in the abstract. They can't tell a developer that
+the SCP <code>DenyS3BucketCreationOutsideApprovedAccounts</code> on OU <code>Tier2-Apps</code> is
+what's blocking them, that the bucket they want already has an owner in
+Backstage, or that the JSM ticket should be routed to <code>PLATFORM-AWS</code> with tag
+<code>scp-exception</code>. The org-context integration is the value; a generic helper has
+none of it. Rejected as insufficient.</p>
+<p><strong>Pure deterministic rule engine, no LLM.</strong> Considered. Phase 1 of this RFC is
+essentially this — and Phase 1 alone probably handles 60-70% of threads. The
+reason to allow an agent loop in later phases is the long tail of cases where
+multiple patterns partially match, where the right answer requires correlation
+across CloudTrail history and identity context, or where the error is genuinely
+novel. A pure rule engine handles the bulk efficiently but degrades to &quot;I don't
+know, paging human&quot; on too many threads. Phased approach (rules first, agent
+later) gets the best of both.</p>
+<p><strong>Live IAM modification from chat.</strong> A 👍 reaction on the bot's suggestion could
+in principle trigger the actual permission change via the access provisioning
+system. Rejected on security grounds: a compromised Slack session would become a
+permission-escalation path, the audit trail is muddier than a JSM ticket, and
+the principle of &quot;chat is not a control plane for production IAM&quot; is
+non-negotiable. The bot drafts; humans approve through normal review.</p>
+<p><strong>Build into the existing JSM bot.</strong> Considered. JSM has a Slack integration for
+ticket creation but isn't conversational, doesn't do real-time error parsing,
+and doesn't have the identity-resolution layer. Treating this as a JSM-bot
+extension would tightly couple us to JSM's product roadmap and constrain us to
+ticket-shaped interactions. The right model is &quot;this bot files JSM tickets when
+appropriate&quot; not &quot;this bot is a JSM frontend.&quot;</p>
+<p><strong>Use the access-undenied-aws Python tool directly.</strong> The upstream tool is
+event-stream oriented (CloudTrail events as input), not conversational, and runs
+synchronously per event. A Slack-driven triage flow has different shape
+(multi-turn, identity-aware, escalation-routed). The Go port of
+access-undenied-aws is a tool the bot can invoke (<code>deep_investigate</code>), not the
+bot itself.</p>
+
+</section>
+<section class="panel" id="p-implementation-phases">
+<h2 class="panel-title" id="implementation-phases">Implementation Phases</h2>
+<h4 id="phase-1-deterministic-core-no-llm">Phase 1: Deterministic core (no LLM)</h4>
+<p><strong>Goal:</strong> Working bot that handles the 60-70% of threads matchable by known
+patterns, ships fast, builds usage data for later phases.</p>
+<ul>
+<li>Slack adapter (slack-go events API, thread-aware)</li>
+<li>Secret scanner (existing libs: trufflehog patterns or gitleaks)</li>
+<li>Error parser (regex + structured field extraction)</li>
+<li>Identity resolver (Okta SCIM, SSO config, Backstage)</li>
+<li>Pattern classifier with the eight day-one patterns</li>
+<li>Self-serve replies and JSM ticket drafting (manual confirmation)</li>
+<li>Postgres persistence</li>
+<li>OTel tracing to Langfuse</li>
+</ul>
+<p><strong>Exit criteria:</strong> ≥50% of <code>#aws-access-support</code> threads resolved self-serve in
+&lt;60 seconds; zero secret leaks in audit; pattern false- positive rate &lt;5%.</p>
+<h4 id="phase-2-agent-loop">Phase 2: Agent loop</h4>
+<p><strong>Goal:</strong> Handle the residual cases that don't match a clean pattern.</p>
+<ul>
+<li>Agent loop with 12-call tool budget</li>
+<li>Context-gathering tool belt (decode, principal summary, CloudTrail
+correlation, SCP lookup, boundary lookup, Backstage)</li>
+<li>KB search over docz wiki and runbooks</li>
+<li>Structured outcome emission (<code>SELF_SERVE</code> / <code>DRAFT_TICKET</code> / <code>START_EXCEPTION</code>
+/ <code>ESCALATE_TO_HUMAN</code>)</li>
+<li>Multi-turn conversation support (clarifying questions)</li>
+</ul>
+<p><strong>Exit criteria:</strong> ≥75% of threads resolved without human escalation; agent loop
+cost per thread under $0.10 average; agent hallucination rate (asserting facts
+not in tool results) &lt;1%, measured via Langfuse evals.</p>
+<h4 id="phase-3-deep-investigation-tool">Phase 3: Deep investigation tool</h4>
+<p><strong>Goal:</strong> Add the policy-chain analyzer (the Go port of access-undenied-aws —
+separate RFC) as the <code>deep_investigate</code> tool.</p>
+<ul>
+<li>Wire the deterministic policy walker as a tool the agent can call</li>
+<li>Cross-account assume-role for <code>iam:SimulateCustomPolicy</code></li>
+<li>Vault JIT credentials per-account (reuses agent platform infrastructure)</li>
+</ul>
+<p><strong>Exit criteria:</strong> Deep investigation invoked on &lt;10% of threads, returns a
+clear cause on &gt;80% of those, and is the source of cited evidence in any
+policy-change tickets the bot drafts.</p>
+<h4 id="phase-4-exception-workflow-integration">Phase 4: Exception workflow integration</h4>
+<p><strong>Goal:</strong> Close the loop on framework-blocked requests.</p>
+<ul>
+<li>Exception workflow ticket templates per framework (SCP, boundary, Wiz
+framework, etc.)</li>
+<li>Direct integration with the JSM-orchestrated Okta group assignment workflow
+for permission-set escalations</li>
+<li>Auto-population of approver chain from the framework owner registry</li>
+</ul>
+<p><strong>Exit criteria:</strong> Median time from &quot;blocked dev posts in Slack&quot; to &quot;correct
+exception workflow ticket open with approver paged&quot; &lt;5 minutes.</p>
+
+</section>
+<section class="panel" id="p-risks">
+<h2 class="panel-title">Risks</h2>
+<h3 id="risks-and-mitigations">Risks and Mitigations</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Impact</th>
+<th>Likelihood</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hallucinated SCP / role / policy names</td>
+<td class="high">High — incorrect routing, dev sent on wild goose chase</td>
+<td class="medium">Medium without controls</td>
+<td>All specifics must come from tool results; structured tool I/O; periodic Langfuse evals on assertion-grounding</td>
+</tr>
+<tr>
+<td>Pasted secrets persisted in logs</td>
+<td class="high">High — credential exposure</td>
+<td class="high">High without controls</td>
+<td>Secret scanner runs first; original paste never persisted; redacted version only</td>
+</tr>
+<tr>
+<td>Confident wrong answers eroding trust</td>
+<td class="high">High — devs stop using the bot</td>
+<td class="medium">Medium</td>
+<td>Confidence thresholds, explicit &quot;I'm not sure&quot; path, escalate-to-human always one click away</td>
+</tr>
+<tr>
+<td>Cross-tenant info leakage</td>
+<td class="high">High — privacy / compliance</td>
+<td class="medium">Medium</td>
+<td>Identity-aware filtering on every tool result; per-channel allowlist; audit trail</td>
+</tr>
+<tr>
+<td>Prompt injection via paste content</td>
+<td class="medium">Medium — bot misbehavior</td>
+<td class="high">High (hostile pastes are easy)</td>
+<td>Pasted content as tool-result data only, never appended to system prompt; structural separation</td>
+</tr>
+<tr>
+<td>LLM cost runaway under volume spike</td>
+<td class="medium">Medium — budget overrun</td>
+<td class="medium">Medium</td>
+<td>Phase 1 is LLM-free; Phase 2 has bounded tool budget; per-day cost cap with auto-degrade to deterministic-only</td>
+</tr>
+<tr>
+<td>Bot becomes critical path, fails noisily</td>
+<td class="medium">Medium — outages block support</td>
+<td class="low">Low</td>
+<td>Bot is additive to existing human triage, not a replacement; graceful degradation to &quot;post a message saying I'm down&quot;</td>
+</tr>
+<tr>
+<td>SCP / framework owner data goes stale</td>
+<td class="medium">Medium — wrong routing</td>
+<td class="medium">Medium</td>
+<td>Owner registry sourced from Backstage catalog, single source of truth; periodic reconciliation</td>
+</tr>
+<tr>
+<td>Devs use bot to probe other teams' access</td>
+<td class="low">Low — abuse</td>
+<td class="low">Low</td>
+<td>Identity-aware filtering, audit trail, channel allowlist</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-success">
+<h2 class="panel-title">Success</h2>
+<h3 id="success-criteria">Success Criteria</h3>
+<p><strong>Phase 1 (deterministic):</strong></p>
+<div class="grid g2">
+<div class="card ok">≥50% of threads resolved self-serve in &lt;60 seconds median</div>
+<div class="card ok">Pattern false-positive rate &lt;5%, measured via user follow-up (&quot;that didn't fix
+it&quot;) signal</div>
+<div class="card ok">Zero secret-leak incidents in monthly audit</div>
+<div class="card ok">100% of threads logged with linked identity for audit</div>
+</div>
+<p><strong>Phase 2 (agent loop):</strong></p>
+<div class="grid g2">
+<div class="card ok">≥75% of threads resolved without human escalation</div>
+<div class="card ok">Median time-to-first-useful-reply &lt;10 seconds</div>
+<div class="card ok">Agent loop cost per thread &lt;$0.10 average</div>
+<div class="card ok">Agent hallucination rate &lt;1% on Langfuse evals (sample of 100/week)</div>
+</div>
+<p><strong>Phase 3 (deep investigation):</strong></p>
+<div class="grid g2">
+<div class="card ok">Deep investigation invoked on &lt;10% of threads (the residual hard cases, not
+the bulk)</div>
+<div class="card ok">Cited cause in ≥80% of policy-change tickets, traceable to the tool result</div>
+</div>
+<p><strong>Phase 4 (exception workflow):</strong></p>
+<div class="grid g2">
+<div class="card ok">Median time from blocked dev → correct exception ticket open with approver
+paged: &lt;5 minutes</div>
+<div class="card ok">≥90% of exception tickets routed to the correct framework owner on first try</div>
+</div>
+<p><strong>Org-level outcomes:</strong></p>
+<div class="grid g2">
+<div class="card ok">50% reduction in median time-to-resolve for AWS access tickets (baseline
+measured pre-rollout from JSM)</div>
+<div class="card ok">Reduction in <code>#aws-access-support</code> human-triager hours per week (track via
+Slack analytics + on-call rotation surveys)</div>
+</div>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>Upstream:
+<a href="https://github.com/tenable/access-undenied-aws">tenable/access-undenied-aws</a>
+— Python policy-chain analyzer, source of inspiration for Phase 3's
+<code>deep_investigate</code> tool</li>
+<li>Related (forthcoming): RFC for the Go port of access-undenied-aws, which
+becomes the <code>deep_investigate</code> tool</li>
+<li>Related (forthcoming): RFC for the agentic Go framework / SDK that this bot
+will be built on (extracted from the server price tracker's interface-driven
+LLM client)</li>
+<li>Internal: Agent platform RFC + DESIGN suite (AgentType / AgentRun CRDs,
+harness containers, Vault JIT) — this bot is a candidate first consumer</li>
+<li>Internal: Wiz operator RFC + Backstage-to-Wiz sync — same identity / ownership
+data flows</li>
+<li>Internal: docz wiki (MkDocs) — KB search target for the <code>kb_search</code> tool</li>
+<li>AWS docs:
+<a href="https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html">Service Control Policies</a>,
+<a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_boundaries.html">Permissions Boundaries</a>,
+<a href="https://docs.aws.amazon.com/STS/latest/APIReference/API_DecodeAuthorizationMessage.html">DecodeAuthorizationMessage</a></li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../rfc/testdata/booty-rfc-0002.orig.md</code>, sha256 <code>fb2f9207b0fc20535a09ae3a27a2448bdee5d9caf5a8262d8547a89bebfb35d8</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+<script>/* mermaid 12.0.0 */</script>
+<script>/*
+ * Draws every pre.mermaid with the mermaid global, in the theme's tokens,
+ * and draws again when the mode changes (DESIGN-0025 §7). The theme
+ * variables follow ui/'s mermaidThemeFromTokens. A diagram whose source
+ * fails to parse keeps its source, with the error beneath it, rather than
+ * leaving a blank box. securityLevel strict keeps a diagram's labels from
+ * carrying script or links.
+ */
+(function () {
+  "use strict";
+  if (!window.mermaid || !window.docz) return;
+
+  var blocks = Array.prototype.slice.call(document.querySelectorAll("pre.mermaid"));
+  blocks.forEach(function (pre) {
+    pre.setAttribute("data-source", pre.textContent);
+  });
+
+  function themeVariables() {
+    var p = window.docz.palette([
+      "--color-bg-raised",
+      "--color-bg-elevated",
+      "--color-border-strong",
+      "--color-fg-primary",
+      "--color-fg-tertiary",
+    ]);
+    var raised = p["--color-bg-raised"];
+    var elevated = p["--color-bg-elevated"];
+    var border = p["--color-border-strong"];
+    var fg = p["--color-fg-primary"];
+    return {
+      primaryColor: elevated,
+      primaryBorderColor: border,
+      primaryTextColor: fg,
+      secondaryColor: raised,
+      secondaryBorderColor: border,
+      tertiaryColor: raised,
+      tertiaryBorderColor: border,
+      mainBkg: elevated,
+      nodeBorder: border,
+      lineColor: p["--color-fg-tertiary"],
+      clusterBkg: raised,
+      clusterBorder: border,
+      titleColor: fg,
+      edgeLabelBackground: raised,
+      fontFamily: "monospace",
+      fontSize: "14px",
+    };
+  }
+
+  var run = 0;
+
+  function draw() {
+    run++;
+    window.mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables: themeVariables(),
+    });
+    blocks.forEach(function (pre, i) {
+      var source = pre.getAttribute("data-source");
+      var next = pre.nextElementSibling;
+      if (next && next.classList.contains("diagram-error")) next.remove();
+      window.mermaid
+        .render("docz-mermaid-" + run + "-" + i, source)
+        .then(function (out) {
+          pre.innerHTML = out.svg;
+          pre.setAttribute("data-processed", "true");
+        })
+        .catch(function (err) {
+          pre.textContent = source;
+          pre.removeAttribute("data-processed");
+          var msg = document.createElement("p");
+          msg.className = "diagram-error";
+          msg.textContent = "Diagram failed to render: " + (err && err.message ? err.message : String(err));
+          pre.insertAdjacentElement("afterend", msg);
+        });
+    });
+  }
+
+  draw();
+  window.docz.onMode(draw);
+})();
+</script>
+</body>
+</html>

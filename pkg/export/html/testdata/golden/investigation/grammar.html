@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="INV-0001">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>INV-0001: Grammar fixture</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Investigation</p>
+<h1>Grammar fixture</h1>
+<p class="summary">Can a type package report document line numbers for a region it read through
+the kinds readers, without the offset being applied twice?</p>
+<div class="meta">
+<span class="pill">INV-0001</span>
+<span class="pill st-accepted">Concluded</span>
+<span class="pill">Test Author</span>
+<span class="pill">2026-09-20</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
+<button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
+<button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
+<button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="question">Question</h3>
+<h3 id="hypothesis">Hypothesis</h3>
+<p>It can. Every reader numbers lines from the start of the bytes it was handed,
+so one addition of the region's start is enough at any depth.</p>
+<h3 id="context">Context</h3>
+<p>The five type packages all publish a Line a consumer acts on, and IMPL-0018
+Phase 1 needs the arithmetic settled before any goldens are captured.</p>
+<p><strong>Triggered by:</strong> DESIGN-0014 / issue #101</p>
+
+</section>
+<section class="panel" id="p-approach">
+<h2 class="panel-title" id="approach">Approach</h2>
+<ol>
+<li>Reproduce the drift with a fixture whose regions nest two deep.</li>
+<li>Instrument every reader and record the line it reports.</li>
+<li>Compare each reported line against the file the fixture was read from.</li>
+</ol>
+<h3 id="environment">Environment</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Version / Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Go</td>
+<td>1.25.1</td>
+</tr>
+<tr>
+<td>docz</td>
+<td>v1.2.2</td>
+</tr>
+<tr>
+<td>Platform</td>
+<td>darwin/arm64</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-findings">
+<h2 class="panel-title" id="findings">Findings</h2>
+<div class="card" id="the-offset-belongs-to-the-caller">
+<p class="card-label">The offset belongs to the caller</p>
+<p>Each reader reported a line one short of the file, because the region's start
+was never added: the reader cannot add it, since it was handed bytes and not
+a document.</p>
+</div>
+<div class="card" id="adding-it-in-the-reader-double-counts-a-nested-region">
+<p class="card-label">Adding it in the reader double-counts a nested region</p>
+<p>A region nested inside another had its parent's start added once by the
+walker and once by the reader, so the reported line sat two lines above the
+bullet a consumer wanted to jump to.</p>
+</div>
+
+</section>
+<section class="panel" id="p-conclusion">
+<h2 class="panel-title" id="conclusion">Conclusion</h2>
+<p>The arithmetic is right once the region's start is added exactly once, by the
+caller that owns the region rather than by the reader that walked it.</p>
+<div class="verdict yes"><p class="card-label">Answer</p><p>Yes, with the shift applied by the caller.</p></div>
+<h3 id="recommendation">Recommendation</h3>
+<p>Give kinds a Shift helper per value type and have every type package call it,
+so the conversion has one definition instead of five.</p>
+
+</section>
+<section class="panel" id="p-open-questions">
+<h2 class="panel-title" id="open-questions">Open questions</h2>
+<details class="expand" id="1-should-the-readers-report-document-lines-themselves">
+<summary>1. Should the readers report document lines themselves?</summary>
+<div class="body">
+<ul>
+<li class="option recommended">a. No, the caller shifts them. <em>(recommendation)</em></li>
+<li class="option">b. Yes, pass the region into every reader.</li>
+</ul>
+<p class="resolution"><strong>Resolved 2026-09-20: (a)</strong> the readers stay bytes-in, values-out.</p>
+</div>
+</details>
+<details class="expand" id="2-does-a-third-level-of-nesting-need-a-rule-of-its-own" open>
+<summary>2. Does a third level of nesting need a rule of its own?</summary>
+<div class="body">
+<ul>
+<li class="option recommended">a. No, the arithmetic is the same at any depth. <em>(recommendation)</em></li>
+<li class="option">b. Yes, cap the nesting at two.</li>
+</ul>
+</div>
+</details>
+
+</section>
+<section class="panel" id="p-decisions">
+<h2 class="panel-title" id="decisions">Decisions</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Question</th>
+<th>Decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Should the readers report document lines?</td>
+<td>No, the caller shifts them</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>DESIGN-0014</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../investigation/testdata/grammar.md</code>, sha256 <code>ce040c1ef8910ac25de9e8331406549d42c21c7f2aa3b9370677817d7950e13a</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

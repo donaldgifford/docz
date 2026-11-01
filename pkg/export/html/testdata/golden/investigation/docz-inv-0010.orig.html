@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="INV-0010">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>INV-0010: IMPL plan parse and write-back API for doczcore (issue 100)</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Investigation</p>
+<h1>IMPL plan parse and write-back API for doczcore (issue 100)</h1>
+<div class="meta">
+<span class="pill">INV-0010</span>
+<span class="pill st-accepted">Concluded</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-09-13</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
+<button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
+<button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<ul>
+<li><a href="#question">Question</a></li>
+<li><a href="#hypothesis">Hypothesis</a></li>
+<li><a href="#context">Context</a></li>
+<li><a href="#approach">Approach</a></li>
+<li><a href="#environment">Environment</a></li>
+<li><a href="#findings">Findings</a>
+<ul>
+<li><a href="#observation-1-the-request-reverses-a-recorded-decision-and-the-reversal-is-justified">Observation 1: the request reverses a recorded decision, and the reversal is justified</a></li>
+<li><a href="#observation-2-what-already-exists-and-what-doczwork-already-solved">Observation 2: what already exists, and what doczwork already solved</a></li>
+<li><a href="#observation-3-what-the-corpus-says-the-grammar-must-tolerate">Observation 3: what the corpus says the grammar must tolerate</a></li>
+<li><a href="#observation-4-the-hand-written-markers-that-must-parse-do-not-match-the-proposed-spelling">Observation 4: the hand-written markers that &quot;must parse&quot; do not match the proposed spelling</a></li>
+<li><a href="#observation-5-starts-with-a-backticked-command-misclassifies-about-a-tenth-of-real-criteria">Observation 5: &quot;starts with a backticked command&quot; misclassifies about a tenth of real criteria</a></li>
+<li><a href="#observation-6-write-back-needs-more-than-four-splices">Observation 6: write-back needs more than four splices</a></li>
+<li><a href="#observation-7-diffplans-needs-an-identity-for-tasks-and-positional-ids-are-not-one">Observation 7: DiffPlans needs an identity for tasks, and positional IDs are not one</a></li>
+<li><a href="#observation-8-there-is-no-cli-task-surface-to-agree-with">Observation 8: there is no CLI task surface to agree with</a></li>
+<li><a href="#observation-9-sizing">Observation 9: sizing</a></li>
+</ul>
+</li>
+<li><a href="#conclusion">Conclusion</a></li>
+<li><a href="#recommendation">Recommendation</a></li>
+<li><a href="#open-questions">Open Questions</a>
+<ul>
+<li><a href="#1-where-does-the-model-live-and-what-are-the-names">1. Where does the model live, and what are the names?</a></li>
+<li><a href="#2-how-is-the-reversal-of-impl-0014-decision-3d-recorded">2. How is the reversal of IMPL-0014 Decision 3(d) recorded?</a></li>
+<li><a href="#3-what-is-a-phase-and-what-is-a-task">3. What is a phase, and what is a task?</a></li>
+<li><a href="#4-how-are-continuation-lines-and-verify-handled">4. How are continuation lines and verify: handled?</a></li>
+<li><a href="#5-marker-grammar-idempotency-and-clearing-a-deferral">5. Marker grammar, idempotency, and clearing a deferral</a></li>
+<li><a href="#6-criteria-classification">6. Criteria classification</a></li>
+<li><a href="#7-diffplans-matching-and-shape">7. DiffPlans matching and shape</a></li>
+<li><a href="#8-cli-surface-in-the-first-release">8. CLI surface in the first release</a></li>
+<li><a href="#9-release-sequencing-against-impl-0017">9. Release sequencing against IMPL-0017</a></li>
+</ul>
+</li>
+<li><a href="#references">References</a></li>
+</ul>
+<h3 id="question">Question</h3>
+<p>Issue #100 asks <code>pkg/doczcore</code> for an IMPL plan model — <code>ParseImpl</code>,
+<code>SetTaskState</code>, <code>SetDeferred</code>, <code>SetSkipped</code>, a byte-level <code>SetStatus</code>, and
+<code>DiffPlans</code> — all pure over a <code>[]byte</code> document. What does that require of
+docz, does it fit the frozen v1 surface and ADR-0001's facts-versus-
+interpretation rule, which parts already exist, what does the real IMPL
+corpus say the grammar has to tolerate, and how big is the work?</p>
+<h3 id="hypothesis">Hypothesis</h3>
+<p>Feasible as one additive <code>minor</code> release, with three costs the issue does not
+mention: it reverses IMPL-0014 Decision 3(d), which deliberately kept the
+plan/phase model <em>out</em> of docz; the grammar has enough unstated edge cases
+(wrapped task text, checkboxes outside phases, hand-written markers that do
+not match the proposed spelling, a criteria heuristic that misfires on symbol
+names) that the design has to pin each one; and the acceptance bullet that
+compares CLI task IDs with the library's has no CLI to compare against.
+Roughly half of the read side already exists in <code>docparse</code> and in
+sdk-booty-sh's <code>doczwork</code>, and the write side is an extension of <code>docwrite</code>'s
+byte-preserving splices.</p>
+<h3 id="context">Context</h3>
+<p>Issue #100 (opened 2026-09-13) is the docz half of <strong>tempy</strong> — a Temporal-
+orchestrated worker that executes docz IMPL docs task by task
+(<code>~/code/tempy</code>, DESIGN-0001 &quot;Temporal-orchestrated IMPL loop execution&quot;,
+IMPL-0001). Its design says <code>doczcore</code> is &quot;the only code that reads or writes
+IMPL structure&quot;, it fetches the IMPL file at a SHA through the GitHub API with
+no checkout, re-parses after every agent iteration, and rejects any commit
+whose <code>DiffPlans</code> shows a change other than the assigned task's checkbox.
+tempy IMPL-0001 has the task &quot;In the docz repository, donaldgifford/docz#100
+… add <code>ParseImpl</code> …&quot; followed by &quot;Pin that docz release in <code>go.mod</code>&quot;, so this
+work is on tempy's critical path. It outranks IMPL-0017 (the <code>updated:</code>
+field, not started).</p>
+<p>There is already a second consumer with the same problem: sdk-booty-sh's
+<code>pkg/loop/doczwork</code> (pinned to docz v1.0.0) carries its own 260-line
+phase/task model over <code>docparse</code> — exactly the &quot;each worker carries its own
+parser&quot; duplication the issue wants to end.</p>
+<p>The history matters. ADR-0001 Decision 2 and IMPL-0014 Decision 3(d) dropped
+<code>ParsePlan</code> from <code>docparse</code> on 2026-07-03: &quot;docz parses <em>facts</em> … the
+plan/phase <em>interpretation</em> is loop-harness policy and moves to sdk-booty-sh's
+<code>doczwork</code>.&quot; The memory of that review adds the principle &quot;a public API docz
+itself never calls, encoding policy docz has no opinion on, is a smell.&quot;</p>
+<p><strong>Triggered by:</strong> issue #100; tempy DESIGN-0001 / IMPL-0001; ADR-0001;
+IMPL-0014 Decision 3.</p>
+
+</section>
+<section class="panel" id="p-approach">
+<h2 class="panel-title" id="approach">Approach</h2>
+<ol>
+<li>Read the issue's API and conventions against tempy DESIGN-0001 (the
+activities that call each function, the phase gate, the <code>verify:</code> /
+deferred / skipped conventions, tempy OQ-6) and tempy IMPL-0001.</li>
+<li>Inventory what docz already has: <code>document.ParseFrontmatter</code>,
+<code>docparse.Headings</code> / <code>TaskItems</code> / <code>Title</code>, <code>docwrite.SetStatus</code> /
+<code>CheckTask</code> and their unexported byte-level cores, the golden and
+write-through tests.</li>
+<li>Read sdk-booty-sh <code>doczwork</code> (<code>model.go</code>, <code>source.go</code>, fixtures) as the
+existing consumer-side implementation of the same semantics.</li>
+<li>Survey the real corpus the acceptance tests must run on: the 16 IMPL docs
+in this repo, docz-api's IMPL docs, sdk-booty-sh's — phase heading shapes,
+task nesting and wrapping, checkboxes outside phases, criteria shapes, and
+every hand-written <code>verify:</code> / deferred / skipped marker.</li>
+<li>Check the CLI for any task surface the acceptance bullet could mean.</li>
+<li>Size the work against IMPL-0015 / IMPL-0016 (four phases each).</li>
+</ol>
+<h3 id="environment">Environment</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Version / Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>docz</td>
+<td><code>main</code> at <code>dd6d853</code>, latest release v1.2.2; public core <code>pkg/doczcore/{config,document,docparse,docwrite,toc}</code> frozen since v1.0.0</td>
+</tr>
+<tr>
+<td>sdk-booty-sh <code>doczwork</code></td>
+<td><code>~/code/sdk-booty-sh/pkg/loop/doczwork</code>, pins docz <strong>v1.0.0</strong></td>
+</tr>
+<tr>
+<td>tempy</td>
+<td><code>~/code/tempy</code>, DESIGN-0001 and IMPL-0001 dated 2026-09-13, no Go code against docz yet</td>
+</tr>
+<tr>
+<td>corpus</td>
+<td>16 docz IMPL docs (<code>docs/impl/0001</code>–<code>0017</code>, no 0010), 10 docz-api and 3 sdk-booty-sh IMPL docs, <code>doczwork</code> clean/messy fixtures</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-findings">
+<h2 class="panel-title" id="findings">Findings</h2>
+<ul class="heading-list">
+<li><a href="#observation-1-the-request-reverses-a-recorded-decision-and-the-reversal-is-justified">Observation 1: the request reverses a recorded decision, and the reversal is justified</a></li>
+<li><a href="#observation-2-what-already-exists-and-what-doczwork-already-solved">Observation 2: what already exists, and what doczwork already solved</a></li>
+<li><a href="#observation-3-what-the-corpus-says-the-grammar-must-tolerate">Observation 3: what the corpus says the grammar must tolerate</a></li>
+<li><a href="#observation-4-the-hand-written-markers-that-must-parse-do-not-match-the-proposed-spelling">Observation 4: the hand-written markers that &#34;must parse&#34; do not match the proposed spelling</a></li>
+<li><a href="#observation-5-starts-with-a-backticked-command-misclassifies-about-a-tenth-of-real-criteria">Observation 5: &#34;starts with a backticked command&#34; misclassifies about a tenth of real criteria</a></li>
+<li><a href="#observation-6-write-back-needs-more-than-four-splices">Observation 6: write-back needs more than four splices</a></li>
+<li><a href="#observation-7-diffplans-needs-an-identity-for-tasks-and-positional-ids-are-not-one">Observation 7: DiffPlans needs an identity for tasks, and positional IDs are not one</a></li>
+<li><a href="#observation-8-there-is-no-cli-task-surface-to-agree-with">Observation 8: there is no CLI task surface to agree with</a></li>
+<li><a href="#observation-9-sizing">Observation 9: sizing</a></li>
+</ul>
+<div class="card" id="observation-1-the-request-reverses-a-recorded-decision-and-the-reversal-is-justified">
+<p class="card-label">Observation 1: the request reverses a recorded decision, and the reversal is justified</p>
+<p>IMPL-0014 Decision 3(d) dropped <code>ParsePlan</code> because every option was &quot;docz
+picking a workflow semantic it has no use for itself — the ambiguity was the
+signal that the semantics belong downstream.&quot; Two things changed:</p>
+<ul>
+<li><strong>Demand is now plural.</strong> <code>doczwork</code> (sdk-booty-sh) and tempy both need the
+same phase/task/criteria model and the same write-backs. ADR-0001
+Decision 1's promotion rule is &quot;public where demand exists&quot;; two consumers
+re-implementing one grammar is the promotion drip the ADR exists to end.</li>
+<li><strong>docz owns the grammar.</strong> The IMPL template (<code>internal/template/templates/ impl.md</code>) defines <code>### Phase N:</code>, <code>#### Tasks</code>, <code>#### Success Criteria</code>,
+and the <code>## Testing Plan</code> checkboxes. A consumer can only guess at the
+template's intent; docz can state it.</li>
+</ul>
+<p>What does <em>not</em> change is the split inside docz: <code>docparse</code> stays the fact
+extractor (headings, checkbox items, byte-accurate lines) and is frozen.
+The plan model is interpretation and belongs in a new package layered on
+top, not in <code>docparse</code>. The &quot;API docz never calls&quot; smell is answered by
+giving the CLI a task surface (Observation 8) rather than by leaving the
+model consumer-only.</p>
+</div>
+<div class="card" id="observation-2-what-already-exists-and-what-doczwork-already-solved">
+<p class="card-label">Observation 2: what already exists, and what <code>doczwork</code> already solved</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Need in #100</th>
+<th>Exists today</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>frontmatter id/title/status from bytes</td>
+<td><code>document.ParseFrontmatter([]byte)</code></td>
+<td>none; note <code>Frontmatter.Status</code> is typed <code>config.Status</code>, the issue's <code>ImplPlan.Status</code> is <code>string</code></td>
+</tr>
+<tr>
+<td>headings with levels and lines</td>
+<td><code>docparse.Headings</code> (H2–H6, inline markdown stripped, fence-aware)</td>
+<td>none</td>
+</tr>
+<tr>
+<td>checkbox items with lines</td>
+<td><code>docparse.TaskItems</code> (<code>Text</code>, <code>Checked</code>, <code>Indent</code>, byte-accurate <code>Line</code>)</td>
+<td><strong><code>Text</code> is the first line only</strong> — continuation lines are not folded (Observation 3)</td>
+</tr>
+<tr>
+<td>phase spans, <code>#### Tasks</code> / <code>#### Success Criteria</code> sub-spans, top-level task scoping, wrapped-criteria folding, phase token with ordinal fallback, duplicate-phase refusal</td>
+<td><code>doczwork/model.go</code> <code>buildModel</code> + clean/messy fixtures</td>
+<td>consumer-side; lift and re-fixture</td>
+</tr>
+<tr>
+<td>status write-back from bytes</td>
+<td><code>docwrite.SetStatus(path, …)</code> — its core <code>findStatusValue(content []byte)</code> is already byte-level</td>
+<td>the exported function reads and writes a path</td>
+</tr>
+<tr>
+<td>checkbox flip from bytes</td>
+<td><code>docwrite.CheckTask(path, line)</code> single-byte splice validated by <code>docparse.TaskItems</code></td>
+<td>path-based; <strong>check only</strong> — refuses an already-checked item and cannot uncheck</td>
+</tr>
+<tr>
+<td>deferred / skipped markers, <code>verify:</code> lines, criteria classification, <code>DiffPlans</code></td>
+<td>nothing</td>
+<td>new</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code>doczwork</code> also shows the semantics a real harness needed beyond the issue:
+<code>MarkDone</code> relocates a task by exact text when lines shifted under it
+(<code>TaskMovedError</code> when the text is gone or ambiguous), and <code>DuplicatePhaseError</code>
+refuses a doc whose phase tokens collide. Both belong in the docz version.</p>
+</div>
+<div class="card" id="observation-3-what-the-corpus-says-the-grammar-must-tolerate">
+<p class="card-label">Observation 3: what the corpus says the grammar must tolerate</p>
+<p>Surveyed with <code>grep</code>/<code>awk</code> over the 16 IMPL docs in this repo:</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Fact</th>
+<th>Evidence</th>
+<th>Consequence for the parser</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Every phase is <code>### Phase N: Title</code>, N numeric and contiguous (1–11)</td>
+<td>118 phase headings, all <code>Phase &lt;digits&gt;:</code></td>
+<td>positional phase segment and heading token coincide today; <code>doczwork</code> also tolerates <code>Phase A:</code> / <code>Phase SH:</code> / <code>Phase 2B:</code> and bold headings</td>
+</tr>
+<tr>
+<td><code>### Phase N</code> <strong>without</strong> a colon appears under <code>## File Changes</code></td>
+<td>8 headings in IMPL-0001 / IMPL-0002</td>
+<td>the colon is the discriminator; &quot;every <code>###</code> is a phase&quot; (IMPL-0014 option a, <code>doczwork</code>'s rule) would also make <code>### In Scope</code> / <code>### Out of Scope</code> phases 1–2 and shift every positional ID</td>
+</tr>
+<tr>
+<td><code>#### Success Criteria</code> is optional</td>
+<td>IMPL-0007 phases 2 and 5 have tasks but no criteria</td>
+<td><code>Criteria</code> may be empty</td>
+</tr>
+<tr>
+<td>Nested checkboxes</td>
+<td>0 in this repo; 1 in <code>doczwork</code>'s messy fixture</td>
+<td><code>Indent == 0</code> scoping (as <code>doczwork</code>) is right; nested items are never tasks</td>
+</tr>
+<tr>
+<td><strong>Task text wraps onto continuation lines</strong></td>
+<td>IMPL-0009: 68 tasks, IMPL-0014: 35, IMPL-0016: 41, IMPL-0017: 48 of 56</td>
+<td><code>TaskItem.Text</code> alone truncates most tasks in recent docs; the parser must fold continuation lines, and the <code>verify:</code> / marker continuation rules interact with that folding</td>
+</tr>
+<tr>
+<td>Checkboxes outside any phase</td>
+<td>template <code>## Testing Plan</code> has 3; IMPL-0013 lists OQs as checkboxes</td>
+<td>a level-2 heading must end the phase span so these never get IDs (<code>doczwork</code>'s <code>spanEnd</code> does this)</td>
+</tr>
+<tr>
+<td>Criteria that start with a backtick</td>
+<td>~200 lines; leading tokens <code>docz</code> 59, <code>make</code> 42, <code>go</code> 25, <code>grep</code> 12 …</td>
+<td>see Observation 5</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="card" id="observation-4-the-hand-written-markers-that-must-parse-do-not-match-the-proposed-spelling">
+<p class="card-label">Observation 4: the hand-written markers that &quot;must parse&quot; do not match the proposed spelling</p>
+<p>The issue says hand-written markers in existing docs must parse. The corpus
+has exactly these:</p>
+<ul>
+<li><p><strong><code>verify:</code></strong> — none in docz; docz-api IMPL-0004 has four, all spelled
+<strong><code>Verify:</code></strong>, not necessarily the first continuation line, and followed
+by prose:</p>
+<pre><code class="language-markdown">- [x] **2.1 Unify helpers under `docz-api.*`.** In `charts/docz-api/`, rename
+      every `repo-guardian.` template define/include to `docz-api.`:
+      `grep -rl &#39;repo-guardian\.&#39; charts/docz-api/templates | xargs sed -i &#39;s/repo-guardian\./docz-api./g&#39;`.
+      Verify: `grep -r &#39;repo-guardian\.&#39; charts/docz-api/templates` prints
+      nothing.
+</code></pre>
+<p>Note the task body itself contains a backticked command before the
+<code>Verify:</code> line, so &quot;the command is the backtick span on the verify line&quot;
+is the only workable rule — not &quot;the first command in the task&quot;.</p>
+</li>
+<li><p><strong>deferred</strong> — none on a task line in docz. docz-api IMPL-0006 has one,
+and it is a <em>prefix</em>, bold, ASCII hyphen, different phrase:</p>
+<pre><code class="language-markdown">- [ ] **deferred - blocked, no cluster available** — redeploy the new image +
+</code></pre>
+<p>with prose lower down saying &quot;marked <code>deferred - human required</code> above&quot;.
+The issue's canonical form is a trailing <code>deferred – human required: &lt;reason&gt;</code> (en dash, colon). Either the parser is lenient about position,
+emphasis, dash, and phrase, or that doc is hand-normalised before tempy
+runs it.</p>
+</li>
+<li><p><strong>skipped</strong> (<code>- [ ] ~~text~~ — skipped: &lt;note&gt;</code>) — zero occurrences
+anywhere; a new convention with no legacy to honour. Because the line stays
+a <code>- [ ]</code> checkbox item, a skipped task keeps its positional ID — a
+property worth keeping.</p>
+</li>
+</ul>
+</div>
+<div class="card" id="observation-5-starts-with-a-backticked-command-misclassifies-about-a-tenth-of-real-criteria">
+<p class="card-label">Observation 5: &quot;starts with a backticked command&quot; misclassifies about a tenth of real criteria</p>
+<p>tempy's phase gate runs every <code>Criterion.Executable</code> command and treats exit 0
+as pass. In this repo's IMPL docs the backtick-leading criteria are mostly
+commands (<code>docz …</code>, <code>make …</code>, <code>go …</code>, <code>grep …</code>), but roughly one in ten is a
+symbol or path used as the sentence's subject:</p>
+<pre><code class="language-markdown">- `WikiConfig` has fields `MkDocsPath`, `Exclude`, `NavTitles`
+- `internal/index/index.go` no longer imports `internal/template`
+- `--verbose` shows per-file ToC output
+- `BenchmarkCmdUpdate/100` allocations drop by ≥30%
+</code></pre>
+<p>Under the issue's rule these become <code>Executable: true, Command: &quot;WikiConfig&quot;</code>
+and fail at the gate with &quot;command not found&quot; — a visible, recoverable
+failure, but noise on every legacy doc. tempy OQ-6 already chose the backtick
+rule for phase criteria (&quot;keep it simple for now&quot;), so docz should implement
+it as specified and document the caveat; docz itself never executes anything.</p>
+</div>
+<div class="card" id="observation-6-write-back-needs-more-than-four-splices">
+<p class="card-label">Observation 6: write-back needs more than four splices</p>
+<ul>
+<li><strong>Bytes in, bytes out is consistent with ADR-0001.</strong> Decision 5 keeps
+path-based helpers &quot;only where a consumer requires in-place mutation&quot; and
+says non-filesystem callers get content back rather than I/O. tempy is
+exactly that caller (GitHub API, &quot;zero data through activity payloads that
+isn't a reference&quot;). The existing path-based <code>SetStatus</code> / <code>CheckTask</code> stay;
+their byte-level cores become exported.</li>
+<li><strong>Unchecking is new.</strong> <code>CheckTask</code> refuses <code>[x]</code>; <code>SetTaskState(…, Unchecked)</code>
+needs the reverse splice.</li>
+<li><strong>The issue's API cannot undo a deferral.</strong> tempy's signal table has
+<code>unblock(task_id, note)</code>: &quot;clears the marker, resets the task iteration
+count.&quot; Nothing in #100 clears a marker. A <code>ClearDeferred</code> (or an
+<code>Unchecked</code>-style state) is required for tempy to work at all.</li>
+<li><strong>Skipping is a multi-line rewrite.</strong> With wrapped tasks the norm
+(Observation 3), <code>~~text~~</code> has to span the first line and its continuation
+lines, and the <code>— skipped: &lt;note&gt;</code> suffix lands on the last text line,
+before any <code>verify:</code> line. &quot;Only the target line(s)&quot; is right, but it is <em>lines</em>.</li>
+<li><strong>Idempotency has two readings.</strong> Same marker, same reason → unchanged
+bytes is uncontroversial. Same marker, different reason → replace or error
+is a decision (Open Question 5).</li>
+<li><strong>Line-ending policy carries over.</strong> <code>ErrUnsupportedLineEndings</code> (LF only,
+DESIGN-0005 Decision 7) applies to every new writer.</li>
+</ul>
+</div>
+<div class="card" id="observation-7-diffplans-needs-an-identity-for-tasks-and-positional-ids-are-not-one">
+<p class="card-label">Observation 7: <code>DiffPlans</code> needs an identity for tasks, and positional IDs are not one</p>
+<p>&quot;Tasks added, removed, reordered&quot; cannot be computed from positional IDs
+alone: after an insertion at 2.3, every later task's ID shifts and a
+position-only diff reports the tail as &quot;changed&quot;. <code>doczwork</code> solved the
+same problem for relocation by matching on exact task text. The diff should
+match phases by token, then tasks within a phase by text (longest common
+subsequence), reporting a reworded task as removed + added — which is what
+tempy's check 2 wants to reject anyway. Checkbox, deferred, and skipped
+changes are then reported per matched task ID; criteria diff by text per
+phase. tempy needs one predicate — &quot;the only change is this task's
+<code>Checked</code>&quot; — so <code>PlanDiff</code> should make that cheap to ask.</p>
+</div>
+<div class="card" id="observation-8-there-is-no-cli-task-surface-to-agree-with">
+<p class="card-label">Observation 8: there is no CLI task surface to agree with</p>
+<p>The acceptance bullet &quot;<code>docz</code> (CLI) and <code>ParseImpl</code> report the same task IDs
+for the same doc&quot; has nothing on the CLI side today: no <code>cmd/</code> file imports
+<code>docparse.TaskItems</code> or <code>docwrite.CheckTask</code> — the checkbox primitive shipped
+in v1.0.0 for sdk-booty-sh and the CLI never calls it. That is the exact
+&quot;public API docz itself never calls&quot; smell from the ADR-0001 review. ADR-0001
+Decision 7 makes the CLI feature set the completeness benchmark; a thin
+<code>docz task</code> command family (list / check / uncheck / defer / undefer / skip)
+over the new package makes the bullet testable and gives humans the same
+tool the worker uses — the <code>status set</code> pattern (IMPL-0011) already shows
+the shape: resolve the doc by ID, call the library, stable exit codes.</p>
+</div>
+<div class="card" id="observation-9-sizing">
+<p class="card-label">Observation 9: sizing</p>
+<p>Comparable past work: IMPL-0015 (changelog block + parser, 4 phases, ~26
+tasks) and IMPL-0016 (api block + <code>Title</code>, 4 phases, ~42 tasks). This is
+larger — a parser with a real grammar, five writers, a diff, a CLI family —
+and closer to IMPL-0014 Phase 2–3 in shape. A reasonable plan is five
+phases: parse (lift <code>doczwork</code>'s model, add continuation folding, markers,
+criteria) → byte-level writers in <code>docwrite</code> + the IMPL-specific writers →
+<code>DiffPlans</code> → <code>docz task</code> CLI → docs, consumer proof, release. Fixtures are
+snapshots of real docs (this repo's IMPL-0009/0014/0017 for wrapping,
+docz-api IMPL-0004 for <code>Verify:</code>, IMPL-0006 for the prefix deferred marker,
+<code>doczwork</code>'s messy fixture), copied under <code>testdata/</code> rather than read from
+<code>docs/</code> so later edits to living docs cannot break the suite.</p>
+</div>
+
+</section>
+<section class="panel" id="p-conclusion">
+<h2 class="panel-title" id="conclusion">Conclusion</h2>
+<div class="verdict yes"><p class="card-label">Answer</p><p>Yes — feasible as one additive <code>minor</code> release, with the design</p></div>
+<p>The parts the issue underestimates: task text wraps in most recent docs so
+the parser must fold continuation lines and the writers must handle
+multi-line targets; the only hand-written markers in the fleet do not match
+the proposed spelling; the criteria heuristic misfires on about a tenth of
+legacy criteria; <code>DiffPlans</code> needs text-based matching; tempy's <code>unblock</code>
+needs a marker remover the issue does not list; and the CLI-agreement
+acceptance bullet needs a CLI to exist.</p>
+<h3 id="recommendation">Recommendation</h3>
+<ol>
+<li><strong>Write DESIGN-0013 from this investigation</strong> with the decisions below
+locked, including a dated amendment to ADR-0001 Decision 2 recording why
+the plan model now lives in docz.</li>
+<li><strong>New subpackage <code>pkg/doczcore/impl</code></strong> composing <code>document</code>, <code>docparse</code>,
+and <code>docwrite</code>; <code>docparse</code> untouched. Lift <code>doczwork</code>'s span logic as the
+starting point.</li>
+<li><strong>Export byte-level cores in <code>docwrite</code></strong> (<code>SetStatusBytes</code>,
+<code>SetTaskStateBytes</code>) so the path-based helpers and the new package share
+one splice each; the IMPL-specific writers (<code>SetDeferred</code>,
+<code>ClearDeferred</code>, <code>SetSkipped</code>) live in <code>impl</code>.</li>
+<li><strong>Lenient parse, canonical write</strong> for every marker: accept <code>Verify:</code> /
+<code>verify:</code>, any dash, prefix or suffix deferred markers; always write the
+issue's canonical trailing forms.</li>
+<li><strong><code>docz task</code> CLI family in the same release</strong> so the acceptance bullet
+is a real test and the API has a first-party caller.</li>
+<li><strong>Ship as v1.3.0 ahead of IMPL-0017</strong>, one <code>minor</code> PR from a <code>feat/</code>
+branch, post-tag <code>dont-release</code> flips; renumber IMPL-0017's target to
+v1.4.0.</li>
+<li><strong>File the consumer issues at design time</strong>: tempy already has its
+IMPL-0001 task; file one in sdk-booty-sh to migrate <code>doczwork</code> onto
+<code>impl</code> and drop its private model (the duplication the issue is about).</li>
+</ol>
+
+</section>
+<section class="panel" id="p-open-questions">
+<h2 class="panel-title" id="open-questions">Open questions</h2>
+<ul class="heading-list">
+<li><a href="#1-where-does-the-model-live-and-what-are-the-names">1. Where does the model live, and what are the names?</a></li>
+<li><a href="#2-how-is-the-reversal-of-impl-0014-decision-3d-recorded">2. How is the reversal of IMPL-0014 Decision 3(d) recorded?</a></li>
+<li><a href="#3-what-is-a-phase-and-what-is-a-task">3. What is a phase, and what is a task?</a></li>
+<li><a href="#4-how-are-continuation-lines-and-verify-handled">4. How are continuation lines and verify: handled?</a></li>
+<li><a href="#5-marker-grammar-idempotency-and-clearing-a-deferral">5. Marker grammar, idempotency, and clearing a deferral</a></li>
+<li><a href="#6-criteria-classification">6. Criteria classification</a></li>
+<li><a href="#7-diffplans-matching-and-shape">7. DiffPlans matching and shape</a></li>
+<li><a href="#8-cli-surface-in-the-first-release">8. CLI surface in the first release</a></li>
+<li><a href="#9-release-sequencing-against-impl-0017">9. Release sequencing against IMPL-0017</a></li>
+</ul>
+<details class="expand" id="1-where-does-the-model-live-and-what-are-the-names" open>
+<summary>1. Where does the model live, and what are the names?</summary>
+<div class="body">
+<ul>
+<li class="option recommended">a. <strong>New subpackage <code>pkg/doczcore/impl</code>, identifiers without the <code>Impl</code>
+prefix</strong> — <code>impl.Parse</code>, <code>impl.Plan</code>, <code>impl.Phase</code>, <code>impl.Task</code>,
+<code>impl.Criterion</code>, <code>impl.TaskState</code>, <code>impl.Diff</code>, <code>impl.PlanDiff</code>. Matches the
+doc type's name (<code>docz create impl</code>), avoids <code>impl.ImplPlan</code> /
+<code>impl.ParseImpl</code> stutter, and <code>Plan.Status</code> is typed <code>config.Status</code> like
+<code>document.Frontmatter.Status</code> (DESIGN-0004 §F). <em>(recommendation)</em></li>
+<li class="option">b. Same package, the issue's identifiers verbatim (<code>ParseImpl</code>, <code>ImplPlan</code>,
+<code>DiffPlans</code>, <code>Status string</code>) — matches tempy's design prose today.</li>
+<li class="option">c. Package <code>implplan</code> (no stutter, clearer in prose, longer import).</li>
+<li class="option">d. Split across <code>docparse</code> (types + <code>Parse</code>) and <code>docwrite</code> (writers) —
+puts interpretation into the frozen fact package.</li>
+<li class="option">e. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="2-how-is-the-reversal-of-impl-0014-decision-3d-recorded" open>
+<summary>2. How is the reversal of IMPL-0014 Decision 3(d) recorded?</summary>
+<div class="body">
+<ul>
+<li class="option recommended">a. <strong>Dated amendment to ADR-0001 Decision 2</strong> (the DESIGN-0007 amendment
+pattern), plus a note in IMPL-0014's Decisions table and in <code>CLAUDE.md</code> /
+the API-philosophy memory: facts stay in <code>docparse</code>; interpretation that
+docz's own template defines may ship in a sibling package when more than
+one consumer needs it. <em>(recommendation)</em></li>
+<li class="option">b. A new ADR-0002 superseding that clause of ADR-0001.</li>
+<li class="option">c. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="3-what-is-a-phase-and-what-is-a-task" open>
+<summary>3. What is a phase, and what is a task?</summary>
+<div class="body">
+<ul>
+<li class="option recommended">a. <strong>A phase is a level-3 heading matching <code>^Phase\s+([^\s/:]+):</code></strong> (inline
+markdown already stripped, so bold headings match), anywhere in the doc;
+its span ends at the next heading of level ≤ 3. Tasks are <code>Indent == 0</code>
+checkbox items inside the phase's <code>#### Tasks</code> sub-span, or the whole
+phase span when there is no such subheading; criteria come from
+<code>#### Success Criteria</code> and may be absent. The phase segment of a task ID
+is the heading token (<code>1</code>, <code>A</code>, <code>2B</code>); a duplicate token is an error.
+<code>### Phase 1</code> without a colon (IMPL-0001/0002 File Changes) and
+<code>### In Scope</code> are not phases. <em>(recommendation)</em></li>
+<li class="option">b. <code>doczwork</code>-literal: every level-3 heading is a phase, token with ordinal
+fallback — hand-written docs with odd headings still parse, but <code>In Scope</code>
+becomes phase 1 in every template-generated doc.</li>
+<li class="option">c. Only under <code>## Implementation Phases</code>; two-mode contract keyed to an
+English heading.</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="4-how-are-continuation-lines-and-verify-handled" open>
+<summary>4. How are continuation lines and <code>verify:</code> handled?</summary>
+<div class="body">
+<ul>
+<li class="option recommended">a. <strong>Fold continuations, extract <code>verify:</code> case-insensitively.</strong> <code>Task.Text</code>
+= first line plus every following line that is more indented than the
+bullet, non-blank, not a nested bullet, joined with single spaces — minus
+the <code>verify:</code> line and any marker. A <code>verify:</code> / <code>Verify:</code> continuation
+line anywhere in the task yields <code>Task.Verify</code> = the contents of its first
+backtick span; prose after the span is ignored. docz-api's four hand-written
+lines parse unchanged. <em>(recommendation)</em></li>
+<li class="option">b. Exact lowercase <code>verify:</code> as the only recognised form, whole remainder
+must be one backtick span — strict and simple; the docz-api lines do not
+parse.</li>
+<li class="option">c. <code>Text</code> stays first-line-only (<code>docparse</code> literal) and <code>verify:</code> must be
+the first continuation line — cheapest, but truncates most tasks written
+since IMPL-0009.</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="5-marker-grammar-idempotency-and-clearing-a-deferral" open>
+<summary>5. Marker grammar, idempotency, and clearing a deferral</summary>
+<div class="body">
+<ul>
+<li class="option recommended">a. <strong>Lenient parse, canonical write, explicit clear.</strong> Parse <code>deferred</code>
+followed by <code>-</code> / <code>–</code> / <code>—</code>, optional emphasis, as a prefix or suffix of the
+task text (folding a wrapped reason); parse <code>~~…~~</code> plus <code>skipped:</code> after any
+dash. Write only the canonical trailing <code>deferred – human required: &lt;reason&gt;</code> and <code>~~text~~ — skipped: &lt;note&gt;</code>. Same marker with the same
+reason → bytes unchanged; different reason → replaced. Add
+<code>ClearDeferred(doc, taskID)</code> for tempy's <code>unblock</code>. <em>(recommendation)</em></li>
+<li class="option">b. Canonical spellings only, in both directions; docz-api IMPL-0006 is
+hand-fixed; <code>unblock</code> is modelled as <code>SetDeferred</code> with an empty reason.</li>
+<li class="option">c. Lenient parse, but a different reason on an already-marked task is an
+error rather than a replacement.</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="6-criteria-classification" open>
+<summary>6. Criteria classification</summary>
+<div class="body">
+<ul>
+<li class="option recommended">a. <strong>As specified</strong>: <code>Executable</code> when the bullet text starts with a
+backtick span, <code>Command</code> = the span; everything else assertive. Document
+the caveat that symbol-subject criteria (about a tenth in this repo)
+classify as executable, and that docz never runs them — the consumer
+gate reports the failure. <em>(recommendation)</em></li>
+<li class="option">b. Stricter: executable only when the span's first token contains no <code>/</code>,
+<code>.</code>, uppercase, or leading <code>--</code> — fewer false positives, heuristics on
+heuristics.</li>
+<li class="option">c. Executable only when the criterion is <em>entirely</em> a backtick span (no
+trailing prose) — clean, but &quot;<code>make ci</code> passes&quot; stops being executable.</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="7-diffplans-matching-and-shape" open>
+<summary>7. <code>DiffPlans</code> matching and shape</summary>
+<div class="body">
+<ul>
+<li class="option recommended">a. <strong>Phases by token, tasks by text.</strong> Within a matched phase, tasks are
+aligned by normalised <code>Text</code> (LCS); a reworded task is removed + added;
+<code>PlanDiff</code> reports <code>TasksAdded</code> / <code>TasksRemoved</code> / <code>TasksReordered</code> as
+task refs, per-matched-ID <code>Checked</code> / <code>Deferred</code> / <code>Skipped</code> changes,
+per-phase criteria changes, plus <code>Empty()</code> and <code>OnlyChecked(taskID)</code> for
+tempy's check 2. <em>(recommendation)</em></li>
+<li class="option">b. Positional IDs only — cheaper, cannot distinguish an insertion from a
+reword of every later task.</li>
+<li class="option">c. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="8-cli-surface-in-the-first-release" open>
+<summary>8. CLI surface in the first release</summary>
+<div class="body">
+<ul>
+<li class="option recommended">a. <strong><code>docz task list|check|uncheck|defer|undefer|skip &lt;impl-id&gt; [task-id]</code></strong>
+as thin wrappers over <code>impl</code> with <code>--format text|json</code> and the <code>status set</code>
+exit-code pattern — makes the CLI/library agreement a test and gives the
+API a first-party caller. <em>(recommendation)</em></li>
+<li class="option">b. <code>docz task list</code> only; writers stay library-only until a human needs
+them.</li>
+<li class="option">c. No CLI; drop the acceptance bullet.</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="9-release-sequencing-against-impl-0017" open>
+<summary>9. Release sequencing against IMPL-0017</summary>
+<div class="body">
+<ul>
+<li class="option recommended">a. <strong>#100 ships first as v1.3.0</strong>; IMPL-0017 (<code>updated:</code> field) retargets
+to v1.4.0, its title and DESIGN-0012 rollout text edited in the same docs
+PR that lands DESIGN-0013. <em>(recommendation)</em></li>
+<li class="option">b. Both in one v1.3.0 — couples an unstarted feature to tempy's critical
+path.</li>
+<li class="option">c. Other.</li>
+</ul>
+</div>
+</details>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li><a href="https://github.com/donaldgifford/docz/issues/100">Issue #100</a> — the request</li>
+<li>tempy <code>docs/design/0001-temporal-orchestrated-impl-loop-execution.md</code>
+(activities table, phase gate, &quot;API / Interface Changes → doczcore&quot;, OQ-6)
+and <code>docs/impl/0001-temporal-orchestrated-impl-loop-worker-mvp.md</code></li>
+<li>sdk-booty-sh <code>pkg/loop/doczwork/{doc.go,model.go,source.go,model_test.go}</code></li>
+<li>ADR-0001
+Decisions 1, 2, 5, 7</li>
+<li>IMPL-0014
+Decision 3 (<code>ParsePlan</code> dropped)</li>
+<li>DESIGN-0005 — byte-preservation
+contract; IMPL-0011 — the
+<code>status set</code> command pattern</li>
+<li><code>pkg/doczcore/docparse/taskitems.go</code>, <code>pkg/doczcore/docwrite/{status,checktask}.go</code>,
+<code>pkg/doczcore/document/document.go</code>, <code>internal/template/templates/impl.md</code></li>
+<li>docz-api <code>docs/impl/0004-…md</code> (<code>Verify:</code> lines), <code>docs/impl/0006-…md</code>
+(prefix deferred marker)</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../investigation/testdata/docz-inv-0010.orig.md</code>, sha256 <code>8c25a9e59948d40bbfa9841026bb51e093bf1656f98d4b2a6984fb8715579e8d</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

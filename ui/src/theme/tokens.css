@@ -7,6 +7,15 @@
  */
 @import "tailwindcss";
 
+/* The themes (DESIGN-0025 §3) live once, in pkg/theme, which the docz
+ * binary embeds for exported pages. Each is a :root[data-theme="…"]
+ * block of these same variable names; being unlayered, it overrides the
+ * @theme values below, which Tailwind still needs to generate every
+ * utility and which equal classic's (pkg/theme's TestClassicMatchesUITokens).
+ * index.html and review.html set data-theme. */
+@import "../../../pkg/theme/tokens/classic.css";
+@import "../../../pkg/theme/tokens/paper.css";
+
 /* `static` so every token is emitted even before a utility references
  * it — the type/status color module resolves tokens at runtime via
  * var(), so the full set is a runtime contract, not dead CSS. */

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="FW-0002">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>FW-0002: Retire the legacy job runner</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · frameworks</p>
+<h1>Retire the legacy job runner</h1>
+<div class="meta">
+<span class="pill">FW-0002</span>
+<span class="pill st-deprecated">Deprecated</span>
+<span class="pill">Parity Fixture</span>
+<span class="pill">2026-03-04</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="summary" aria-controls="p-summary">Summary</button>
+<button type="button" data-tab="owner" aria-controls="p-owner">Owner</button>
+<button type="button" data-tab="adoption" aria-controls="p-adoption">Adoption</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-summary">
+<h2 class="panel-title" id="summary">Summary</h2>
+<p>The legacy job runner is the cron wrapper that predates the scheduler. It
+takes a shell command and a crontab line, writes a pid file, and does
+nothing else: no retries, no structured logs, no way to ask whether last
+night's run succeeded. Two of the five services still on it schedule work
+that nobody notices when it stops.</p>
+<p><strong>Replacement:</strong> the internal scheduler framework, FW-0001.</p>
+
+</section>
+<section class="panel" id="p-owner">
+<h2 class="panel-title" id="owner">Owner</h2>
+<p>Platform team owns the runner until the last service leaves it. After that
+the repository is archived rather than deleted, because three runbooks link
+to its README.</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Jobs on the runner</th>
+<th>Owner</th>
+<th>Migrated</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>billing-export</td>
+<td>4</td>
+<td>Payments</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>docs-rebuild</td>
+<td>1</td>
+<td>Platform</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>search-reindex</td>
+<td>2</td>
+<td>Search</td>
+<td>no</td>
+</tr>
+<tr>
+<td>mail-digest</td>
+<td>1</td>
+<td>Growth</td>
+<td>no</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-adoption">
+<h2 class="panel-title" id="adoption">Adoption</h2>
+<p>Nothing new adopts it. The remaining work is subtraction, and it goes in
+this order:</p>
+<ul>
+<li>Move the two Search jobs onto the scheduler.
+<ul>
+<li>Reindex is idempotent, so it can run under both for a week.</li>
+<li>The delta job is not, and needs a lock before it moves.</li>
+</ul>
+</li>
+<li>Move the Growth digest, which is the only job that reads the runner's
+pid file directly.</li>
+<li>Delete the crontab entries, then the runner's deploy.</li>
+</ul>
+<p>A job moves with one config block:</p>
+<pre><code class="language-yaml">schedule:
+  name: search-reindex
+  cron: &#34;0 3 * * *&#34;
+  retries: 2
+  timeout: 45m
+</code></pre>
+<p>The pid-file read in the digest job is the one real blocker. It infers
+&quot;already running&quot; from a file the scheduler does not write, so it needs the
+scheduler's own lease API instead.</p>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>FW-0001: Adopt the internal auth framework</li>
+<li>ADR-0001: Keep frameworks in a register</li>
+<li><a href="https://example.invalid/scheduler/leases">Scheduler lease API</a></li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../../test/parity/fixtures/custom/docs/frameworks/0002-retire-the-legacy-job-runner.md</code>, sha256 <code>a9e206f0e4d776939165191609b533bfd5716339504100171a51a6061615b044</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

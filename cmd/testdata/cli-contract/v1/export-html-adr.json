@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "out": "build/html",
+  "dry_run": false,
+  "pages": [
+    {
+      "id": "ADR-0001",
+      "type": "adr",
+      "source": "docs/adr/0001-use-postgresql-for-the-registry-store.md",
+      "path": "adr/0001-use-postgresql-for-the-registry-store.html",
+      "action": "wrote",
+      "hash": "sha256:53598a7c17118dee020f6bdb8bd8aec78f286e8d29746f40f7a9efba758cdaee",
+      "unresolved_links": [],
+      "problems": []
+    },
+    {
+      "id": "ADR-0002",
+      "type": "adr",
+      "source": "docs/adr/0002-vendor-the-markdown-walker.md",
+      "path": "adr/0002-vendor-the-markdown-walker.html",
+      "action": "wrote",
+      "hash": "sha256:9bc17a61f72f59e17543e91c4b43e74851d8e341afff78db87a62e5e8cc1e31e",
+      "unresolved_links": [
+        {
+          "href": "../inv/0006-doczcore-public-api-philosophy.md",
+          "text": "INV-0006: doczcore public-API philosophy",
+          "line": 184
+        }
+      ],
+      "problems": []
+    },
+    {
+      "id": "",
+      "type": "",
+      "source": "",
+      "path": "index.html",
+      "action": "wrote",
+      "hash": "sha256:4f6ad880167e22b678236ffd9ed57925b6c6f2a85f6d8af087f2bf4be35dd374",
+      "unresolved_links": [],
+      "problems": []
+    }
+  ],
+  "total": {
+    "pages": 3,
+    "wrote": 3,
+    "unchanged": 0,
+    "failed": 0
+  }
+}

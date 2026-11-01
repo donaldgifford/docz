@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="DESIGN-0004">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>DESIGN-0004: Runner Pattern and DocType Registry</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Design</p>
+<h1>Runner Pattern and DocType Registry</h1>
+<p class="summary"><strong>Status:</strong> Approved
+<strong>Author:</strong> Donald Gifford
+<strong>Date:</strong> 2026-05-27</p>
+<div class="meta">
+<span class="pill">DESIGN-0004</span>
+<span class="pill st-accepted">Approved</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-05-27</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="background" aria-controls="p-background">Background</button>
+<button type="button" data-tab="design" aria-controls="p-design">Design</button>
+<button type="button" data-tab="interfaces" aria-controls="p-interfaces">Interfaces</button>
+<button type="button" data-tab="data-model" aria-controls="p-data-model">Data model</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
+<button type="button" data-tab="rollout" aria-controls="p-rollout">Rollout</button>
+<button type="button" data-tab="decisions-locked-or-revised" aria-controls="p-decisions-locked-or-revised">Decisions Locked or Revised</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title" id="overview">Overview</h2>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#goals-and-non-goals">Goals and Non-Goals</a>
+<ul>
+<li><a href="#goals">Goals</a></li>
+<li><a href="#non-goals">Non-Goals</a></li>
+</ul>
+</li>
+<li><a href="#background">Background</a></li>
+<li><a href="#detailed-design">Detailed Design</a>
+<ul>
+<li><a href="#a-runner-struct-shape-and-lifecycle">A. Runner struct shape and lifecycle</a></li>
+<li><a href="#b-flags-binding-model">B. Flags binding model</a></li>
+<li><a href="#c-output-writers-and---quiet">C. Output writers and --quiet</a></li>
+<li><a href="#d-logger-handler-choice">D. Logger handler choice</a></li>
+<li><a href="#e-doctype-registry-api">E. DocType registry API</a></li>
+<li><a href="#f-typed-doctype-and-status-strings">F. Typed DocType and Status strings</a></li>
+<li><a href="#g-librarypattern-evaluation-cobra-only">G. Library/pattern evaluation (Cobra-only)</a></li>
+<li><a href="#h-test-strategy">H. Test strategy</a></li>
+</ul>
+</li>
+<li><a href="#api--interface-changes">API / Interface Changes</a></li>
+<li><a href="#data-model">Data Model</a></li>
+<li><a href="#testing-strategy">Testing Strategy</a></li>
+<li><a href="#migration--rollout-plan">Migration / Rollout Plan</a>
+<ul>
+<li><a href="#per-commit-sequence">Per-commit sequence</a></li>
+</ul>
+</li>
+<li><a href="#decisions-locked-or-revised">Decisions Locked or Revised</a></li>
+<li><a href="#open-questions">Open Questions</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+<p>DESIGN-0004 specifies the architectural shape that IMPL-0009 (Wave 5 of
+INV-0002) will implement: a <code>cmd.Runner</code> struct that holds resolved
+config and injected dependencies, command handlers as methods on
+<code>*Runner</code>, a <code>config.DocTypeDef</code> registry that consolidates the
+scattered per-type metadata, and typed <code>DocType</code> / <code>Status</code> strings at
+internal API boundaries. The refactor eliminates the two systemic
+testability blockers in <code>docz</code> today — <code>cmd/</code> package-level globals and
+the 6+ scattered DocType definitions — without changing user-visible
+CLI behavior or the YAML config schema.</p>
+<h3 id="goals-and-non-goals">Goals and Non-Goals</h3>
+<div class="grid g2">
+<div class="card ok" id="goals">
+<p class="card-label">Goals</p>
+<ul>
+<li>Define a <code>Runner</code> struct that is the single injection surface for
+config, writers, logger, time, and git resolution.</li>
+<li>Replace every <code>runFoo</code> package-level handler with a method on
+<code>*Runner</code>, allowing tests to construct a Runner with <code>bytes.Buffer</code>
+writers and a fixed <code>Now</code>/<code>Git</code> instead of mutating package globals.</li>
+<li>Add a <code>log/slog</code> logger that writes to <code>Runner.Err</code> so test buffers
+capture log output without shared-stderr races.</li>
+<li>Consolidate the six built-in doc types into a single
+<code>internal/config/doctype.go</code> registry, derived from a literal
+<code>allDocTypes</code> slice with <code>DefaultConfig</code> as a constructor func.</li>
+<li>Introduce <code>type DocType string</code> and <code>type Status string</code> as compile-time
+signal at internal API boundaries, with no YAML schema change.</li>
+<li>Enable <code>t.Parallel()</code> on every existing cmd-layer test by removing the
+<code>os.Chdir</code>, package-global, and <code>os.Pipe</code> patterns blocking it today.</li>
+</ul>
+</div>
+<div class="card neutral" id="non-goals">
+<p class="card-label">Non-Goals</p>
+<ul>
+<li>Adding new user-facing commands or flags (beyond the <code>--log-format</code> and
+<code>--log-level</code> already in IMPL-0009 scope).</li>
+<li>Migrating from Cobra/Viper to another CLI framework.</li>
+<li>Adopting Bubble Tea, <code>fang</code>, or other Charm libraries — explicitly
+rejected below.</li>
+<li>Internationalization, structured-log shipping, or daemon mode.</li>
+<li>Changing the <code>.docz.yaml</code> schema. Existing config files must continue
+to parse byte-identically.</li>
+</ul>
+</div>
+</div>
+
+</section>
+<section class="panel" id="p-background">
+<h2 class="panel-title" id="background">Background</h2>
+<p><code>docz</code> today carries the following testability debts (cross-referenced
+to INV-0002 findings):</p>
+<ul>
+<li><strong>F1–F2: package-level globals in <code>cmd/</code></strong> — every flag (<code>createStatus</code>,
+<code>updateDryRun</code>, <code>wikiInitForce</code>, etc.) and <code>appCfg</code> is a <code>var</code> at file
+scope. Tests must reset these between runs, which prevents
+<code>t.Parallel()</code> and forces serialized execution.</li>
+<li><strong>F3: <code>if verbose { fmt.Fprintf(os.Stderr, ...) }</code> scattered across the
+cmd layer</strong> — 20+ such blocks. No structured logging, no level
+control, no test capture.</li>
+<li><strong>F4–F5: package globals <code>timeNow</code> and <code>gitUserName</code></strong> — tests must
+monkey-patch these to inject test values; impossible to parallelize.</li>
+<li><strong>F6: <code>os.Chdir</code> in tests</strong> — <code>internal/config/config_test.go</code> and
+several <code>cmd/*_test.go</code> files change the process working directory to
+steer config loading, fundamentally a process-wide side effect.</li>
+<li><strong>F14–F16: DocType scattered across 6+ locations</strong> —
+<code>config.DefaultConfig</code>, <code>config.ValidTypes</code>, <code>config.ResolveTypeAlias</code>,
+<code>config.TypesHelp</code>, the embedded template filenames, the default nav
+titles. No single source of truth.</li>
+</ul>
+<p>IMPL-0009 closes all of these in a single architectural pass. DESIGN-0004
+is the prerequisite gate that locks in shape before code lands.</p>
+
+</section>
+<section class="panel" id="p-design">
+<h2 class="panel-title">Design</h2>
+<h3 id="detailed-design">Detailed Design</h3>
+<h4 id="a-runner-struct-shape-and-lifecycle">A. Runner struct shape and lifecycle</h4>
+<p>The exact field set:</p>
+<pre><code class="language-go">// cmd/runner.go
+type Runner struct {
+    Cfg    config.Config
+    Out    io.Writer
+    Err    io.Writer
+    Logger *slog.Logger
+    Now    func() time.Time
+    Git    GitResolver
+}
+</code></pre>
+<p>No additional fields belong at construction time. <code>repoRoot</code> is <strong>not</strong>
+a Runner field; it is a parameter to <code>config.Load(configFile, repoRoot)</code>
+plumbed in <code>PersistentPreRunE</code> by calling <code>os.Getwd()</code> once. Keeping it
+out of Runner avoids confusing &quot;where this process is running&quot; with
+&quot;what config does this command hold.&quot;</p>
+<p><code>context.Context</code> is <strong>not</strong> a Runner field. It belongs in method
+signatures:</p>
+<pre><code class="language-go">func (r *Runner) Create(
+    ctx context.Context,
+    cmd *cobra.Command,
+    opts createOpts,
+    args []string,
+) error
+</code></pre>
+<p>Cobra passes <code>cmd.Context()</code>; the Runner method threads it to any
+context-aware call (git lookup, future timeouts).</p>
+<p><strong>Construction model:</strong> plain <code>NewRunner(cfg config.Config) *Runner</code>
+with defaults. Functional options are rejected here — six fields with
+unambiguous defaults do not justify the <code>WithXxx</code> ceremony, and
+struct-literal construction in tests is clearer:</p>
+<pre><code class="language-go">func NewRunner(cfg config.Config) *Runner {
+    return &amp;Runner{
+        Cfg: cfg,
+        Out: os.Stdout,
+        Err: os.Stderr,
+        Logger: slog.New(slog.NewTextHandler(os.Stderr, &amp;slog.HandlerOptions{
+            Level: slog.LevelInfo,
+        })),
+        Now: time.Now,
+        Git: realGit{},
+    }
+}
+</code></pre>
+<p>Tests construct directly:</p>
+<pre><code class="language-go">r := &amp;cmd.Runner{
+    Cfg:    config.DefaultConfig(),
+    Out:    &amp;bytes.Buffer{},
+    Err:    &amp;bytes.Buffer{},
+    Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+    Now:    func() time.Time { return fixedTime },
+    Git:    staticGit{Name: &#34;Test User&#34;},
+}
+</code></pre>
+<p><strong>Lifecycle:</strong> the Runner is built once in <code>PersistentPreRunE</code> and
+stored in a single package-level variable <code>runner *Runner</code> in
+<code>cmd/runner.go</code>. Per Decision §4 this matches the current <code>appCfg</code>
+model. One global mutable replaces six — a net win even if it is not
+zero-global. The Runner is effectively read-only after construction
+(handlers do not mutate <code>r.Cfg</code>). Tests bypass <code>PersistentPreRunE</code>
+entirely and construct the Runner directly.</p>
+<p><code>cobra.Command.Annotations</code> and context-stored runners are explicitly
+rejected — both add type-assertion noise with no benefit at this scale.</p>
+<h4 id="b-flags-binding-model">B. Flags binding model</h4>
+<p>Each command file owns a package-private options struct and a build
+function <code>newXxxCmd(r *Runner) *cobra.Command</code>:</p>
+<pre><code class="language-go">// cmd/create.go
+type createOpts struct {
+    status   string
+    author   string
+    noUpdate bool
+}
+
+func newCreateCmd(r *Runner) *cobra.Command {
+    var opts createOpts
+    c := &amp;cobra.Command{
+        Use:  &#34;create &lt;type&gt; &lt;title&gt;&#34;,
+        RunE: func(cmd *cobra.Command, args []string) error {
+            return r.Create(cmd.Context(), cmd, opts, args)
+        },
+    }
+    c.Flags().StringVar(&amp;opts.status, &#34;status&#34;, &#34;&#34;, &#34;initial status&#34;)
+    c.Flags().StringVar(&amp;opts.author, &#34;author&#34;, &#34;&#34;, &#34;document author&#34;)
+    c.Flags().BoolVar(&amp;opts.noUpdate, &#34;no-update&#34;, false, &#34;skip index update&#34;)
+    return c
+}
+</code></pre>
+<p>The opts struct is allocated per <code>newCreateCmd</code> call, so each test
+invocation gets fresh flag state. This eliminates the current leak where
+<code>createStatus = &quot;&quot;</code> must be reset between tests.</p>
+<p><code>--verbose</code> remains a persistent root flag. It is parsed before
+<code>PersistentPreRunE</code>, so by the time <code>NewRunner(cfg)</code> runs the flag value
+is final. The flag's package-level <code>var verbose bool</code> declaration is the
+<strong>only</strong> acceptable package-level global remaining; tracking
+<code>--log-level</code> and <code>--log-format</code> similarly. All other former globals are
+folded into per-command options structs.</p>
+<h4 id="c-output-writers-and---quiet">C. Output writers and <code>--quiet</code></h4>
+<p>Handlers write to <code>r.Out</code> / <code>r.Err</code> directly, never to
+<code>cmd.OutOrStdout()</code> and never to <code>os.Stdout</code>. The Runner is the single
+injection surface. Cobra's <code>cmd.OutOrStdout()</code> is redundant once
+<code>runner.Out</code> covers the same need with simpler test wiring (no
+<code>cmd.SetOut(&amp;buf)</code> + <code>t.Cleanup</code> ceremony).</p>
+<p>A <code>--quiet</code> persistent flag replaces <code>r.Out</code> with <code>io.Discard</code> in
+<code>PersistentPreRunE</code>, silencing user-facing success lines (<code>&quot;Created RFC-0001&quot;</code>) while preserving <code>r.Err</code> for warnings and errors. The logger
+also writes to <code>r.Err</code> (see §D), so <code>--quiet</code> does not suppress log
+output — that is the role of <code>--log-level=warn</code> or higher.</p>
+<p><strong>Note on IMPL-0009 Phase 3 task wording.</strong> IMPL-0009 Phase 3's task
+list predates this design and refers to <code>cmd.OutOrStdout()</code> and
+<code>cmd.SetOut(&amp;buf)</code> as the replacement pattern. That wording is
+superseded by this section: handlers write through <code>r.Out</code>/<code>r.Err</code>
+exclusively, and tests construct a Runner with <code>bytes.Buffer</code> writers
+rather than using <code>cmd.SetOut</code>/<code>cmd.SetErr</code>.</p>
+<h4 id="d-logger-handler-choice">D. Logger handler choice</h4>
+<p>The logger is constructed eagerly in <code>NewRunner</code>:</p>
+<pre><code class="language-go">slog.New(slog.NewTextHandler(r.Err, &amp;slog.HandlerOptions{Level: level}))
+</code></pre>
+<p>Lazy initialization is rejected — it would require a mutex or <code>sync.Once</code>
+to be safe across future goroutines, where eager construction is
+trivially safe.</p>
+<p>The handler writes to <strong><code>r.Err</code></strong>, not <code>os.Stderr</code>. This means tests
+capturing <code>r.Err</code> also capture log lines, and <code>t.Parallel()</code> tests do
+not race on a shared stderr.</p>
+<p><strong>Flags:</strong></p>
+<ul>
+<li><code>--verbose</code> (existing) — shorthand for <code>--log-level=debug</code>.</li>
+<li><code>--log-level=debug|info|warn|error</code> (new) — explicit level. Default
+<code>info</code>. When both <code>--verbose</code> and <code>--log-level</code> are set,
+<code>--log-level</code> wins.</li>
+<li><code>--log-format=text|json</code> (new, Decision §1) — <code>TextHandler</code> is the
+default; <code>--log-format=json</code> swaps in <code>JSONHandler</code> with identical
+options.</li>
+</ul>
+<p>Internal packages remain silent. None of <code>config</code>, <code>document</code>, <code>index</code>,
+<code>toc</code>, <code>wiki</code>, or <code>template</code> take a logger handle. They return typed
+errors and structured data; the cmd layer logs. The one borderline case
+(<code>toc.UpdateFiles</code> write errors collected in <code>UpdateReport</code>) is the
+correct pattern — return data, let the caller decide whether to log.</p>
+<h4 id="e-doctype-registry-api">E. DocType registry API</h4>
+<pre><code class="language-go">// internal/config/doctype.go
+type DocTypeDef struct {
+    Name          string         // canonical name (&#34;rfc&#34;)
+    Aliases       []string       // alternate input names (&#34;implementation&#34;)
+    DefaultConfig func() TypeConfig // fresh TypeConfig per call
+    NavTitle      string         // &#34;RFCs&#34;
+    PluralLabel   string         // &#34;RFCs&#34; (may differ from NavTitle)
+    TemplateName  string         // &#34;rfc&#34; — embedded template lookup key
+}
+
+var allDocTypes = []DocTypeDef{
+    {
+        Name:    &#34;rfc&#34;,
+        Aliases: nil,
+        DefaultConfig: func() TypeConfig {
+            return TypeConfig{
+                Enabled:  true,
+                Dir:      &#34;rfc&#34;,
+                IDPrefix: &#34;RFC&#34;,
+                IDWidth:  4,
+                Statuses: []string{&#34;Draft&#34;, &#34;Proposed&#34;, &#34;Accepted&#34;, &#34;Rejected&#34;, &#34;Implemented&#34;},
+                // ...
+            }
+        },
+        NavTitle:     &#34;RFCs&#34;,
+        PluralLabel:  &#34;RFCs&#34;,
+        TemplateName: &#34;rfc&#34;,
+    },
+    // 5 more entries
+}
+</code></pre>
+<p><strong>Registration model:</strong> explicit literal, rejected in favor of <code>init()</code>
+registration. <code>docz</code> has a closed set of built-in types with no
+extension point; the literal is readable, greppable, and statically
+analyzable. <code>init()</code> ordering would be invisible in tests.</p>
+<p><strong>Export policy:</strong> <code>allDocTypes</code> is package-private. The exported
+accessors are:</p>
+<ul>
+<li><code>AllDocTypes() []DocTypeDef</code> — returns <code>slices.Clone(allDocTypes)</code>.</li>
+<li><code>LookupDocType(name string) (DocTypeDef, bool)</code> — case-insensitive,
+whitespace-trimmed, checks canonical then aliases.</li>
+<li><code>DocTypeNames() []string</code> — sorted canonical names.</li>
+</ul>
+<p><strong><code>DefaultConfig</code> as constructor:</strong> this is the most important deviation
+from the IMPL-0009 sketch. Holding <code>TypeConfig</code> inline as a value would
+share its <code>Statuses []string</code> slice across all callers — a single
+errant <code>append</code> or assignment in a test silently corrupts the global. A
+<code>func() TypeConfig</code> constructor costs one extra call per lookup and
+eliminates the entire class of shared-mutation bugs.</p>
+<p><strong>Name collision warning.</strong> The <code>DocTypeDef</code> field is named
+<code>DefaultConfig</code> (a <code>func() TypeConfig</code>) and the package-level accessor
+that builds the full <code>Config</code> is also named <code>DefaultConfig()</code>. These
+are distinct symbols at different scopes (struct field vs. package
+function) but the collision is easy to miss in review. If it causes
+confusion during implementation, prefer renaming the struct field to
+<code>NewTypeConfig func() TypeConfig</code>. The DESIGN doc retains
+<code>DefaultConfig</code> to match the IMPL-0009 sketch but the implementer may
+choose either name.</p>
+<p><strong>Derived state:</strong> <code>DefaultConfig().Types</code>, <code>ValidTypes()</code>,
+<code>DefaultNavTitles()</code>, <code>typeAliases</code>, and <code>TypesHelp()</code> all become
+package-private build functions that iterate <code>allDocTypes</code>. The
+top-level exported names stay the same — the change is internal.</p>
+<p><strong>Consistency invariants (each in its own <code>t.Run</code>):</strong></p>
+<ul>
+<li><code>TestDocTypeRegistry_AllHaveEmbeddedTemplate</code></li>
+<li><code>TestDocTypeRegistry_AllHaveEmbeddedIndexHeader</code></li>
+<li><code>TestDocTypeRegistry_NoDuplicateNames</code></li>
+<li><code>TestDocTypeRegistry_NoAliasCollidesWithCanonical</code></li>
+<li><code>TestDocTypeRegistry_DefaultConfigValidates</code></li>
+<li><code>TestDocTypeRegistry_DefaultConfigStatusesNonEmpty</code></li>
+<li><code>TestDocTypeRegistry_DerivedDefaultConfigMatchesHardcoded</code></li>
+</ul>
+<h4 id="f-typed-doctype-and-status-strings">F. Typed <code>DocType</code> and <code>Status</code> strings</h4>
+<p>Per Decision §2 the registry struct is <code>config.DocTypeDef</code>; the
+typed-string wrapper is <code>config.DocType</code>. Plus:</p>
+<pre><code class="language-go">type DocType string
+type Status string
+</code></pre>
+<p><strong>Enforcement surface</strong> (sites that switch to the typed forms):</p>
+<ul>
+<li><code>document.CreateOptions.Type</code> → <code>DocType</code></li>
+<li><code>template.Data.Type</code> → <code>DocType</code></li>
+<li><code>template.Data.Status</code> → <code>Status</code></li>
+<li><code>template.EmbeddedDocumentTemplate(docType DocType)</code> parameter</li>
+<li><code>document.Frontmatter.Status</code> → <code>Status</code></li>
+</ul>
+<p>The <code>Config.Types</code> map <strong>key remains plain <code>string</code></strong> — Go requires
+explicit casting at every typed-string map access, which adds more noise
+than value at the map-key layer. Typed wrappers stay at function
+parameter and struct field boundaries.</p>
+<p><strong>YAML compatibility — revising Decision §3.</strong> Decision §3 said a
+custom <code>UnmarshalYAML</code> is required for <code>Status</code> at the YAML boundary.
+This is incorrect: <code>go.yaml.in/yaml/v3</code> unmarshals YAML string scalars
+transparently into any Go type whose underlying kind is <code>string</code>. A
+<code>type Status string</code> field tagged <code>yaml:&quot;status&quot;</code> will unmarshal without
+any custom code. The same holds for <code>DocType</code>. <strong>Decision §3 is revised:
+no custom unmarshaler needed.</strong> Verify with a parse golden test on a
+<code>.docz.yaml</code> fixture.</p>
+<h4 id="g-librarypattern-evaluation-cobra-only">G. Library/pattern evaluation (Cobra-only)</h4>
+<p>Per IMPL-0009 Decisions §5 the DESIGN doc evaluates <code>charmbracelet/fang</code>,
+Bubble Tea v2 alongside Cobra, and <code>localstack/lstk</code>.</p>
+<ul>
+<li><strong><code>fang</code></strong> — has dropped its Bubble Tea v1 dependency; styling comes
+through <code>lipgloss/v2</code> and <code>charm.land/x/ansi</code>. The repo describes it
+as &quot;small, experimental.&quot; It wraps Cobra to provide styled help,
+styled errors, automatic <code>--version</code>, manpage generation, and shell
+completion. The &quot;experimental&quot; label is the blocker: charm.land
+projects iterate fast and could pull in a TUI dependency later.
+Features it offers are out of IMPL-0009 scope. <strong>Reject.</strong></li>
+<li><strong>Bubble Tea v2 alongside Cobra</strong> — Bubble Tea v2.0.6 is stable. A
+legitimate pattern for future interactive prompts (e.g., interactive
+<code>docz create</code>). But docz has no current TUI requirement. The Runner
+pattern keeps the door open via a future <code>Runner.Prompt</code> injection
+field; adding Bubble Tea today is premature. <strong>Reject.</strong></li>
+<li><strong><code>localstack/lstk</code></strong> — useful <strong>pattern reference</strong>, not a
+dependency. The per-command options struct pattern in §B is the main
+borrowing. lstk's Runner is less formalized than what IMPL-0009
+proposes, but the command organization is clean. <strong>Reference only.</strong></li>
+</ul>
+<p><strong>Recommendation:</strong> stay on plain Cobra + Viper. The Runner pattern
+alone resolves every testability and DI concern; new library coupling
+buys marginal UX gains for non-trivial volatility risk.</p>
+<h4 id="h-test-strategy">H. Test strategy</h4>
+<p>Example post-refactor handler test:</p>
+<pre><code class="language-go">func TestRunner_Create_GeneratesFile(t *testing.T) {
+    t.Parallel()
+
+    dir := t.TempDir()
+    rfcDir := filepath.Join(dir, &#34;docs&#34;, &#34;rfc&#34;)
+    if err := os.MkdirAll(rfcDir, 0o750); err != nil {
+        t.Fatal(err)
+    }
+    readme := &#34;# RFCs\n\n&#34; +
+        &#34;&lt;!-- BEGIN DOCZ AUTO-GENERATED --&gt;\n&#34; +
+        &#34;&lt;!-- END DOCZ AUTO-GENERATED --&gt;\n&#34;
+    if err := os.WriteFile(filepath.Join(rfcDir, &#34;README.md&#34;),
+        []byte(readme), 0o644); err != nil {
+        t.Fatal(err)
+    }
+
+    cfg := config.DefaultConfig()
+    cfg.DocsDir = filepath.Join(dir, &#34;docs&#34;)
+
+    fixedTime := time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC)
+    var out bytes.Buffer
+    r := &amp;Runner{
+        Cfg:    cfg,
+        Out:    &amp;out,
+        Err:    io.Discard,
+        Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+        Now:    func() time.Time { return fixedTime },
+        Git:    staticGit{Name: &#34;Test User&#34;},
+    }
+
+    opts := createOpts{status: &#34;Draft&#34;}
+    if err := r.Create(context.Background(), nil, opts,
+        []string{&#34;rfc&#34;, &#34;API Rate Limiting&#34;}); err != nil {
+        t.Fatalf(&#34;Create() error: %v&#34;, err)
+    }
+
+    if !strings.Contains(out.String(), &#34;RFC-0001&#34;) {
+        t.Errorf(&#34;output = %q, want RFC-0001&#34;, out.String())
+    }
+}
+</code></pre>
+<p><strong>Conditions for <code>t.Parallel()</code> safety:</strong></p>
+<ol>
+<li><code>t.TempDir()</code> for all filesystem state.</li>
+<li>No mutation of package-level vars (<code>appCfg</code>, <code>updateDryRun</code>, etc.) —
+replaced by per-test Runner construction.</li>
+<li><code>Now</code> injected via <code>Runner.Now</code>; no mutation of <code>timeNow</code>.</li>
+<li><code>Git</code> injected via <code>Runner.Git</code>; no exec side effects.</li>
+<li>Logger writes to <code>r.Err</code> (a <code>bytes.Buffer</code> or <code>io.Discard</code>); no
+shared stderr.</li>
+</ol>
+<p>After Phase 7 (<code>config.Load(configFile, repoRoot string)</code>) there is no
+<code>os.Chdir</code>, eliminating the final process-wide state mutation.</p>
+
+</section>
+<section class="panel" id="p-interfaces">
+<h2 class="panel-title">Interfaces</h2>
+<h3 id="api--interface-changes">API / Interface Changes</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>config.Load</code></td>
+<td><code>Load(configFile string) (Config, error)</code></td>
+<td><code>Load(configFile, repoRoot string) (Config, error)</code> — empty <code>repoRoot</code> falls back to <code>os.Getwd()</code> for back-compat</td>
+</tr>
+<tr>
+<td><code>document.CreateOptions.Type</code></td>
+<td><code>string</code></td>
+<td><code>DocType</code></td>
+</tr>
+<tr>
+<td><code>template.Data.Type</code></td>
+<td><code>string</code></td>
+<td><code>DocType</code></td>
+</tr>
+<tr>
+<td><code>template.Data.Status</code></td>
+<td><code>string</code></td>
+<td><code>Status</code></td>
+</tr>
+<tr>
+<td><code>template.EmbeddedDocumentTemplate</code></td>
+<td><code>(name string)</code></td>
+<td><code>(docType DocType)</code></td>
+</tr>
+<tr>
+<td><code>document.Frontmatter.Status</code></td>
+<td><code>string</code></td>
+<td><code>Status</code></td>
+</tr>
+<tr>
+<td><code>config.ValidateType</code></td>
+<td><code>(string, error)</code></td>
+<td><code>(DocType, error)</code></td>
+</tr>
+<tr>
+<td>New: <code>config.DocTypeDef</code>, <code>config.AllDocTypes</code>, <code>config.LookupDocType</code>, <code>config.DocTypeNames</code></td>
+<td>n/a</td>
+<td>exported</td>
+</tr>
+<tr>
+<td>New: <code>cmd.Runner</code>, <code>cmd.NewRunner</code>, <code>cmd.GitResolver</code></td>
+<td>n/a</td>
+<td>exported (within cmd)</td>
+</tr>
+<tr>
+<td>New CLI flags</td>
+<td>n/a</td>
+<td><code>--log-level</code>, <code>--log-format</code>, <code>--quiet</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code>.docz.yaml</code> schema: <strong>unchanged</strong>. All typed-string fields use the same
+YAML tags as today (<code>yaml:&quot;status&quot;</code> etc.) and <code>go.yaml.in/yaml/v3</code>
+handles the typed-string round trip without a custom unmarshaler.</p>
+
+</section>
+<section class="panel" id="p-data-model">
+<h2 class="panel-title" id="data-model">Data model</h2>
+<p>No persisted-data schema changes. The in-memory <code>Config</code> and
+<code>Frontmatter</code> structs gain typed-string field types (<code>DocType</code>,
+<code>Status</code>) but the YAML representation is byte-identical.</p>
+<p>The registry <code>allDocTypes</code> is the new in-memory source of truth for
+DocType metadata. All previously hardcoded lookup tables (<code>typeAliases</code>,
+<code>defaultNavTitles</code>, etc.) are derived at package init.</p>
+
+</section>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-strategy">Testing Strategy</h3>
+<ul>
+<li><strong>Per-handler unit tests:</strong> one focused test per <code>(*Runner).Xxx</code>
+method, using a struct-literal Runner with <code>bytes.Buffer</code> writers.</li>
+<li><strong>DocType registry consistency tests:</strong> seven <code>t.Run</code> cases inside a
+single table loop (see §E).</li>
+<li><strong><code>t.Parallel()</code> smoke test:</strong> a single test that fans out 10
+concurrent runner invocations against distinct <code>t.TempDir()</code> roots to
+catch any remaining shared state.</li>
+<li><strong>slog handler capture test:</strong> assert that <code>r.Logger.Debug(...)</code>
+output lands in the <code>bytes.Buffer</code> attached as <code>r.Err</code>.</li>
+<li><strong>Git resolver context test:</strong> <code>staticGit</code> with a cancellable context
+proves <code>Ctrl+C</code> during <code>docz create</code> would cancel the git lookup.</li>
+<li><strong>YAML back-compat fixtures:</strong> 3–5 real-world <code>.docz.yaml</code> files (this
+repo's plus 2–3 synthetic edge cases per Decision §7) parsed in a
+parameterized golden test. Includes the typed-string round trip.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-rollout">
+<h2 class="panel-title">Rollout</h2>
+<h3 id="migration--rollout-plan">Migration / Rollout Plan</h3>
+<p>Per Decision §6: phases 2–11 ship as a <strong>single PR</strong>. DESIGN-0004
+(Phase 1) ships separately as the prerequisite gate.</p>
+<p>The single-PR call is validated by the phase interdependencies:
+Phase 5 (time injection) needs Phase 3 (Runner methods) to have a call
+site for <code>r.Now</code>. Phase 8 (DocType registry) needs Phase 3 to type
+handlers against <code>DocType</code>. Splitting would require temporary
+scaffolding or keeping both code paths live, which is more complexity
+than the large single PR.</p>
+<h4 id="per-commit-sequence">Per-commit sequence</h4>
+<p>Each commit leaves <code>make ci</code> green:</p>
+<ol>
+<li><code>cmd/runner.go</code>: define <code>Runner</code> + <code>NewRunner</code> + <code>runner *Runner</code>
+global; wire in <code>PersistentPreRunE</code>. No handlers converted.</li>
+<li><code>cmd/git.go</code>: define <code>GitResolver</code>, <code>realGit</code>, <code>staticGit</code>. No
+callers yet.</li>
+<li>Convert <code>runCreate</code> → <code>(*Runner).Create</code>. Bind <code>createOpts</code> in
+<code>newCreateCmd</code> closure. Replace all <code>fmt.Printf</code> / <code>os.Stdout</code> calls
+inside <code>runCreate</code> and its callees with <code>r.Out</code>/<code>r.Err</code> writes.</li>
+<li>Convert <code>runUpdate</code>, <code>updateType</code>, <code>runToCUpdate</code> → Runner methods.</li>
+<li>Convert <code>runInit</code> and related helpers; fold in Phase 7 (<code>config.Load</code>
+<code>repoRoot</code> parameter) at the same commit since the test rewrites are
+coupled.</li>
+<li>Convert remaining handlers (<code>runWikiInit</code>, <code>runWikiUpdate</code>,
+<code>runList</code>, <code>runTemplateShow</code>, etc.); replace verbose-guard blocks
+with <code>r.Logger.Debug(...)</code> (Phases 3 + 4 merged for small commands).
+Verify the <code>ensureDoczInit → (*Runner).Init(ctx, nil, nil)</code> path
+(per Open Question 2) — a nil <code>*cobra.Command</code> argument must not
+crash, which is naturally satisfied because all output flows through
+<code>r.Out</code>/<code>r.Err</code>.</li>
+<li>Delete <code>internal/document/time.go</code>; add <code>CreateOptions.CreatedAt</code>;
+populate from <code>runner.Now()</code>.</li>
+<li><code>internal/config/doctype.go</code>: <code>DocTypeDef</code>, <code>allDocTypes</code>, helpers;
+derive <code>DefaultConfig().Types</code>, <code>ValidTypes()</code>, etc.; add the seven
+consistency tests.</li>
+<li>Define <code>type DocType string</code> + <code>type Status string</code>. Update
+<code>CreateOptions.Type</code>, <code>template.Data.Type/Status</code>,
+<code>Frontmatter.Status</code>. Add YAML back-compat golden tests.</li>
+<li>Add <code>--log-level</code> and <code>--log-format</code> flags; wire the JSON handler;
+write the <code>--quiet</code> integration test.</li>
+<li>Final sweep: <code>make ci</code>, add <code>t.Parallel()</code> annotations everywhere
+eligible, regenerate any drifted goldens.</li>
+</ol>
+
+</section>
+<section class="panel" id="p-decisions-locked-or-revised">
+<h2 class="panel-title" id="decisions-locked-or-revised">Decisions Locked or Revised</h2>
+<p>From IMPL-0009 §Decisions:</p>
+<ol>
+<li>✅ <strong>Locked.</strong> <code>slog.TextHandler</code> default; <code>--log-format=json</code> opt-in.</li>
+<li>✅ <strong>Locked.</strong> Registry struct is <code>config.DocTypeDef</code>; typed-string
+wrapper is <code>config.DocType</code>.</li>
+<li>⚠️ <strong>Revised.</strong> No custom <code>UnmarshalYAML</code> required —
+<code>go.yaml.in/yaml/v3</code> handles typed-string fields with underlying
+kind <code>string</code> transparently. The DESIGN doc supersedes IMPL-0009
+Decision §3, and IMPL-0009 Phase 10's &quot;custom YAML marshaler&quot; task
+is cancelled — drop it during implementation rather than reopening
+the question.</li>
+<li>✅ <strong>Locked.</strong> Runner is a per-process singleton.</li>
+<li>✅ <strong>Locked.</strong> Stay on plain Cobra + Viper; reject <code>fang</code> and Bubble
+Tea (see §G).</li>
+<li>✅ <strong>Locked.</strong> Phases 2–11 ship as a single PR; Phase 1 (this
+document) ships separately.</li>
+<li>✅ <strong>Locked.</strong> Collect 3–5 real-world <code>.docz.yaml</code> fixtures for parse
+golden tests.</li>
+<li>✅ <strong>Locked.</strong> No external repositories import
+<code>github.com/donaldgifford/docz/cmd</code>. Verified via <code>gh search code</code>
+on 2026-05-27. No build-tag fences or <code>internal/cmd</code> move needed. If
+the module ever becomes a library dependency, revisit by moving
+<code>cmd/</code> under <code>internal/</code> or exporting only <code>cmd.Execute()</code>.</li>
+<li>✅ <strong>Locked.</strong> <code>slog</code> shorthand by default; <code>slog.Attr</code> only on a
+profiled hot path.</li>
+<li>✅ <strong>Locked.</strong> Rollback strategy: revert the single Wave 5 PR.</li>
+</ol>
+
+</section>
+<section class="panel" id="p-open-questions">
+<h2 class="panel-title" id="open-questions">Open questions</h2>
+<ol>
+<li><strong><code>--log-format=json</code> test coverage scope.</strong> Do we add a single
+smoke test or a full parameterized matrix? Recommendation: single
+smoke test asserting valid JSON output, leave the matrix for if/when
+a real consumer surfaces.</li>
+<li><strong><code>ensureDoczInit</code> calling <code>(*Runner).Init</code> with a nil <code>*cobra.Command</code>.</strong>
+The current <code>cmd/wiki.go:ensureDoczInit</code> calls <code>runInit(nil, nil)</code>.
+After conversion, the Runner method must guard against a nil cmd
+when writing output — handled naturally because all output migrates
+to <code>r.Out</code>/<code>r.Err</code> instead of <code>cmd.Println</code>. Confirm during Phase 6
+conversion.</li>
+<li><strong>Integration tests that call <code>rootCmd.Execute()</code>.</strong> If any are added
+later, they must build a fresh command tree per test
+(<code>newCreateCmd(r)</code> etc.) because <code>rootCmd</code> flags do not reset between
+<code>Execute()</code> calls. Document this constraint in CONTRIBUTING.md when
+the runner pattern lands.</li>
+</ol>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>IMPL-0009 — Runner Pattern and DocType Registry Refactor
+(implementation plan this design gates)</li>
+<li>INV-0002 — Architectural Review and Cleanup Opportunities
+(findings F1–F6 and F14–F16 are the underlying problems)</li>
+<li>IMPL-0008 — Move Stranded Business Logic Into Internal Packages
+(provides the slim <code>cmd/</code> and <code>internal/document</code> shape this refactor
+builds on)</li>
+<li><code>log/slog</code> package documentation (Go 1.21+) — structured logging API</li>
+<li><code>go.yaml.in/yaml/v3</code> — typed-string unmarshal behavior verified for
+Decision §3 revision</li>
+<li><code>charmbracelet/fang</code> — evaluated and rejected; see §G</li>
+<li><code>charmbracelet/bubbletea</code> v2 — evaluated and rejected; see §G</li>
+<li><code>localstack/lstk</code> — pattern reference for per-command options; see §G</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../design/testdata/docz-design-0004.md</code>, sha256 <code>98f0cb19b3ac8b6469a47260c09cf0dda0cb7945302d9a00a350bf8cfcbb7d3d</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

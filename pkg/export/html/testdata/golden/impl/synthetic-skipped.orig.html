@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="IMPL-9001">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>IMPL-9001: A plan with abandoned work</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Implementation plan</p>
+<h1>A plan with abandoned work</h1>
+<p class="summary">Record every spelling of an abandoned task, so the IDs a consumer has already
+written down keep pointing at the same work.</p>
+<div class="meta">
+<span class="pill">IMPL-9001</span>
+<span class="pill st-active">In Progress</span>
+<span class="pill">Fixture</span>
+<span class="pill">2026-09-20</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="phases" aria-controls="p-phases">Phases</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
+<button type="button" data-tab="dependencies" aria-controls="p-dependencies">Dependencies</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="objective">Objective</h3>
+
+</section>
+<section class="panel" id="p-phases">
+<h2 class="panel-title">Phases</h2>
+<h3 id="implementation-phases">Implementation Phases</h3>
+<div class="filters" role="group" aria-label="Show tasks"><button type="button" data-filter="all">All</button><button type="button" data-filter="open">Open</button><button type="button" data-filter="done">Done</button></div>
+<div class="card phase" id="phase-1-abandon-some-work">
+<div class="phase-head"><h3>Phase 1: Abandon some work</h3><span class="progress">2 / 3</span></div>
+<div class="bar"><i style="width: 66%"></i></div>
+<p>The interesting property is the numbering: tasks 1.2 and 1.4 are skipped, and
+1.3 and 1.5 keep the IDs they had before anyone gave up on their neighbours.</p>
+<ul class="tasks" id="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Land the parser</span></li>
+<li data-state="skipped"><input type="checkbox" disabled><span class="text"><del>Land the second parser</del> <span class="pill warn">skipped</span> <span class="note">the first one covers both cases</span></span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Land the walker</span></li>
+<li data-state="skipped"><input type="checkbox" disabled><span class="text"><del>Land the cache</del> <span class="pill warn">skipped</span></span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Land the writer</span></li>
+</ul>
+<h5 id="success-criteria">Success Criteria</h5>
+<ul>
+<li><code>go test ./...</code> passes</li>
+<li>No task ID changed when a task was skipped</li>
+</ul>
+</div>
+<div class="card phase" id="phase-2-defer-the-rest">
+<div class="phase-head"><h3>Phase 2: Defer the rest</h3><span class="progress">0 / 3</span></div>
+<div class="bar"><i style="width: 0%"></i></div>
+<ul class="tasks" id="tasks-1">
+<li data-state="deferred"><input type="checkbox" disabled><span class="text">Cut the release <span class="pill warn">deferred</span> <span class="note">needs a release owner</span></span></li>
+<li data-state="deferred"><input type="checkbox" disabled><span class="text"> <span class="pill warn">deferred</span> <span class="note">waiting on the upstream fix</span></span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Announce it</span></li>
+<li data-state="skipped"><input type="checkbox" disabled><span class="text"><del>Backport to v1</del> <span class="pill warn">skipped</span> <span class="note">v1 is frozen</span></span></li>
+</ul>
+<h5 id="success-criteria-1">Success Criteria</h5>
+<ul>
+<li>The release is tagged</li>
+</ul>
+</div>
+
+</section>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-plan">Testing Plan</h3>
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><div class="text">The skipped tasks are in neither progress count</div></li>
+</ul>
+
+</section>
+<section class="panel" id="p-dependencies">
+<h2 class="panel-title" id="dependencies">Dependencies</h2>
+<p>None.</p>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>DESIGN-0014</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../impl/testdata/synthetic-skipped.orig.md</code>, sha256 <code>8b7b739bbe942a6151be2c4e2c518117ecc0ecac85a9c42bf4c67b4cbbf10097</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

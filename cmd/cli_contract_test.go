@@ -153,6 +153,28 @@ func TestCLIJSONContract(t *testing.T) {
 
 		contractCheck(t, schemas["list"], "list", out.Bytes())
 	})
+
+	t.Run("export-html", func(t *testing.T) {
+		for _, fixture := range []string{"rfc", "adr", "design", "impl", "investigation", "custom"} {
+			r, out, _ := fixtureRunner(t, fixture)
+			opts := exportHTMLOpts{format: formatJSON, theme: "paper", mermaid: "source"}
+
+			if err := r.exportHTML(t.Context(), &opts, nil); err != nil {
+				t.Fatalf("export html (%s) = %v", fixture, err)
+			}
+
+			contractCheck(t, schemas["export-html"], "export-html-"+fixture, out.Bytes())
+		}
+
+		r, out, _ := fixtureRunner(t, "impl")
+		opts := exportHTMLOpts{format: formatJSON, theme: "paper", mermaid: "embed", dryRun: true}
+
+		if err := r.exportHTML(t.Context(), &opts, []string{"IMPL-0001"}); err != nil {
+			t.Fatalf("export html --dry-run IMPL-0001 = %v", err)
+		}
+
+		contractCheck(t, schemas["export-html"], "export-html-dry-run", out.Bytes())
+	})
 }
 
 // TestCLIJSONContractFixtures re-validates every committed output, including
@@ -171,7 +193,15 @@ func TestCLIJSONContractFixtures(t *testing.T) {
 
 	for _, e := range entries {
 		name := strings.TrimSuffix(e.Name(), ".json")
-		schema, _, _ := strings.Cut(name, "-")
+
+		// A fixture is named <schema>-<case>, and a schema's name may hold a
+		// dash itself (export-html), so the longest name it opens with wins.
+		schema := ""
+		for n := range schemas {
+			if (name == n || strings.HasPrefix(name, n+"-")) && len(n) > len(schema) {
+				schema = n
+			}
+		}
 
 		sch, ok := schemas[schema]
 		if !ok {

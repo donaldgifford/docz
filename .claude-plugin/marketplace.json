@@ -13,6 +13,12 @@
       "source": "./plugins/docz-review",
       "description": "Blocks the end of a turn on a browser review of every docz document the agent created, and feeds the reviewer's answers back as the next instruction.",
       "category": "documentation"
+    },
+    {
+      "name": "docz-html",
+      "source": "./plugins/docz-html",
+      "description": "Turns a docz document into one standalone HTML page in docz's theme, for readers outside the repository.",
+      "category": "documentation"
     }
   ]
 }

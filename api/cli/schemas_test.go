@@ -10,10 +10,11 @@ import (
 const idBase = "https://github.com/donaldgifford/docz/schemas/cli/"
 
 var versions = map[string]int{
-	"inspect":  SchemaVersionInspect,
-	"validate": SchemaVersionValidate,
-	"create":   SchemaVersionCreate,
-	"review":   SchemaVersionReview,
+	"inspect":     SchemaVersionInspect,
+	"validate":    SchemaVersionValidate,
+	"create":      SchemaVersionCreate,
+	"review":      SchemaVersionReview,
+	"export-html": SchemaVersionExportHTML,
 }
 
 func TestSchemas(t *testing.T) {

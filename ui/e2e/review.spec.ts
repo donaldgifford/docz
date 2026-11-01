@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 /*
@@ -6,6 +7,10 @@ import { expect, test, type Page } from "@playwright/test";
  * and block boundaries), against the fake server the review dev server
  * runs over e2e/fixtures/review-session.json. The fake keeps state, so
  * the specs run serially and reset it first.
+ *
+ * Every spec runs under each appearance (IMPL-0028 Phase 6): paper
+ * light, paper dark, and classic, stored where the page reads them, and
+ * each setting is also held to full-rule axe, contrast included.
  */
 
 const ORIGIN = "http://127.0.0.1:4174";
@@ -17,11 +22,34 @@ test.beforeEach(async ({ request }) => {
   await request.post(`${ORIGIN}/__fake/reset`);
 });
 
+interface Setting {
+  name: string;
+  theme: "paper" | "classic";
+  mode: "light" | "dark";
+}
+
+const PAPER_LIGHT: Setting = {
+  name: "paper light",
+  theme: "paper",
+  mode: "light",
+};
+
+const SETTINGS: Setting[] = [
+  PAPER_LIGHT,
+  { name: "paper dark", theme: "paper", mode: "dark" },
+  { name: "classic", theme: "classic", mode: "dark" },
+];
+
+let setting = PAPER_LIGHT;
+
 async function open(page: Page) {
   await page.goto(`${ORIGIN}/review.html?t=${TOKEN}`);
   await expect(
     page.getByRole("heading", { name: "Review cache", level: 1 }),
   ).toBeVisible();
+  const html = page.locator("html");
+  await expect(html).toHaveAttribute("data-theme", setting.theme);
+  await expect(html).toHaveAttribute("data-mode", setting.mode);
 }
 
 // Selects from the first occurrence of `from` (the `nth` one) through the
@@ -81,138 +109,217 @@ async function comment(page: Page, text: string) {
   await expect(popover).toBeHidden();
 }
 
-test("answers, annotates, submits, and the message carries it all", async ({
-  page,
-  request,
-}) => {
-  await open(page);
+for (const each of SETTINGS) {
+  test.describe(each.name, () => {
+    test.beforeEach(async ({ page }) => {
+      setting = each;
+      await page.addInitScript((s: Setting) => {
+        localStorage.setItem("docz:theme", s.theme);
+        localStorage.setItem("docz:mode", s.mode);
+      }, each);
+    });
 
-  const q1 = page.locator('[data-question="1"]');
-  await q1.getByRole("radio", { name: /An in-process LRU/ }).click();
-  await page
-    .getByRole("button", { name: "Accept all recommendations" })
-    .click();
-  await expect(
-    page
-      .locator('[data-question="2"]')
-      .getByRole("radio", { name: /One hour/ }),
-  ).toHaveAttribute("aria-checked", "true");
-  await expect(
-    q1.getByRole("radio", { name: /An in-process LRU/ }),
-  ).toHaveAttribute("aria-checked", "true");
+    test("passes full-rule axe", async ({ page }) => {
+      await open(page);
+      const results = await new AxeBuilder({ page }).analyze();
+      const blocking = results.violations.filter(
+        (v) => v.impact === "serious" || v.impact === "critical",
+      );
+      expect(
+        blocking.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.html) })),
+      ).toEqual([]);
+    });
 
-  // Formatted: the quote starts inside a <strong>.
-  await select(page, "Postgres for the store");
-  await comment(page, "Why not SQLite?");
+    test("answers, annotates, submits, and the message carries it all", async ({
+      page,
+      request,
+    }) => {
+      await open(page);
 
-  // Multiline: across the soft wrap in the overview.
-  await select(page, "We use", "Postgres");
-  await comment(page, "Wrapped.");
+      const q1 = page.locator('[data-question="1"]');
+      await q1.getByRole("radio", { name: /An in-process LRU/ }).click();
+      await page
+        .getByRole("button", { name: "Accept all recommendations" })
+        .click();
+      await expect(
+        page
+          .locator('[data-question="2"]')
+          .getByRole("radio", { name: /One hour/ }),
+      ).toHaveAttribute("aria-checked", "true");
+      await expect(
+        q1.getByRole("radio", { name: /An in-process LRU/ }),
+      ).toHaveAttribute("aria-checked", "true");
 
-  // Unicode: combining-free accents and two emoji.
-  const uni = await select(page, "café notes ☕");
-  await uni.getByRole("button", { name: "Replace" }).click();
-  await uni.getByLabel("Replace with").fill("coffee notes");
-  await uni.getByRole("button", { name: "Add" }).click();
+      // Formatted: the quote starts inside a <strong>.
+      await select(page, "Postgres for the store");
+      await comment(page, "Why not SQLite?");
 
-  // Repeated: the second "The cache is warm." in the same paragraph.
-  const rep = await select(page, "The cache is warm.", "The cache is warm.", 1);
-  await rep.getByRole("button", { name: "Delete" }).click();
+      // Multiline: across the soft wrap in the overview.
+      await select(page, "We use", "Postgres");
+      await comment(page, "Wrapped.");
 
-  // Cross-block: from a goal into the non-goal list; comment only.
-  const cross = await select(page, "under 50 ms.", "Caching search");
-  await expect(cross.getByRole("button", { name: "Replace" })).toBeDisabled();
-  await expect(cross.getByRole("button", { name: "Delete" })).toBeDisabled();
-  await comment(page, "Across the lists.");
+      // Unicode: combining-free accents and two emoji.
+      const uni = await select(page, "café notes ☕");
+      await uni.getByRole("button", { name: "Replace" }).click();
+      await uni.getByLabel("Replace with").fill("coffee notes");
+      await uni.getByRole("button", { name: "Add" }).click();
 
-  await expect(
-    page.getByRole("button", { name: "Approve", exact: true }),
-  ).toBeDisabled();
-  await page.getByRole("button", { name: "Submit" }).click();
-  await expect(page.getByText(/This round is closed: changes/)).toBeVisible();
+      // Repeated: the second "The cache is warm." in the same paragraph.
+      const rep = await select(
+        page,
+        "The cache is warm.",
+        "The cache is warm.",
+        1,
+      );
+      await rep.getByRole("button", { name: "Delete" }).click();
 
-  const message = await (await request.get(`${ORIGIN}/__fake/feedback`)).text();
-  expect(message).toContain(
-    "docz review: DESIGN-0001 Review cache, round 1: changes requested",
-  );
-  expect(message).toContain("- Q1 Which cache? → c");
-  expect(message).toContain("- Q2 How long a TTL? → a");
-  expect(message).toContain(
-    '[overview › Overview, line 39] "Postgres for the store"\n   comment: Why not SQLite?',
-  );
-  expect(message).toContain('[overview › Overview, line 39] "We use Postgres"');
-  expect(message).toContain(
-    '[goals › Goals, line 53] replace "café notes ☕"\n   → "coffee notes"',
-  );
-  expect(message).toContain(
-    '[overview › Overview, line 43] delete: "The cache is warm."',
-  );
-  expect(message).toContain('[goals › Goals, line 52] "under 50 ms."');
-  expect(message).toContain("Resolve Q1 and Q2 in the document");
-  expect(message).not.toContain("quote not found");
-  expect(message).not.toContain("quote ambiguous");
-});
+      // Cross-block: from a goal into the non-goal list; comment only.
+      const cross = await select(page, "under 50 ms.", "Caching search");
+      await expect(
+        cross.getByRole("button", { name: "Replace" }),
+      ).toBeDisabled();
+      await expect(
+        cross.getByRole("button", { name: "Delete" }),
+      ).toBeDisabled();
+      await comment(page, "Across the lists.");
 
-test("a comment typed but not added is never lost", async ({ page }) => {
-  await open(page);
-  const submit = page.getByRole("button", { name: "Submit" });
-  const approve = page.getByRole("button", { name: "Approve", exact: true });
-  // An empty draft has nothing to submit; approving is its own button.
-  await expect(submit).toBeDisabled();
-  await expect(approve).toBeEnabled();
+      await expect(
+        page.getByRole("button", { name: "Approve", exact: true }),
+      ).toBeDisabled();
+      await page.getByRole("button", { name: "Submit" }).click();
+      await expect(
+        page.getByText(/This round is closed: changes/),
+      ).toBeVisible();
 
-  const popover = await select(page, "Postgres for the store");
-  await popover.getByRole("button", { name: "Comment" }).click();
-  await popover.getByLabel("Comment").fill("Why not SQLite?");
-  await expect(submit).toBeDisabled();
-  await expect(approve).toBeDisabled();
+      const message = await (
+        await request.get(`${ORIGIN}/__fake/feedback`)
+      ).text();
+      expect(message).toContain(
+        "docz review: DESIGN-0001 Review cache, round 1: changes requested",
+      );
+      expect(message).toContain("- Q1 Which cache? → c");
+      expect(message).toContain("- Q2 How long a TTL? → a");
+      expect(message).toContain(
+        '[overview › Overview, line 39] "Postgres for the store"\n   comment: Why not SQLite?',
+      );
+      expect(message).toContain(
+        '[overview › Overview, line 39] "We use Postgres"',
+      );
+      expect(message).toContain(
+        '[goals › Goals, line 53] replace "café notes ☕"\n   → "coffee notes"',
+      );
+      expect(message).toContain(
+        '[overview › Overview, line 43] delete: "The cache is warm."',
+      );
+      expect(message).toContain('[goals › Goals, line 52] "under 50 ms."');
+      expect(message).toContain("Resolve Q1 and Q2 in the document");
+      expect(message).not.toContain("quote not found");
+      expect(message).not.toContain("quote ambiguous");
+    });
 
-  // A click on the page clears the selection; the popover and its words stay.
-  await page
-    .getByRole("heading", { name: "Review cache", exact: true })
-    .click();
-  await expect(popover.getByLabel("Comment")).toHaveValue("Why not SQLite?");
+    test("a comment typed but not added is never lost", async ({ page }) => {
+      await open(page);
+      const submit = page.getByRole("button", { name: "Submit" });
+      const approve = page.getByRole("button", {
+        name: "Approve",
+        exact: true,
+      });
+      // An empty draft has nothing to submit; approving is its own button.
+      await expect(submit).toBeDisabled();
+      await expect(approve).toBeEnabled();
 
-  await popover.getByRole("button", { name: "Add" }).click();
-  await expect(submit).toBeEnabled();
-  await submit.click();
-  await expect(page.getByText(/This round is closed: changes/)).toBeVisible();
-});
+      const popover = await select(page, "Postgres for the store");
+      await popover.getByRole("button", { name: "Comment" }).click();
+      await popover.getByLabel("Comment").fill("Why not SQLite?");
+      await expect(submit).toBeDisabled();
+      await expect(approve).toBeDisabled();
 
-test("a forged data-line never becomes a coordinate", async ({
-  page,
-  request,
-}) => {
-  await open(page);
-  const forged = page.getByText("A forged paragraph claiming line one.");
-  await expect(forged).toHaveAttribute("data-line", "71");
-  await expect(page.locator('article [data-line="1"]')).toHaveCount(0);
+      // A click on the page clears the selection; the popover and its words stay.
+      await page
+        .getByRole("heading", { name: "Review cache", exact: true })
+        .click();
+      await expect(popover.getByLabel("Comment")).toHaveValue(
+        "Why not SQLite?",
+      );
 
-  await select(page, "A forged paragraph");
-  await comment(page, "Remove this.");
-  await page.getByRole("button", { name: "Submit" }).click();
-  await expect(page.getByText(/This round is closed/)).toBeVisible();
+      await popover.getByRole("button", { name: "Add" }).click();
+      await expect(submit).toBeEnabled();
+      await submit.click();
+      await expect(
+        page.getByText(/This round is closed: changes/),
+      ).toBeVisible();
+    });
 
-  const records = (await (
-    await request.get(`${ORIGIN}/__fake/records`)
-  ).json()) as {
-    annotations: { anchor?: { line: number; resolution: string } }[];
-  }[];
-  expect(records[0]?.annotations[0]?.anchor).toMatchObject({
-    line: 71,
-    resolution: "exact",
+    test("a forged data-line never becomes a coordinate", async ({
+      page,
+      request,
+    }) => {
+      await open(page);
+      const forged = page.getByText("A forged paragraph claiming line one.");
+      await expect(forged).toHaveAttribute("data-line", "71");
+      await expect(page.locator('article [data-line="1"]')).toHaveCount(0);
+
+      await select(page, "A forged paragraph");
+      await comment(page, "Remove this.");
+      await page.getByRole("button", { name: "Submit" }).click();
+      await expect(page.getByText(/This round is closed/)).toBeVisible();
+
+      const records = (await (
+        await request.get(`${ORIGIN}/__fake/records`)
+      ).json()) as {
+        annotations: { anchor?: { line: number; resolution: string } }[];
+      }[];
+      expect(records[0]?.annotations[0]?.anchor).toMatchObject({
+        line: 71,
+        resolution: "exact",
+      });
+    });
+
+    test("Approve records an approval with nothing drafted", async ({
+      page,
+      request,
+    }) => {
+      await open(page);
+      await page.getByRole("button", { name: "Approve", exact: true }).click();
+      await expect(
+        page.getByText(/This round is closed: approved/),
+      ).toBeVisible();
+      const message = await (
+        await request.get(`${ORIGIN}/__fake/feedback`)
+      ).text();
+      expect(message.trim()).toBe(
+        "docz review: DESIGN-0001 Review cache, round 1: approved",
+      );
+    });
   });
-});
+}
 
-test("Approve records an approval with nothing drafted", async ({
+test("with no stored choice it follows the system, then keeps the reader's", async ({
   page,
-  request,
 }) => {
-  await open(page);
-  await page.getByRole("button", { name: "Approve", exact: true }).click();
-  await expect(page.getByText(/This round is closed: approved/)).toBeVisible();
-  const message = await (await request.get(`${ORIGIN}/__fake/feedback`)).text();
-  expect(message.trim()).toBe(
-    "docz review: DESIGN-0001 Review cache, round 1: approved",
-  );
+  setting = PAPER_LIGHT;
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto(`${ORIGIN}/review.html?t=${TOKEN}`);
+  const html = page.locator("html");
+  await expect(html).toHaveAttribute("data-theme", "paper");
+  await expect(html).not.toHaveAttribute("data-mode", /.*/);
+  const bg = () =>
+    page.evaluate(() =>
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--color-bg-base")
+        .trim(),
+    );
+  expect(await bg()).toBe("#15171a");
+
+  await page.getByRole("button", { name: "Switch to light mode" }).click();
+  await expect(html).toHaveAttribute("data-mode", "light");
+  expect(await bg()).toBe("#f6f5f1");
+
+  // The page drops its token from the URL, so reopen the link.
+  await page.goto(`${ORIGIN}/review.html?t=${TOKEN}`);
+  await expect(html).toHaveAttribute("data-mode", "light");
+  await page.getByLabel("Theme").selectOption("classic");
+  await page.goto(`${ORIGIN}/review.html?t=${TOKEN}`);
+  await expect(html).toHaveAttribute("data-theme", "classic");
+  await expect(page.getByRole("button", { name: /Switch to/ })).toHaveCount(0);
 });

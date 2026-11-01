@@ -60,5 +60,7 @@ docz create impl "Your Implementation Title"
 | IMPL-0025 | Pre-cut markdown and lint fixes | Completed | 2026-10-12 | Donald Gifford | [0025-pre-cut-markdown-and-lint-fixes.md](0025-pre-cut-markdown-and-lint-fixes.md) |
 | IMPL-0026 | A read-only MCP server in docz-api: tokens, scoped access, and the six tools | Completed | 2026-10-17 | Donald Gifford | [0026-a-read-only-mcp-server-in-docz-api-tokens-scoped-access-and-the.md](0026-a-read-only-mcp-server-in-docz-api-tokens-scoped-access-and-the.md) |
 | IMPL-0027 | docz-review: the CLI contract, the review page, the binary, and the plugin | In Progress | 2026-10-25 | Donald Gifford | [0027-docz-review-the-cli-contract-the-review-page-the-binary-and-the.md](0027-docz-review-the-cli-contract-the-review-page-the-binary-and-the.md) |
+| IMPL-0028 | docz-html: pkg/theme, the skill, docz export html, and the review page on paper | Completed | 2026-10-31 | Donald Gifford | [0028-docz-html-pkgtheme-the-skill-docz-export-html-and-the-review.md](0028-docz-html-pkgtheme-the-skill-docz-export-html-and-the-review.md) |
+| IMPL-0029 | docz-site on paper, with the widgets as React components | Draft | 2026-10-31 | Donald Gifford | [0029-docz-site-on-paper-with-the-widgets-as-react-components.md](0029-docz-site-on-paper-with-the-widgets-as-react-components.md) |
 <!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->

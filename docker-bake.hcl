@@ -127,7 +127,8 @@ target "_common_ui" {
   dockerfile = "../Dockerfile.ui"
   context    = "ui"
   contexts = {
-    spec = "api"
+    spec  = "api"
+    theme = "pkg/theme"
   }
   labels = {
     "org.opencontainers.image.source"      = "https://github.com/donaldgifford/docz"

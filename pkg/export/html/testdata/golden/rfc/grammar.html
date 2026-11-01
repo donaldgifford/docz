@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="RFC-0001">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>RFC-0001: Grammar fixture</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · RFC</p>
+<h1>Grammar fixture</h1>
+<p class="summary">Publish a typed reader for RFC documents, so a consumer reads a proposal as a
+value with one field per section rather than as markdown it has to walk itself.</p>
+<div class="meta">
+<span class="pill">RFC-0001</span>
+<span class="pill st-draft">Draft</span>
+<span class="pill">Test Author</span>
+<span class="pill">2026-09-20</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="problem" aria-controls="p-problem">Problem</button>
+<button type="button" data-tab="proposal" aria-controls="p-proposal">Proposal</button>
+<button type="button" data-tab="alternatives" aria-controls="p-alternatives">Alternatives</button>
+<button type="button" data-tab="risks" aria-controls="p-risks">Risks</button>
+<button type="button" data-tab="success" aria-controls="p-success">Success</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="summary">Summary</h3>
+
+</section>
+<section class="panel" id="p-problem">
+<h2 class="panel-title">Problem</h2>
+<h3 id="problem-statement">Problem Statement</h3>
+<p>Every consumer that wants the risks out of a proposal parses the table itself,
+and each one disagrees about which column is which.</p>
+<h4 id="supporting-data">Supporting Data</h4>
+<p>Three consumers ship a table reader of their own today, and two of them read
+the mitigation column as the third rather than the fourth.</p>
+
+</section>
+<section class="panel" id="p-proposal">
+<h2 class="panel-title">Proposal</h2>
+<h3 id="proposed-solution">Proposed Solution</h3>
+<p>Ship <code>pkg/rfc</code> with one field per section of the template, the shared sections
+read by the <code>kinds</code> package so they mean the same thing in every type.</p>
+
+</section>
+<section class="panel" id="p-alternatives">
+<h2 class="panel-title">Alternatives</h2>
+<h3 id="alternatives-considered">Alternatives Considered</h3>
+<div class="grid g2">
+<div class="card"><p class="card-label">a. Leave the parsing to each consumer.</p><p>Rejected: three readers already disagree about the risks table, which is the problem rather than the fix.</p></div>
+<div class="card"><p class="card-label">Ship a generic markdown model.</p><p>Rejected: a consumer would still have to know which heading held the risks.</p></div>
+<div class="card"><p class="card-label"></p><p>Wait for the schema work to land first.</p></div>
+</div>
+
+</section>
+<section class="panel" id="p-risks">
+<h2 class="panel-title">Risks</h2>
+<h3 id="risks-and-mitigations">Risks and Mitigations</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Impact</th>
+<th>Likelihood</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The template is renamed</td>
+<td class="high">High</td>
+<td class="low">Low</td>
+<td>A test pins the heading table to it</td>
+</tr>
+<tr>
+<td>A legacy document carries no markers</td>
+<td class="medium">Medium</td>
+<td class="high">High</td>
+<td>Inference reads it by heading</td>
+</tr>
+<tr>
+<td>The risks table grows a fifth column</td>
+<td class="low">Low</td>
+<td class="low">Low</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-success">
+<h2 class="panel-title">Success</h2>
+<h3 id="success-criteria">Success Criteria</h3>
+<div class="grid g2">
+<div class="card ok"><code>go test ./pkg/rfc/...</code> passes</div>
+<div class="card ok">Every RFC in the corpus parses with no finding its author did not earn</div>
+</div>
+
+</section>
+<section class="panel" id="p-open-questions">
+<h2 class="panel-title" id="open-questions">Open questions</h2>
+<details class="expand" id="1-should-the-risks-table-be-read-by-column-name">
+<summary>1. Should the risks table be read by column name?</summary>
+<div class="body">
+<ul>
+<li class="option recommended">a. No, by position <em>(recommendation)</em>: the corpus spells the headers four
+different ways.</li>
+<li class="option">b. Yes, by name, and report a table whose headers do not match.</li>
+</ul>
+<p class="resolution"><strong>Resolved 2026-09-20: (a)</strong> reading by name would drop every row of the two
+documents that write &quot;Likelihood&quot; as &quot;Probability&quot;.</p>
+</div>
+</details>
+<details class="expand" id="2-should-an-empty-mitigation-be-an-error-rather-than-a-warning" open>
+<summary>2. Should an empty mitigation be an error rather than a warning?</summary>
+<div class="body">
+<ul>
+<li class="option">a. Warning: a risk listed before anyone knows what to do about it is how the
+section gets written.</li>
+<li class="option">b. Error, so an accepted proposal cannot carry one.</li>
+</ul>
+</div>
+</details>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>DESIGN-0014</li>
+<li>The RFC template, whose sections this fixture mirrors</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../rfc/testdata/grammar.md</code>, sha256 <code>5357ce1d9ffc61e83f6c0e4e6047ca0b19407bb8a05b01e4a95b7e3939cde78b</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/repo"
 	"github.com/donaldgifford/docz/v2/pkg/export/confluence"
+	"github.com/donaldgifford/docz/v2/pkg/export/html"
 )
 
 // hooks returns the repo.Hooks that narrate an operation onto this
@@ -56,6 +57,15 @@ func (r *Runner) exportHooks() *confluence.Hooks {
 		},
 		PageDone: func(p confluence.PageResult) {
 			r.Logger.Debug("page done", "title", p.Title, "action", p.Action.String(), "page_id", p.PageID, "version", p.Version)
+		},
+	}
+}
+
+// exportHTMLHooks maps docz export html's page events to debug lines.
+func (r *Runner) exportHTMLHooks() *html.Hooks {
+	return &html.Hooks{
+		PageDone: func(p html.PageResult) {
+			r.Logger.Debug("page done", "id", p.ID, "path", p.Path, "action", string(p.Action))
 		},
 	}
 }

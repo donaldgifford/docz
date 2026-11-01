@@ -6,11 +6,13 @@
 # finding.
 #
 # A placeholder Postgres DSN (user docz, host db) — the example stack in docz-api's
-# DESIGN-0001, quoted in its archived copy, in docz's DESIGN-0008, and in
-# the pkg/design golden corpus that snapshots it.
+# DESIGN-0001, quoted in its archived copy, in docz's DESIGN-0008, in
+# the pkg/design golden corpus that snapshots it, and in the
+# pkg/export/html goldens rendered from that corpus (IMPL-0028).
 ^docs/archive/api/design/0001-docz-api-cross-repo-docz-registry-and-ingestion-service\.md$
 ^docs/design/0008-docz-api-cross-repo-docz-registry-and-ingestion-service\.md$
 ^pkg/design/testdata/api-design-0001(\.orig)?\.md$
+^pkg/export/html/testdata/golden/design/api-design-0001(\.orig)?\.html$
 # A placeholder Postgres DSN (user u, host db) — a config parsing test's fixture.
 ^internal/config/config_test\.go$
 # This file. Its first version quoted the two DSNs above, and a scan over

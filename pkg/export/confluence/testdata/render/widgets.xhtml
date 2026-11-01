@@ -1,0 +1,22 @@
+title: DESIGN-0001: Widgets
+---
+<h2>Overview</h2>
+<p>A flow, a stepper, and a scorecard each fold into an expand.</p>
+<ac:structured-macro ac:name="expand"><ac:parameter ac:name="title">Flow</ac:parameter><ac:rich-text-body><ac:structured-macro ac:name="code"><ac:parameter ac:name="language">yaml</ac:parameter><ac:plain-text-body><![CDATA[stages:
+  - name: Ingress
+    does: Terminates TLS
+  - name: Auth
+    does: Verifies the token
+]]></ac:plain-text-body></ac:structured-macro>
+</ac:rich-text-body></ac:structured-macro>
+<ac:structured-macro ac:name="expand"><ac:parameter ac:name="title">Stepper</ac:parameter><ac:rich-text-body><ac:structured-macro ac:name="code"><ac:parameter ac:name="language">yaml</ac:parameter><ac:plain-text-body><![CDATA[steps:
+  - {key: parse, name: Parse, does: Reads it}
+  - {key: verify, name: Verify, does: Checks it}
+scenarios:
+  - name: Valid
+]]></ac:plain-text-body></ac:structured-macro>
+</ac:rich-text-body></ac:structured-macro>
+<ac:structured-macro ac:name="expand"><ac:parameter ac:name="title">Scorecard</ac:parameter><ac:rich-text-body><ac:structured-macro ac:name="code"><ac:parameter ac:name="language">yaml</ac:parameter><ac:plain-text-body><![CDATA[checks:
+  - {id: C1, name: Signed, target: "<all> & signed"}
+]]></ac:plain-text-body></ac:structured-macro>
+</ac:rich-text-body></ac:structured-macro>

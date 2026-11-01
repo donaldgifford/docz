@@ -75,6 +75,8 @@ jobs:
               - 'ui/**'
               - 'api/openapi.yaml'
               - 'api/cli/**'
+              # tokens.css imports the themes from here (DESIGN-0025).
+              - 'pkg/theme/**'
               - 'ui.just'
               - 'Dockerfile.ui'
             # The plugin's tests run its hooks against ui/review/ from source,
@@ -511,8 +513,9 @@ jobs:
       # fields a marketplace install reads, and every listed source exists.
       - name: Check the manifests
         run: |
-          jq -e '.name and .version and .description' \
-            plugins/docz-review/.claude-plugin/plugin.json
+          for manifest in plugins/*/.claude-plugin/plugin.json; do
+            jq -e '.name and .version and .description' "${manifest}"
+          done
           jq -e '.hooks.PostToolUse and .hooks.Stop' \
             plugins/docz-review/hooks/hooks.json
           jq -e '.name == "docz" and (.plugins | length > 0)' \

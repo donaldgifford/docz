@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="IMPL-0002">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>IMPL-0002: Registry store migration</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Implementation plan</p>
+<h1>Registry store migration</h1>
+<p class="summary">This implements moving the document registry from flat files on disk to a
+PostgreSQL-backed store. The current file-based registry does not scale
+past a few thousand documents and makes concurrent writes from multiple
+docz-api instances unsafe. The new schema supports transactional writes,
+indexed lookups by id and type, and row-level locking during status
+transitions.</p>
+<div class="meta">
+<span class="pill">IMPL-0002</span>
+<span class="pill st-active">In Progress</span>
+<span class="pill">Parity Fixture</span>
+<span class="pill">2026-03-04</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="phases" aria-controls="p-phases">Phases</button>
+<button type="button" data-tab="changes" aria-controls="p-changes">Changes</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
+<button type="button" data-tab="dependencies" aria-controls="p-dependencies">Dependencies</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="objective">Objective</h3>
+<p><strong>Implements:</strong> DESIGN-0002</p>
+<h3 id="scope">Scope</h3>
+<div class="grid g2">
+<div class="card ok" id="in-scope">
+<p class="card-label">In Scope</p>
+<ul>
+<li>Schema design for the <code>documents</code> and <code>document_events</code> tables</li>
+<li>A dual-write shim so the file store and Postgres stay in sync during
+rollout</li>
+<li>Backfill tooling to import existing flat-file documents into Postgres</li>
+<li>The cutover switch and removal of the flat-file code path</li>
+</ul>
+</div>
+<div class="card bad" id="out-of-scope">
+<p class="card-label">Out of Scope</p>
+<ul>
+<li>Any change to the public docz-api HTTP contract</li>
+<li>Multi-region replication, tracked separately in INV-0006</li>
+<li>Migrating the wiki nav cache, which stays file-based for now</li>
+</ul>
+</div>
+</div>
+
+</section>
+<section class="panel" id="p-phases">
+<h2 class="panel-title">Phases</h2>
+<h3 id="implementation-phases">Implementation Phases</h3>
+<p>Each phase builds on the previous one. A phase is complete when all its tasks
+are checked off and its success criteria are met.</p>
+<div class="filters" role="group" aria-label="Show tasks"><button type="button" data-filter="all">All</button><button type="button" data-filter="open">Open</button><button type="button" data-filter="done">Done</button></div>
+<div class="card phase" id="phase-0-schema-and-migrations">
+<div class="phase-head"><h3>Phase 0: Schema and migrations</h3><span class="progress">4 / 4</span></div>
+<div class="bar"><i style="width: 100%"></i></div>
+<p>Stand up the Postgres schema and the migration tooling that later phases
+depend on. No production traffic touches Postgres yet, so this phase is
+purely additive and can ship without a feature flag.</p>
+<pre><code class="language-sql">CREATE TABLE documents (
+    id         TEXT PRIMARY KEY,
+    doc_type   TEXT NOT NULL,
+    status     TEXT NOT NULL,
+    path       TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+</code></pre>
+<ul class="tasks" id="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write the <code>documents</code> table migration (id, type, status, path, created_at)</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write the <code>document_events</code> table migration for audit history</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Add a <code>migrate</code> subcommand that runs migrations via golang-migrate</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write unit tests for the migration runner against a throwaway database</span></li>
+</ul>
+<div class="callout ok" id="success-criteria"><p class="callout-title">Success criteria</p>
+<ul>
+<li><code>go build ./...</code> succeeds with no errors</li>
+<li><code>docz-api migrate up</code> applies cleanly against a fresh Postgres 15 instance</li>
+<li><code>docz-api migrate down</code> leaves the database in its prior state</li>
+</ul>
+</div>
+</div>
+<div class="card phase" id="phase-1-dual-write">
+<div class="phase-head"><h3>Phase 1: Dual write</h3><span class="progress">2 / 4</span></div>
+<div class="bar"><i style="width: 50%"></i></div>
+<p>Write to both the flat-file registry and Postgres on every create, update,
+and status change. Reads still come from the flat-file store, so a bug in
+the Postgres path cannot take down the API.</p>
+<ul class="tasks" id="tasks-1">
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Add a <code>dualWriter</code> wrapper around the existing file store</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Wire <code>dualWriter</code> into <code>docz create</code>, <code>docz update</code>, and <code>docz status set</code></span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Add a reconciliation job that diffs file and Postgres state nightly</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Write integration tests for dual-write failure modes (Postgres down, file write fails, partial write)</span></li>
+</ul>
+<div class="callout ok" id="success-criteria-1"><p class="callout-title">Success criteria</p>
+<ul>
+<li>Every write path exercises both stores in the same request</li>
+<li>The reconciliation job runs in CI against a seeded fixture set</li>
+<li>No increase in p99 write latency versus the file-only baseline</li>
+</ul>
+</div>
+</div>
+<div class="card phase" id="phase-2-cut-over-and-delete-the-file-path">
+<div class="phase-head"><h3>Phase 2: Cut over and delete the file path</h3><span class="progress">0 / 4</span></div>
+<div class="bar"><i style="width: 0%"></i></div>
+<p>Flip reads to Postgres, watch error budgets for a full release cycle, and
+then delete the flat-file registry code entirely.</p>
+<ul class="tasks" id="tasks-2">
+<li data-state="open"><input type="checkbox" disabled><span class="text">Flip the read path to Postgres behind the <code>DOCZ_REGISTRY_BACKEND</code> flag</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Monitor p99 latency and error rate for two weeks post-flip</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Remove <code>internal/registry/filestore</code> and its tests</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Update the operator runbook to drop the flat-file recovery steps</span></li>
+</ul>
+<div class="callout ok" id="success-criteria-2"><p class="callout-title">Success criteria</p>
+<ul>
+<li><code>make ci</code> passes with zero errors</li>
+<li>No references to <code>filestore</code> remain outside git history</li>
+<li>The on-call runbook reflects the Postgres-only path</li>
+</ul>
+</div>
+</div>
+
+</section>
+<section class="panel" id="p-changes">
+<h2 class="panel-title">Changes</h2>
+<h3 id="file-changes">File Changes</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>internal/registry/postgres/schema.sql</code></td>
+<td>Create</td>
+<td>Initial schema for <code>documents</code> and <code>document_events</code></td>
+</tr>
+<tr>
+<td><code>internal/registry/postgres/store.go</code></td>
+<td>Create</td>
+<td>Postgres-backed implementation of the <code>registry.Store</code> interface</td>
+</tr>
+<tr>
+<td><code>internal/registry/dualwrite.go</code></td>
+<td>Create</td>
+<td>Wrapper that writes to both backends during rollout</td>
+</tr>
+<tr>
+<td><code>internal/registry/filestore/filestore.go</code></td>
+<td>Modify</td>
+<td>Trimmed in Phase 2, deleted once cutover is verified</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-plan">Testing Plan</h3>
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><div class="text">Unit tests for the Postgres store against a real database, not mocks</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text">Integration tests for the dual-write path covering partial failures</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text">Load test the migration and backfill tooling against a snapshot of
+production-sized data</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text">Manual verification of the cutover flag in staging before flipping it
+in production</div></li>
+</ul>
+
+</section>
+<section class="panel" id="p-dependencies">
+<h2 class="panel-title" id="dependencies">Dependencies</h2>
+<ul>
+<li>A Postgres 15 instance provisioned in staging and production</li>
+<li><code>golang-migrate</code> added as a build dependency</li>
+<li>Sign-off from the on-call rotation before flipping the cutover flag in
+Phase 2</li>
+</ul>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>DESIGN-0002: Registry storage backend</li>
+<li><a href="https://github.com/golang-migrate/migrate">golang-migrate documentation</a></li>
+<li>INV-0006: Multi-region replication options</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../../test/parity/fixtures/impl/docs/impl/0002-registry-store-migration.md</code>, sha256 <code>daf5e9ef4fb6beb4a1ae52c9a1b46555474ce70d956c546d14dbf998c989e0fe</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="ADR-0003">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>ADR-0003: Remove plan from the built-in document types</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · ADR</p>
+<h1>Remove plan from the built-in document types</h1>
+<p class="summary"><code>plan</code> leaves the built-in document type registry: no <code>PLAN</code> prefix, no
+<code>plan</code> directory, no embedded <code>plan.md</code> or <code>index_plan.md</code>, five built-in
+types instead of six. Nobody has ever written a PLAN document; phased
+planning happens in IMPL documents. A repo that still carries a <code>plan:</code>
+block in <code>.docz.yaml</code> keeps working as a custom type and only loses
+<code>docz create plan</code> until it supplies its own template. The removal ships on
+the v2 line with the API, first in the beta that carries the <code>cmd/</code> swap
+(ADR-0002); the v1 line keeps <code>plan</code> as it is.</p>
+<div class="meta">
+<span class="pill">ADR-0003</span>
+<span class="pill st-accepted">Accepted</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-09-14</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="decision" aria-controls="p-decision">Decision</button>
+<button type="button" data-tab="consequences" aria-controls="p-consequences">Consequences</button>
+<button type="button" data-tab="alternatives" aria-controls="p-alternatives">Alternatives</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="summary">Summary</h3>
+<h3 id="context">Context</h3>
+<p>docz shipped with six built-in types. PLAN was meant to sit between RFC
+(proposal) and IMPL (phased execution), a slot every repo in the fleet fills
+with DESIGN + IMPL instead. DESIGN-0011 turned it off by default in v1.1.1
+after finding no usage; the registry entry, the two embedded templates, the
+<code>docz --help</code> line, the README section, and about 25 test references stayed.</p>
+<p>The cost is no longer only cruft. DESIGN-0013 introduced <code>pkg/impl</code>, a typed
+model of an IMPL document, whose natural root name was <code>Plan</code>. With a <code>plan</code>
+doc type in the registry the word meant two things — <code>impl.Plan</code> versus
+<code>docz create plan</code> — and tempy's own design prose already says &quot;plan&quot; for
+both. ADR-0002 settles the type package's root name as <code>Doc</code> regardless, so
+the collision is avoided, but the built-in type itself remains dead weight
+and a standing source of the confusion that made the naming question hard.
+Issue #103 records the facts.</p>
+
+</section>
+<section class="panel" id="p-decision">
+<h2 class="panel-title" id="decision">Decision</h2>
+<div class="callout">
+<ol>
+<li><p><strong>Remove the <code>plan</code> registry entry</strong> from <code>pkg/doczcore/config/doctype.go</code>.
+<code>DocTypeNames()</code>, <code>TypesHelp()</code>, <code>DefaultConfig().Types</code>, and
+<code>DefaultNavTitles()</code> all derive from the registry, so it is the single
+removal point in code. This lands on the v2 line only (Open Question 2):
+v1.x keeps the entry and its templates unchanged.</p>
+<pre><code class="language-go">// doctype.go — the entry that goes. Everything else derives from the slice.
+{
+    Name:    &#34;plan&#34;,
+    Aliases: nil,
+    DefaultConfig: func() TypeConfig {
+        return TypeConfig{Enabled: false, Dir: &#34;plan&#34;, IDPrefix: &#34;PLAN&#34;, /* … */}
+    },
+    NavTitle: &#34;Plans&#34;, PluralLabel: &#34;Plans&#34;, TemplateName: &#34;plan&#34;,
+    HelpDescription: &#34;Planning documents — goal, approach, components&#34;,
+},
+</code></pre>
+</li>
+<li><p><strong>Remove the embedded templates</strong> <code>internal/template/templates/plan.md</code>
+and <code>index_plan.md</code>, their goldens, and the <code>types.plan.enabled: true</code>
+comment in <code>docz_yaml.tmpl</code>. Issue #99 also edits <code>index_plan.md</code>;
+whichever lands second rebases onto the other.</p>
+</li>
+<li><p><strong>A legacy <code>plan:</code> block is a custom type.</strong> No migration code. Config
+decoding already treats an unknown <code>types.&lt;name&gt;</code> key as a custom type
+(DESIGN-0006), so a repo with the block keeps loading, validating,
+listing, and updating. <code>docz create plan</code> fails with a clear error naming
+the fallback: add <code>docs/templates/plan.md</code> or delete the block.</p>
+</li>
+<li><p><strong>Docs and derived surfaces follow.</strong> README (types table and the PLAN
+section), CLAUDE.md (&quot;Six built-in doc types&quot; becomes five), release
+notes with the fallback spelled out. <code>docz --help</code> and <code>docz init</code> output
+derive from the registry and need no edit.</p>
+</li>
+<li><p><strong>Downstream issues at decision time</strong> (the docz-api pattern): one in
+claude-skills for the docz plugin's bundled <code>templates/plan.md</code>, doc-types
+reference, and <code>docz:create</code> fallback mapping; one in docz-api only if
+its contract package enumerates built-in type names.</p>
+<blockquote>
+<p><strong>Amended 2026-09-20:</strong> the claude-skills issue is <strong>not</strong> filed with
+this decision. The plugin serves v1 users until v2 ships, and dropping
+its bundled <code>plan.md</code> or the PLAN row before then would break their
+<code>docz:create</code> fallback against a CLI that still accepts <code>plan</code>. It is
+filed as a follow-up once <code>v2.0.0-beta.1</code> is tagged (IMPL-0018 Out of
+Scope). The docz-api half of this decision stands as written.</p>
+</blockquote>
+</li>
+</ol>
+</div>
+<h4 id="supporting-data">Supporting Data</h4>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Fact</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PLAN documents across docz, docz-api, sdk-booty-sh, tempy</td>
+<td>0</td>
+<td>#103</td>
+</tr>
+<tr>
+<td>Repos whose <code>.docz.yaml</code> still enables <code>plan</code></td>
+<td>3 (docz, docz-api, sdk-booty-sh — pre-v1.1.1 <code>docz init</code> output); tempy has it disabled</td>
+<td>#103</td>
+</tr>
+<tr>
+<td>Default since</td>
+<td>v1.1.1 (DESIGN-0011): <code>enabled: false</code></td>
+<td><code>doctype.go</code> comment</td>
+</tr>
+<tr>
+<td>Code references outside the registry</td>
+<td>2 embedded templates, <code>docz_yaml.tmpl</code> comment, ~25 test and golden references, README ×5, DEVELOPMENT.md worked example</td>
+<td><code>grep</code> 2026-09-14</td>
+</tr>
+<tr>
+<td>Other templates that mention PLAN</td>
+<td><code>impl.md</code> and <code>investigation.md</code> &quot;Implements / Triggered by&quot; comments — prose hints, kept as-is or trimmed</td>
+<td><code>grep</code></td>
+</tr>
+<tr>
+<td>Public catalogue affected</td>
+<td><code>config.DocTypeNames()</code> loses one value; <code>config.LookupDocType(&quot;plan&quot;)</code> returns false</td>
+<td>ADR-0001 contract</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h4 id="what-a-legacy-config-does-after-removal">What a legacy config does after removal</h4>
+<pre class="mermaid">flowchart LR
+  cfg[&#34;.docz.yaml has types.plan&#34;] --&gt; load[&#34;config.Load: unknown key → custom type plan&#34;]
+  load --&gt; upd[&#34;docz update / list: scans docs/plan if present&#34;]
+  load --&gt; create[&#34;docz create plan&#34;]
+  create --&gt; tmpl{&#34;docs/templates/plan.md&lt;br/&gt;or types.plan.template?&#34;}
+  tmpl -- yes --&gt; ok[&#34;renders as any custom type&#34;]
+  tmpl -- no --&gt; err[&#34;error: no template for type plan;&lt;br/&gt;add docs/templates/plan.md or remove the block&#34;]
+</pre>
+<p>The type's lifecycle, for the record:</p>
+<pre class="mermaid">stateDiagram-v2
+  direction LR
+  BuiltInOn: built-in, enabled
+  BuiltInOff: built-in, disabled by default
+  Custom: custom type, if configured
+  Gone: not a type
+  [*] --&gt; BuiltInOn: v0.x
+  BuiltInOn --&gt; BuiltInOff: v1.1.1 (DESIGN-0011)
+  BuiltInOff --&gt; Custom: v2 line, block kept
+  BuiltInOff --&gt; Gone: v2 line, block removed
+</pre>
+
+</section>
+<section class="panel" id="p-consequences">
+<h2 class="panel-title" id="consequences">Consequences</h2>
+<div class="grid g3">
+<div class="card ok" id="positive">
+<p class="card-label">Positive</p>
+<ul>
+<li><strong>One word, one meaning.</strong> &quot;Plan&quot; no longer names a docz type; the IMPL
+model's vocabulary (phases, tasks) has no built-in neighbour to collide
+with.</li>
+<li><strong>Less to carry.</strong> Two templates, a registry entry, and their tests and
+goldens go; <code>docz --help</code> and the README stop advertising a type nobody
+uses.</li>
+<li><strong>Custom-type support is exercised for real.</strong> The legacy-block fallback
+is the DESIGN-0006 path with a real config on it.</li>
+</ul>
+</div>
+<div class="card bad" id="negative">
+<p class="card-label">Negative</p>
+<ul>
+<li><strong>A removal from a frozen catalogue.</strong> <code>config.DocTypeNames()</code> and
+<code>LookupDocType</code> are v1.0 contract; dropping a value is a breaking change,
+which is why it rides the v2 line (Open Question 1).</li>
+<li><strong>Three fleet repos need a one-line config edit</strong> or they keep a dormant
+custom type. Harmless, but it shows up in <code>docz config</code> output until
+fixed.</li>
+<li><strong><code>docz template override plan</code> can no longer export a starting point.</strong>
+A repo that wants PLAN back writes the template from scratch or copies it
+from git history.</li>
+</ul>
+</div>
+<div class="card neutral" id="neutral">
+<p class="card-label">Neutral</p>
+<ul>
+<li><strong>Sequencing with #99</strong> (index header scaffolding) touches the same file;
+ordering is a rebase, not a design question.</li>
+<li><strong>The claude-skills plugin</strong> ships its own copy of the templates and
+updates on its own cadence, after v2 (Decision 5 amendment); until then
+its fallback can still produce a PLAN file that the CLI treats as custom.</li>
+</ul>
+</div>
+</div>
+
+</section>
+<section class="panel" id="p-alternatives">
+<h2 class="panel-title">Alternatives</h2>
+<h3 id="alternatives-considered">Alternatives Considered</h3>
+<div class="grid g2">
+<div class="card"><p class="card-label">a. Keep it disabled</p><p>(status quo since v1.1.1). <em>Pros:</em> nothing to do. <em>Cons:</em> the confusion, the dead templates, the help text, and the tests stay; the naming problem recurs with every type package.</p></div>
+<div class="card"><p class="card-label">b. Deprecate, then remove in v2.</p><p>Warn on load when <code>types.plan.enabled</code> is true for one minor, remove at the next major. <em>Pros:</em> semver-clean. <em>Cons:</em> a warning for a type with zero documents, and a v2 that has no other reason to exist.</p></div>
+<div class="card"><p class="card-label">c. Rename the built-in</p><p>(<code>roadmap</code>, <code>outline</code>). <em>Pros:</em> keeps the slot. <em>Cons:</em> renames an unused type; the slot itself is what the fleet does not use.</p></div>
+<div class="card"><p class="card-label">d. This ADR.</p><p>Remove it, document the custom-type fallback, decide the semver treatment explicitly.</p></div>
+</div>
+
+</section>
+<section class="panel" id="p-open-questions">
+<h2 class="panel-title" id="open-questions">Open questions</h2>
+<blockquote>
+<p>Each question is numbered; option <code>a</code> is my recommendation, later letters
+are alternatives, and the last is a free-form &quot;other&quot;.</p>
+</blockquote>
+<details class="expand" id="1-semver-treatment">
+<summary>1. Semver treatment</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-09-19: (c).</strong> The removal is the breaking change it
+technically is and rides the v2 line that ships the API and the <code>/v2</code>
+module path — first in a <code>v2.0.0-beta.N</code>, never in a v1 release
+(ADR-0002 Decisions 3 and 6). No deprecation cycle.</p>
+<ul>
+<li class="option recommended">a. <strong>One <code>minor</code> with a prominent release-note callout.</strong> Zero documents
+exist, the fallback is graceful and documented, and the only observable
+change for a legacy config is <code>docz create plan</code> needing a template. A
+major bump for this would be ceremony. <em>(recommendation)</em></li>
+<li class="option">b. Deprecate first (Alternative B), remove in v2.</li>
+<li class="option">c. Treat it as the <code>major</code> it technically is and bundle any other
+breaking cleanups behind it.</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="2-sequencing-against-the-api-work">
+<summary>2. Sequencing against the API work</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-09-19: (a), with the v1 line untouched.</strong> The removal
+lands inside the <code>cmd/</code> swap, which ships as <code>v2.0.0-beta.1</code>. Nothing changes on
+v1.x: no warning, no template edit; <code>plan</code> stays a disabled built-in
+there for as long as v1.x exists.</p>
+<ul>
+<li class="option recommended">a. <strong>Land inside the <code>cmd/</code> swap release</strong> (ADR-0002 Decision 6): one
+release whose release notes already speak to library consumers, so the
+catalogue change and the new packages are read together, and the
+<code>docz_yaml.tmpl</code> and <code>index_*.md</code> edits ride the <code>doctemplate</code> promotion
+instead of conflicting with it. <em>(recommendation)</em></li>
+<li class="option">b. Its own earlier <code>minor</code>, ahead of the API work, so the registry is
+final before <code>repo</code> and <code>doctemplate</code> are specified against it.</li>
+<li class="option">c. After the swap, in the following minor.</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li><a href="https://github.com/donaldgifford/docz/issues/103">Issue #103</a> — facts,
+touch points, acceptance</li>
+<li>ADR-0002
+— the <code>Doc</code> root-type convention and the release this removal rides with</li>
+<li>DESIGN-0011
+— PLAN off by default in v1.1.1</li>
+<li>DESIGN-0006 — the
+custom-type decoding the fallback relies on</li>
+<li>DESIGN-0013
+Open Question 2 — where the naming collision was first raised</li>
+<li><a href="https://github.com/donaldgifford/docz/issues/99">Issue #99</a> — the
+<code>index_plan.md</code> edit to sequence with</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../adr/testdata/docz-adr-0003.md</code>, sha256 <code>844a34041ea0885f0463b7171d0b6f42a67e6f9b0ffa58b5e0977df7779b5ed7</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+<script>/* mermaid 12.0.0 */</script>
+<script>/*
+ * Draws every pre.mermaid with the mermaid global, in the theme's tokens,
+ * and draws again when the mode changes (DESIGN-0025 §7). The theme
+ * variables follow ui/'s mermaidThemeFromTokens. A diagram whose source
+ * fails to parse keeps its source, with the error beneath it, rather than
+ * leaving a blank box. securityLevel strict keeps a diagram's labels from
+ * carrying script or links.
+ */
+(function () {
+  "use strict";
+  if (!window.mermaid || !window.docz) return;
+
+  var blocks = Array.prototype.slice.call(document.querySelectorAll("pre.mermaid"));
+  blocks.forEach(function (pre) {
+    pre.setAttribute("data-source", pre.textContent);
+  });
+
+  function themeVariables() {
+    var p = window.docz.palette([
+      "--color-bg-raised",
+      "--color-bg-elevated",
+      "--color-border-strong",
+      "--color-fg-primary",
+      "--color-fg-tertiary",
+    ]);
+    var raised = p["--color-bg-raised"];
+    var elevated = p["--color-bg-elevated"];
+    var border = p["--color-border-strong"];
+    var fg = p["--color-fg-primary"];
+    return {
+      primaryColor: elevated,
+      primaryBorderColor: border,
+      primaryTextColor: fg,
+      secondaryColor: raised,
+      secondaryBorderColor: border,
+      tertiaryColor: raised,
+      tertiaryBorderColor: border,
+      mainBkg: elevated,
+      nodeBorder: border,
+      lineColor: p["--color-fg-tertiary"],
+      clusterBkg: raised,
+      clusterBorder: border,
+      titleColor: fg,
+      edgeLabelBackground: raised,
+      fontFamily: "monospace",
+      fontSize: "14px",
+    };
+  }
+
+  var run = 0;
+
+  function draw() {
+    run++;
+    window.mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables: themeVariables(),
+    });
+    blocks.forEach(function (pre, i) {
+      var source = pre.getAttribute("data-source");
+      var next = pre.nextElementSibling;
+      if (next && next.classList.contains("diagram-error")) next.remove();
+      window.mermaid
+        .render("docz-mermaid-" + run + "-" + i, source)
+        .then(function (out) {
+          pre.innerHTML = out.svg;
+          pre.setAttribute("data-processed", "true");
+        })
+        .catch(function (err) {
+          pre.textContent = source;
+          pre.removeAttribute("data-processed");
+          var msg = document.createElement("p");
+          msg.className = "diagram-error";
+          msg.textContent = "Diagram failed to render: " + (err && err.message ? err.message : String(err));
+          pre.insertAdjacentElement("afterend", msg);
+        });
+    });
+  }
+
+  draw();
+  window.docz.onMode(draw);
+})();
+</script>
+</body>
+</html>
