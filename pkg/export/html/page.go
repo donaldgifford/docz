@@ -17,10 +17,21 @@ import (
 //go:embed templates/page.html.tmpl
 var pageSource string
 
-// pageTemplate is the page skeleton. html/template escapes every value it
-// interpolates by its context; the few trusted values (the theme, the
-// rendered markdown) are typed as such at one place each.
-var pageTemplate = template.Must(template.New("page").Parse(pageSource))
+//go:embed templates/fragment.html.tmpl
+var fragmentSource string
+
+//go:embed templates/wrap.html.tmpl
+var wrapSource string
+
+// pageTemplate is the page skeleton, and fragmentTemplate the document
+// alone; both execute the one "wrap" template, so the two cannot drift.
+// html/template escapes every value it interpolates by its context; the
+// few trusted values (the theme, the rendered markdown) are typed as such
+// at one place each.
+var (
+	pageTemplate     = template.Must(template.Must(template.New("page").Parse(wrapSource)).Parse(pageSource))
+	fragmentTemplate = template.Must(template.Must(template.New("fragment").Parse(wrapSource)).Parse(fragmentSource))
+)
 
 // csp is every page's Content-Security-Policy: nothing loads from the
 // network, and inline style and script are the page's own (DESIGN-0025 §8).
@@ -39,6 +50,7 @@ const (
 type pageData struct {
 	Theme, ID, Title, FullTitle, Eyebrow string
 	CSP                                  string
+	Fragment                             bool
 	Summary                              template.HTML
 	Pills                                []pill
 	Inferred                             bool
@@ -112,15 +124,19 @@ func writePage(src []byte, fm *document.Frontmatter, d *doc, opts RenderOptions)
 	data := pageData{
 		Theme: name, ID: fm.ID, Title: fm.Title, FullTitle: fullTitle(fm),
 		Eyebrow:  eyebrow(opts.Site, opts.Type),
-		Mermaid:  mermaidFor(opts.Mermaid, d.md.nodes.mermaid),
+		Fragment: opts.Fragment,
 		Summary:  trusted(d.summary),
 		Pills:    pills(fm),
 		Inferred: d.inferred,
 		Source:   opts.Source, SHA256: hex.EncodeToString(sum[:]), Version: opts.Version,
-		CSS:        template.CSS(css),            //nolint:gosec // G203: pkg/theme's own stylesheet.
-		Runtime:    template.JS(theme.Runtime()), //nolint:gosec // G203: pkg/theme's own runtime.
-		ThemeOpen:  themeOpen,
-		ThemeClose: themeClose,
+	}
+
+	// A fragment's host brings the stylesheet, the runtime, and mermaid.
+	if !opts.Fragment {
+		data.Mermaid = mermaidFor(opts.Mermaid, d.md.nodes.mermaid)
+		data.CSS = template.CSS(css)                //nolint:gosec // G203: pkg/theme's own stylesheet.
+		data.Runtime = template.JS(theme.Runtime()) //nolint:gosec // G203: pkg/theme's own runtime.
+		data.ThemeOpen, data.ThemeClose = themeOpen, themeClose
 	}
 
 	for _, p := range d.rendered {
@@ -136,8 +152,13 @@ func writePage(src []byte, fm *document.Frontmatter, d *doc, opts RenderOptions)
 
 	data.CSP = pagePolicy(data.Mermaid)
 
+	tmpl := pageTemplate
+	if opts.Fragment {
+		tmpl = fragmentTemplate
+	}
+
 	var out bytes.Buffer
-	if err := pageTemplate.Execute(&out, data); err != nil {
+	if err := tmpl.Execute(&out, data); err != nil {
 		return nil, fmt.Errorf("html: page: %w", err)
 	}
 

@@ -217,3 +217,84 @@ func TestGoldenFullPage(t *testing.T) {
 func cutMermaid(page []byte) []byte {
 	return bytes.ReplaceAll(page, []byte(mermaidScript()), []byte("/* mermaid "+mermaidVersion+" */"))
 }
+
+// wrapOf cuts a page's div.wrap, the part a fragment shares.
+func wrapOf(page []byte) []byte {
+	start := bytes.Index(page, []byte(`<div class="wrap">`))
+	end := bytes.LastIndex(page, []byte("</footer>\n</div>"))
+
+	if start < 0 || end < 0 {
+		return nil
+	}
+
+	return page[start : end+len("</footer>\n</div>")]
+}
+
+// TestFragmentsAreThePagesBody holds every corpus document's fragment to
+// its page's body less the mode toggle, inside one div.docz-page, so the
+// page goldens pin the fragments too (DESIGN-0026 §4).
+func TestFragmentsAreThePagesBody(t *testing.T) {
+	t.Parallel()
+
+	toggle := []byte("\n<button type=\"button\" class=\"mode-toggle\">Dark</button>")
+
+	for path, typ := range corpus(t) {
+		t.Run(goldenName(path, typ), func(t *testing.T) {
+			t.Parallel()
+
+			src, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var spec kinds.HeadingSpec
+			if f, ok := specs[typ]; ok {
+				spec = f()
+			}
+
+			opts := RenderOptions{Spec: spec, Type: typ, Source: filepath.ToSlash(path), Site: "docz", Version: "test"}
+
+			page, err := Render(src, opts)
+			if err != nil {
+				t.Skip("the page does not render either")
+			}
+
+			opts.Fragment = true
+
+			frag, err := Render(src, opts)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			body := bytes.Replace(wrapOf(page.Body), toggle, nil, 1)
+			open := `<div class="docz-page" data-theme="paper" data-doc="` + html.EscapeString(page.ID) + "\">\n"
+			want := open + string(body) + "\n</div>\n"
+
+			if string(frag.Body) != want {
+				t.Errorf("the fragment is not the page's body:\n got %.300q\nwant %.300q", frag.Body, want)
+			}
+		})
+	}
+}
+
+// TestGoldenFragment pins one fragment whole.
+func TestGoldenFragment(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join("..", "..", "impl", "testdata", "api-impl-0004.md")
+
+	src, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p, err := Render(src, RenderOptions{
+		Spec: specs["impl"](), Type: "impl", Source: filepath.ToSlash(path),
+		Site: "docz", Version: "test", Fragment: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	compare(t, filepath.Join("testdata", "golden", "fragment.html"), p.Body)
+}

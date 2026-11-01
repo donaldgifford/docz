@@ -99,14 +99,16 @@ runtime can run inside an element.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `RenderOptions.Fragment`: the `wrap` div inside
+- [x] `RenderOptions.Fragment`: the `wrap` div inside
   `<div class="docz-page" data-theme data-doc>`, with no `<html>`,
   `<style>`, runtime, mermaid loader, or mode toggle. A second template,
   `templates/fragment.html.tmpl`, shares the body through a named
   template, so page and fragment cannot drift.
-- [ ] Fragment goldens for every corpus document under
-  `testdata/golden/fragment/`, and `FuzzRender` run over fragments too.
-- [ ] `docz export html --fragment`, writing `.html` fragments, with the
+- [x] Every corpus document's fragment held equal to its page's body
+  less the mode toggle (`TestFragmentsAreThePagesBody`), so the page
+  goldens pin fragments too; one fragment golden whole; and
+  `FuzzRenderFragment`, which allows no running script and no style.
+- [x] `docz export html --fragment`, writing `.html` fragments, with the
   JSON report unchanged.
 - [ ] `runtime.js`: `docz.mount(root, {hash})`, every per-page lookup
   inside `root`, the tab memory keyed by `root`'s `data-doc`, `js` class

@@ -54,6 +54,12 @@ type RenderOptions struct {
 	Site string
 	// Version is the docz version the footer names.
 	Version string
+	// Fragment renders the document alone, for a host page to embed: one
+	// div.docz-page holding the header, the tab bar, the panels, and the
+	// footer, with no stylesheet, runtime, mermaid loader, or mode toggle.
+	// The host brings pkg/theme's styles scoped to .docz-page, calls the
+	// runtime's docz.mount on the element, and draws each pre.mermaid.
+	Fragment bool
 }
 
 // Link is a relative link or image the resolver could not place.
@@ -70,7 +76,8 @@ type Link struct {
 type Page struct {
 	// ID is the frontmatter id, Title its title, Type the type rendered as.
 	ID, Title, Type string
-	// Body is the whole HTML page.
+	// Body is the whole HTML page, or the fragment when
+	// [RenderOptions.Fragment] is set.
 	Body []byte
 	// Hash is "sha256:<hex>" of Body.
 	Hash string

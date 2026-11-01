@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"golang.org/x/net/html"
+	"golang.org/x/net/html/atom"
 )
 
 func FuzzRender(f *testing.F) {
@@ -60,6 +61,58 @@ func FuzzRender(f *testing.F) {
 		if scripts != 1 || styles != 1 {
 			t.Fatalf("the page has %d scripts and %d styles, want 1 and 1", scripts, styles)
 		}
+	})
+}
+
+// FuzzRenderFragment holds a fragment to no runnable script and no style
+// at all: the host page brings both, so anything here came from the
+// document.
+func FuzzRenderFragment(f *testing.F) {
+	for _, seed := range []string{
+		"---\nid: X-0001\ntitle: T\n---\n## A\n\nText.\n",
+		"---\ntitle: \"<script>x</script>\"\n---\n# <script>y</script>\n\n<style>p{}</style>\n",
+		"---\nid: X\n---\n```mermaid\n</pre><script>z</script>\n```\n[a](javascript:x)\n",
+		"---\nid: X\n---\n```docz-flow\nstages:\n  - {name: \"</script><script>x\", does: d}\n  - {name: b, does: d}\n```\n",
+	} {
+		f.Add([]byte(seed))
+	}
+
+	f.Fuzz(func(t *testing.T, src []byte) {
+		p, err := Render(src, RenderOptions{Fragment: true, Site: "s", Type: "design"})
+		if err != nil {
+			return
+		}
+
+		nodes, err := html.ParseFragment(bytes.NewReader(p.Body), &html.Node{
+			Type: html.ElementNode, Data: "body", DataAtom: atom.Body,
+		})
+		if err != nil {
+			t.Fatalf("the fragment does not parse: %v", err)
+		}
+
+		if len(nodes) != 2 || nodes[0].Data != "div" || nodes[1].Type != html.TextNode {
+			t.Fatalf("the fragment is %d nodes, want one div.docz-page and its newline", len(nodes))
+		}
+
+		var visit func(*html.Node)
+
+		visit = func(n *html.Node) {
+			if n.Type == html.ElementNode {
+				if checkElement(t, n) {
+					t.Fatal("the fragment carries a script that runs")
+				}
+
+				if n.Data == "style" {
+					t.Fatal("the fragment carries a style element")
+				}
+			}
+
+			for c := n.FirstChild; c != nil; c = c.NextSibling {
+				visit(c)
+			}
+		}
+
+		visit(nodes[0])
 	})
 }
 

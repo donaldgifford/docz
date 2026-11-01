@@ -57,7 +57,7 @@ func (x *exporter) index(entries []repo.Entry, results []PageResult) PageResult 
 	}
 
 	p, err := Render([]byte(md.String()), RenderOptions{
-		Theme: x.opts.Theme, Site: x.opts.Site, Version: x.opts.Version,
+		Theme: x.opts.Theme, Site: x.opts.Site, Version: x.opts.Version, Fragment: x.opts.Fragment,
 		Resolve: func(_, href string) string {
 			if pages[strings.SplitN(href, "#", 2)[0]] {
 				return href
