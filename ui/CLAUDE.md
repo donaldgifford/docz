@@ -191,6 +191,26 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   when the layout is elk; e2e asserts both directions, and the
   diagram-free chunk assertion matches `elk` as well as `mermaid`
   because the ELK filename contains neither the word nor the library.
+  Widgets (IMPL-0030 Phase 5): `widget-marker.ts` runs beside the
+  mermaid marker (post-sanitize, pre-Shiki) and moves a `docz-flow`,
+  `docz-stepper`, or `docz-scorecard` fence's YAML onto
+  `data-widget-source` with its name and fence line; MarkdownPre routes
+  it to `WidgetBlock`, which lazy-loads `widgets/widget-view.tsx` (the
+  `yaml` parser, `validate.ts`, and the three components, one chunk that
+  e2e asserts never loads on a widget-free page) and shows the YAML as
+  code until it arrives. `validate.ts` is a port of
+  `pkg/export/html/widgets.go`, held to it by the shared corpus under
+  `pkg/export/html/testdata/widgets/` (same JSON, same error lines); a
+  change to either side changes the corpus. A valid block is
+  `figure.widget[data-widget]`, an invalid one `div.widget-invalid` with
+  a caution callout listing each error at its document line, then the
+  YAML. Components use token utilities only, so a theme or mode change
+  needs no redraw, and never a `style` attribute: the XSS gate allows
+  one only inside Shiki, which is why the scorecard bar is a
+  `<progress>`. Every string is a React text child. The reader hook
+  renders with `preserveLines`, so error lines are document lines on
+  both surfaces; the review mode carries `data-line` to the widget
+  root as MermaidBlock does.
   h2–h4 map to `markdown-heading.tsx`, which appends the
   hover/focus-revealed copy-link button (a labeled BUTTON, not a
   link — the underline rule for prose links stays untouched).
