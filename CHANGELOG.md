@@ -10,6 +10,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(investigation)* INV-0031, the docz-review trial on its own repository
 - *(impl)* IMPL-0030, one theme system across docz-html, docz-review, and docz-site
 - *(impl)* IMPL-0030's open questions resolved
+- *(impl)* IMPL-0031, the review page laid out like docz-html's exported page
 
 ### Testing
 
