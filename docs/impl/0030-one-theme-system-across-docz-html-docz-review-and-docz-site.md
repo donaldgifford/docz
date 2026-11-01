@@ -457,7 +457,7 @@ docz-site, and in a review.
 - [x] Extend the XSS suite (`processor.xss.test.tsx`) to the widget path:
   script, an event handler, and a `javascript:` URL in every string
   field, and a forged marker attribute in raw HTML.
-- [ ] The markdown specimen gains a section per widget, and the axe
+- [x] The markdown specimen gains a section per widget, and the axe
   sweep (`src/a11y/axe.test.tsx`) covers a valid and an invalid one.
 - [ ] e2e: each widget draws in the reader and the review page, and each
   invalid fixture shows its source and errors.
