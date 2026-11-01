@@ -338,7 +338,7 @@ export function CommandPalette({
     <div
       data-testid="command-palette"
       role="presentation"
-      className="fixed inset-x-0 top-[52px] bottom-0 z-[120] flex items-start justify-center bg-[rgba(8,11,16,0.66)] backdrop-blur-[2px] sm:px-4 sm:pt-[7vh]"
+      className="fixed inset-x-0 top-[52px] bottom-0 z-[120] flex items-start justify-center bg-bg-base/65 backdrop-blur-[2px] sm:px-4 sm:pt-[7vh]"
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           onOpenChange(false);

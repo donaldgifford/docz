@@ -60,7 +60,7 @@ export function AppShell() {
         <Link to="/" className="flex items-center gap-[0.55rem]">
           <span
             aria-hidden
-            className="grid size-[22px] place-items-center bg-accent font-mono text-[14px] font-bold text-bg-base"
+            className="grid size-[22px] place-items-center bg-accent font-mono text-[14px] font-bold text-(--color-on-accent)"
           >
             D
           </span>

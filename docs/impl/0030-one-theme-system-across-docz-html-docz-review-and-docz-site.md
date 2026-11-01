@@ -333,7 +333,7 @@ surface is checked under each.
   every theme's `--color-code-bg` in `theme-contrast.test.tsx` (read from
   `pkg/theme/tokens`), so a theme whose code surface is lighter fails
   there.
-- [ ] Find and replace colours the site hardcodes outside the tokens.
+- [x] Find and replace colours the site hardcodes outside the tokens.
   `mermaid-block.tsx` falls back to classic hex when a token is
   unreadable, which is fine as a fallback, but no rendered surface may
   depend on it.
