@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { refreshMermaidTheme } from "@/markdown/mermaid-block";
 import {
+  DEFAULT_THEME,
   newSubmissionId,
   StaleError,
   type ReviewClient,
@@ -41,11 +42,14 @@ const statusOf = (doc: ReviewDocument) => doc.inspect.frontmatter?.status ?? "";
 
 export function ReviewApp({ client }: { client: ReviewClient }) {
   const queryClient = useQueryClient();
-  const appearance = useAppearance(refreshMermaidTheme);
   const session = useQuery({
     queryKey: SESSION_KEY,
     queryFn: () => client.session(),
   });
+  const appearance = useAppearance(
+    session.data?.theme ?? DEFAULT_THEME,
+    refreshMermaidTheme,
+  );
   const [active, setActive] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [stale, setStale] = useState<Record<string, string>>({});

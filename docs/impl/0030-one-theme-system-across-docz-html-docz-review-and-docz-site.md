@@ -259,7 +259,7 @@ review session, and neither surface offers a theme selector.
   page in the session payload. A docz too old to report one means
   `paper`, with no refusal and no `SUPPORTED.minDocz` bump (Open
   Question 4).
-- [ ] Review page: `main.tsx` sets `data-theme` from the session before
+- [x] Review page: `main.tsx` sets `data-theme` from the session before
   the first render. Delete the theme half of `appearance.ts`
   (`THEMES`, `storedTheme`, `setTheme`, the `docz:theme` key) and the
   selector in `AppearanceControls`. The light/dark toggle stays, shown
