@@ -393,7 +393,7 @@ offer it.
   stays network-free and its size does not change (Open Question 6).
 - [x] `pkg/theme`: register the theme in `Names()` and `CSS()`;
   `theme_test.go`'s every-token check covers it with no new test.
-- [ ] `ui/src/theme/contrast.test.ts` passes for it at 4.5:1 on the three
+- [x] `ui/src/theme/contrast.test.ts` passes for it at 4.5:1 on the three
   surfaces. DESIGN-0036 already moved its bad tone once for AA, so muted
   and warn may need the same, and each move is noted in the file.
 - [ ] `pkg/export/html`: a full-page golden per theme, the theme cut to
