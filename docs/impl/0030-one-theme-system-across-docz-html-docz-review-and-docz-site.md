@@ -489,7 +489,7 @@ docz-site, and in a review.
 
 - [x] Set IMPL-0029 to `Cancelled`, with a line at its top pointing here
   (Open Question 10). It stays in the index as the record.
-- [ ] Mark DESIGN-0025's rollout complete, with this plan as step 5.
+- [x] Mark DESIGN-0025's rollout complete, with this plan as step 5.
 - [ ] Close #214, #213, and #209 from the final PR, and comment on #212
   that Phase 5's components are in place.
 - [ ] Check `CLAUDE.md`, `ui/CLAUDE.md`, the chart README, and the

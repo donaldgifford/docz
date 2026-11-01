@@ -834,6 +834,12 @@ Each step is one PR; the first that adds a command is labelled `minor`.
 5. **docz-site on `paper`**, `classic` selectable, and the widgets as
    React components reading the same fenced blocks. `minor`.
 
+> **Complete 2026-11-01.** Steps 1–4 shipped in v2.4.0 (IMPL-0028).
+> Step 5 is IMPL-0030: docz-site on `paper` with `classic` and
+> `charcoal` selectable, the review page in the repository's
+> `html.theme`, and the three widgets drawn in the reader and the
+> review from the blocks the export draws.
+
 The `docz-html/` source directory is removed from the branch before the
 first PR merges; nothing from it is committed except what step 1 ports.
 
