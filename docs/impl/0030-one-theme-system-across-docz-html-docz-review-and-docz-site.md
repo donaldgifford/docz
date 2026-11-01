@@ -209,7 +209,7 @@ repository.
   updated for the new field.
 - [x] `test/consumer`: assert `DefaultConfig().Theme`, and that
   `ParseBytes` reads the key, through the public path.
-- [ ] This repository's own `.docz.yaml` gains `html: {theme: paper}`, and
+- [x] This repository's own `.docz.yaml` gains `html: {theme: paper}`, and
   `test/archive` still passes.
 - [ ] Update `CLAUDE.md` (the config bullet and the parity list).
 

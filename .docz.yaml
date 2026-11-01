@@ -113,3 +113,5 @@ sync:
     exclude:
       - examples # in step with api.exclude
       - archive
+html:
+  theme: paper # docz export html and docz-review (IMPL-0030)
