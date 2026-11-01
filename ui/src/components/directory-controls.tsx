@@ -99,7 +99,7 @@ export function RepoPicker({
         onClick={() => {
           setOpen((value) => !value);
         }}
-        className="flex items-center gap-2 border border-border-default bg-bg-raised px-3 py-[0.35rem] font-mono text-[13px] text-fg-secondary hover:border-border-strong"
+        className="flex items-center gap-2 border border-border-default bg-bg-raised px-3 py-[0.35rem] font-mono text-[13px] text-fg-secondary hover:border-border-strong rounded-sm"
       >
         <span className="text-fg-muted">repo:</span>{" "}
         <span>{current ?? "all"}</span>

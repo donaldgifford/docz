@@ -127,10 +127,13 @@
   /* Code blocks */
   --color-code-bg: #101215;
 
-  /* Sharp corners everywhere — wipe Tailwind's radius scale so no
-     rounded-* utility exists, then re-add the pill shape chips use. */
+  /* Wipe Tailwind's radius scale so no other rounded-* utility exists,
+     then add the pill shape chips use and the shell's one corner. */
   --radius-*: initial;
   --radius-pill: 999px;
+  /* repo-guardian's 3px corner (DESIGN-0026 §2), for controls, inputs,
+     and cards; badges stay square. */
+  --radius-sm: 3px;
 
   /* Motion */
   --ease-brand: cubic-bezier(0.2, 0.8, 0.2, 1);

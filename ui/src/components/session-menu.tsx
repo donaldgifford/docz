@@ -27,7 +27,7 @@ function InertPlaceholder({ testid }: { testid: string }) {
     <span
       aria-hidden
       data-testid={testid}
-      className="grid size-[26px] place-items-center border border-border-default bg-bg-elevated text-[12px] text-fg-secondary"
+      className="grid size-[26px] place-items-center border border-border-default bg-bg-elevated text-[12px] text-fg-secondary rounded-sm"
     >
       ·
     </span>
@@ -149,12 +149,12 @@ export function SessionMenu() {
         onClick={() => {
           setOpen((wasOpen) => !wasOpen);
         }}
-        className="grid size-[26px] cursor-pointer place-items-center border border-border-default bg-bg-elevated text-[12px] text-fg-secondary hover:border-border-strong hover:text-fg-primary"
+        className="grid size-[26px] cursor-pointer place-items-center border border-border-default bg-bg-elevated text-[12px] text-fg-secondary hover:border-border-strong hover:text-fg-primary rounded-sm"
       >
         {initial}
       </button>
       {open && (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-50 min-w-[200px] border border-border-default bg-bg-raised py-2">
+        <div className="absolute right-0 top-[calc(100%+8px)] z-50 min-w-[200px] border border-border-default bg-bg-raised py-2 rounded-sm">
           <div className="px-4 pb-2">
             <div className="truncate text-[14px] text-fg-primary">
               {identity}

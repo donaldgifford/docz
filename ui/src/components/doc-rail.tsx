@@ -97,7 +97,7 @@ export function LifecycleRail({
       className="mb-6 border border-border-hairline px-4 py-3"
       data-testid="lifecycle-disclosure"
     >
-      <summary className="cursor-pointer font-mono text-[11px] tracking-[0.14em] text-fg-muted uppercase">
+      <summary className="cursor-pointer text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
         Lifecycle · {currentStatus === "" ? "unset" : currentStatus}
       </summary>
       <div

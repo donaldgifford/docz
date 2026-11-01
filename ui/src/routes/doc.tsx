@@ -254,7 +254,7 @@ export function Component() {
         // lifecycle moved into the article header, so long documents
         // keep their outline visible without burying anything.
         <section className="mb-8">
-          <div className="mb-3 border-b border-border-hairline pb-2 font-mono text-[11px] tracking-[0.14em] text-fg-muted uppercase">
+          <div className="mb-3 border-b border-border-hairline pb-2 text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
             On this page
           </div>
           <TocList toc={toc} />
@@ -275,7 +275,7 @@ export function Component() {
       {/* Narrow viewports: ToC as a disclosure above the article
           (the right rail hides below the frame's 1181px breakpoint). */}
       <details className="mb-6 border border-border-hairline px-4 py-3 min-[1181px]:hidden">
-        <summary className="cursor-pointer font-mono text-[11px] tracking-[0.14em] text-fg-muted uppercase">
+        <summary className="cursor-pointer text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
           On this page
         </summary>
         <div className="pt-3">
@@ -292,7 +292,7 @@ export function Component() {
           role="region"
           aria-label="raw markdown"
           tabIndex={0}
-          className="overflow-x-auto border border-border-default bg-code-bg p-5 font-mono text-[13.5px] leading-[1.55] whitespace-pre-wrap text-fg-secondary"
+          className="overflow-x-auto border border-border-default bg-code-bg p-5 font-mono text-[13.5px] leading-[1.55] whitespace-pre-wrap text-fg-secondary rounded-sm"
         >
           {doc.raw_md ?? ""}
         </pre>

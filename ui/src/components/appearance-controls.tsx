@@ -20,7 +20,7 @@ export function AppearanceControls({
       type="button"
       aria-label={`Switch to ${next} mode`}
       onClick={onToggleMode}
-      className="border border-border-default px-[8px] py-[2px] text-fg-tertiary hover:border-border-strong hover:text-fg-primary"
+      className="border border-border-default px-[8px] py-[2px] text-fg-tertiary hover:border-border-strong hover:text-fg-primary rounded-sm"
     >
       {next === "dark" ? "Dark" : "Light"}
     </button>

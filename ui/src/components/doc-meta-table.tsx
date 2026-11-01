@@ -73,7 +73,7 @@ export function DocMetaTable({
   return (
     <div className="mb-6">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <span className="font-mono text-[11px] tracking-[0.14em] text-fg-muted uppercase">
+        <span className="text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
           Metadata
         </span>
         <div
@@ -99,7 +99,7 @@ export function DocMetaTable({
           </FormatButton>
           <a
             href={jsonUrl}
-            className="border border-border-default px-2 py-[2px] text-fg-tertiary hover:text-fg-primary"
+            className="border border-border-default px-2 py-[2px] text-fg-tertiary hover:text-fg-primary rounded-sm"
           >
             json
           </a>

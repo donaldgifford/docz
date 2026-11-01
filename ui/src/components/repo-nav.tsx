@@ -76,7 +76,9 @@ function NavTypeSection({
           className={navItemClass}
         >
           <span className="truncate">{docType.name}</span>{" "}
-          <span className="text-[12px] text-fg-muted">{count ?? ""}</span>
+          <span className="font-mono text-[12px] text-fg-muted">
+            {count ?? ""}
+          </span>
         </NavLink>
         <button
           type="button"
@@ -149,14 +151,11 @@ export function RepoNav({ owner, name }: { owner: string; name: string }) {
   }
 
   return (
-    <nav
-      aria-label={`${repoId} navigation`}
-      className="font-mono text-[13.5px]"
-    >
+    <nav aria-label={`${repoId} navigation`} className="text-[13px]">
       <div className="mb-4 flex items-center gap-[0.55rem]">
         <span
           aria-hidden
-          className="grid size-[22px] flex-none place-items-center border border-border-default bg-bg-elevated text-[12px] text-accent"
+          className="grid size-[22px] flex-none place-items-center border border-border-default bg-bg-elevated text-[12px] text-accent rounded-sm"
         >
           {name.charAt(0).toUpperCase()}
         </span>
@@ -164,7 +163,7 @@ export function RepoNav({ owner, name }: { owner: string; name: string }) {
           <div className="truncate leading-[1.2] font-semibold text-fg-primary">
             {repoId}
           </div>
-          <div className="text-[11.5px] text-fg-muted">
+          <div className="font-mono text-[11.5px] text-fg-muted">
             {detail === undefined
               ? "…"
               : `${detail.default_branch} · docz.yaml`}
@@ -174,7 +173,7 @@ export function RepoNav({ owner, name }: { owner: string; name: string }) {
 
       <NavLink to={`/${repoId}`} end className={navItemClass}>
         <span>Home</span>{" "}
-        <span className="text-[12px] text-fg-muted">index.md</span>
+        <span className="font-mono text-[12px] text-fg-muted">index.md</span>
       </NavLink>
 
       {changelogCfg !== undefined && (
@@ -193,7 +192,7 @@ export function RepoNav({ owner, name }: { owner: string; name: string }) {
           onFocus={prefetchChangelog}
         >
           <span>Changelog</span>{" "}
-          <span className="text-[12px] text-fg-muted">
+          <span className="font-mono text-[12px] text-fg-muted">
             {changelogBasename(changelogCfg.file)}
           </span>
         </NavLink>
@@ -205,7 +204,7 @@ export function RepoNav({ owner, name }: { owner: string; name: string }) {
         <NavPagesSection owner={owner} name={name} />
       )}
 
-      <div className="mt-[1.15rem] mb-[0.45rem] border-b border-border-hairline pb-[0.4rem] text-[11px] tracking-[0.14em] text-fg-muted uppercase">
+      <div className="mt-[1.15rem] mb-[0.45rem] border-b border-border-hairline pb-[0.4rem] text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
         doc types
       </div>
 

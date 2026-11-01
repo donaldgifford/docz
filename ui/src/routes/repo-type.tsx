@@ -27,7 +27,7 @@ import type { DocType, Document } from "@/api/__generated__/docz-api.schemas";
 
 function GenMarker({ children }: { children: string }) {
   return (
-    <div className="my-6 flex items-center gap-3 font-mono text-[11px] tracking-[0.14em] text-fg-muted uppercase before:h-px before:flex-1 before:bg-border-hairline before:content-[''] after:h-px after:flex-1 after:bg-border-hairline after:content-['']">
+    <div className="my-6 flex items-center gap-3 text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase before:h-px before:flex-1 before:bg-border-hairline before:content-[''] after:h-px after:flex-1 after:bg-border-hairline after:content-['']">
       {children}
     </div>
   );
@@ -182,7 +182,7 @@ export function Component() {
       ]}
       rail={
         <>
-          <div className="mb-3 border-b border-border-hairline pb-2 font-mono text-[11px] tracking-[0.14em] text-fg-muted uppercase">
+          <div className="mb-3 border-b border-border-hairline pb-2 text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
             On this page
           </div>
           <TocList toc={toc} />

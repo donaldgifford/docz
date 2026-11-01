@@ -190,7 +190,7 @@ onto `.docz-page`.
   written by `gen-themes` and checked by `gen-themes-check` in
   `just ui ci`, and unit tests of the rewriter, including a shape it
   refuses.
-- [ ] Restyle the topbar, sidebar, directory, search, palette, menus,
+- [x] Restyle the topbar, sidebar, directory, search, palette, menus,
   and badges to the shell's look.
 - [x] `contrast.test.ts`: the shell in both modes; the document themes
   inside `.docz-page`.

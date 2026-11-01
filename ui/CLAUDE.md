@@ -104,7 +104,7 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   unknown value is a config error that fails `/readyz`. `refreshMermaidTheme`'s
   signal lives in `src/lib/mermaid-theme.ts` so the eager bundle never
   imports `mermaid-block`. No component may carry a literal colour: the
-  header is `bg-bg-base/90`, the logo `text-(--color-on-accent)`, the
+  header is `bg-bg-raised`, the logo `text-(--color-on-accent)`, the
   palette scrim `bg-bg-base/65`. The site's e2e specs loop over
   `SHELL_MODES`; the review spec over every theme (`e2e/appearances.ts`).
 - `tsconfig.json` is solution-style → `tsconfig.app.json` (browser code,

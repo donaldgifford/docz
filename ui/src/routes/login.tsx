@@ -29,7 +29,7 @@ import { classifySession } from "@/lib/session";
 function LoginCard({ children }: { children: ReactNode }) {
   return (
     <main className="mx-auto flex max-w-[420px] flex-col px-5 pt-[14vh]">
-      <div className="border border-border-default bg-bg-raised px-8 py-8">
+      <div className="border border-border-default bg-bg-raised px-8 py-8 rounded-sm">
         <div className="mb-1 font-mono text-[13.5px] tracking-[0.05em] text-accent">
           / docz <span className="text-fg-muted">/</span> sign in
         </div>
@@ -60,7 +60,7 @@ export function Component() {
         </p>
         <Link
           to="/"
-          className="block border border-border-default px-4 py-[0.55rem] text-center font-mono text-[14px] text-fg-secondary hover:border-border-strong hover:text-fg-primary"
+          className="block border border-border-default px-4 py-[0.55rem] text-center font-mono text-[14px] text-fg-secondary hover:border-border-strong hover:text-fg-primary rounded-sm"
         >
           Browse the docs
         </Link>
