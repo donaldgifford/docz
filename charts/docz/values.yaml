@@ -508,6 +508,13 @@ site:
     # to the two names so a typo fails at install rather than silently
     # rendering the default.
     mermaidLayout: "elk"
+    # -- The site's default theme (DOCZ_THEME), a theme pkg/theme has:
+    # `paper` (light and dark) or `classic` (dark). Empty sets no
+    # variable and the site defaults to `paper`. A reader may pick another
+    # in the topbar, kept in their browser. A repository's `.docz.yaml`
+    # `html.theme` sets `docz export html` and docz-review, never the
+    # site, which shows many repositories (DESIGN-0025 §3).
+    theme: ""
     # -- Topbar nav pins (DOCZ_NAV_LINKS): a list of `{label, href}`
     # links rendered between Repos and the session menu. Injected into
     # the SPA at runtime as JSON, whitelist-validated by the server

@@ -337,7 +337,7 @@ surface is checked under each.
   `mermaid-block.tsx` falls back to classic hex when a token is
   unreadable, which is fine as a fallback, but no rendered surface may
   depend on it.
-- [ ] Chart: `site.config.theme` (enum in `values.schema.json` from the
+- [x] Chart: `site.config.theme` (enum in `values.schema.json` from the
   theme list, empty by default) renders `DOCZ_THEME` only when set;
   helm-unittest for both, and `just chart docs`.
 - [ ] `e2e/a11y.spec.ts` and the rendering specs run under every theme

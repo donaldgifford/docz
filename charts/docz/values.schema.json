@@ -271,6 +271,15 @@
                 "elk"
               ]
             },
+            "theme": {
+              "description": "The site's default theme (DOCZ_THEME), a pkg/theme name; empty renders no variable and the site defaults to paper. Constrained because the server falls back to paper on anything it does not recognize.",
+              "type": "string",
+              "enum": [
+                "",
+                "paper",
+                "classic"
+              ]
+            },
             "navLinks": {
               "description": "Topbar nav pins rendered into DOCZ_NAV_LINKS as JSON.",
               "type": "array",

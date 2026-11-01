@@ -63,6 +63,10 @@ spec:
             {{- end }}
             - name: DOCZ_MERMAID_LAYOUT
               value: {{ .Values.site.config.mermaidLayout | quote }}
+            {{- with .Values.site.config.theme }}
+            - name: DOCZ_THEME
+              value: {{ . | quote }}
+            {{- end }}
             - name: DOCZ_LOG_LEVEL
               value: {{ .Values.site.config.logLevel | quote }}
             - name: DOCZ_LOG_FORMAT
