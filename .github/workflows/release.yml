@@ -87,6 +87,7 @@ jobs:
         run: |
           just ui gen-api
           just ui gen-cli
+          just ui gen-themes
 
       - name: Build docz-review
         run: just ui build-review "${{ needs.bump-version.outputs.tag }}"

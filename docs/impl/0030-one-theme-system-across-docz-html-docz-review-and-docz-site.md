@@ -310,7 +310,7 @@ surface is checked under each.
   `src/lib/appearance.ts`, shared by the review page and the site. The
   site adds a theme half that the review page does not import: stored
   `docz:theme`, then the injected default, then `paper`.
-- [ ] `scripts/gen-themes.ts` writes `src/theme/__generated__/themes.ts`
+- [x] `scripts/gen-themes.ts` writes `src/theme/__generated__/themes.ts`
   (gitignored, like the CLI types) from the file names under
   `pkg/theme/tokens/`, run before `typecheck`, `test`, and `build` and
   checked by a `gen-themes-check` in `just ui ci`. `Dockerfile.ui`

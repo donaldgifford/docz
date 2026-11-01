@@ -52,6 +52,14 @@ gen-cli:
 gen-cli-check:
     ./scripts/gen-cli-check.sh
 
+# Generate the theme list (../pkg/theme/tokens -> src/theme/__generated__)
+gen-themes:
+    bun run gen-themes
+
+# Drift gate: snapshot, regenerate, diff the generated theme list
+gen-themes-check:
+    ./scripts/gen-themes-check.sh
+
 # Lint (eslint flat config)
 lint:
     bun run lint
@@ -169,4 +177,4 @@ local-down:
     @echo "✓ docz-site stopped"
 
 # CI parity: everything the ci workflow runs, in order
-ci: gen-api gen-cli lint fmt-check typecheck test test-server build bundle-budget e2e gen-api-check gen-cli-check
+ci: gen-api gen-cli gen-themes lint fmt-check typecheck test test-server build bundle-budget e2e gen-api-check gen-cli-check gen-themes-check

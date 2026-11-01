@@ -82,6 +82,7 @@ jobs:
         run: |
           just ui gen-api
           just ui gen-cli
+          just ui gen-themes
 
       - name: Build docz-review
         run: just ui build-review "${{ github.ref_name }}"

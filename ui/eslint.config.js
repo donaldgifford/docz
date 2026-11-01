@@ -17,6 +17,7 @@ export default tseslint.config(
       "playwright-report",
       "src/api/__generated__",
       "src/cli/__generated__",
+      "src/theme/__generated__",
       "review/__generated__",
       "review/compiled.ts",
       "dist-review-bin",
