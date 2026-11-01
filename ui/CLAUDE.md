@@ -576,20 +576,30 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
   badges; nothing is inserted into the sanitized markdown. Lightning CSS
   warns that it does not know `::highlight` while minifying; the rule
   survives, so the warning is noise.
-- **Appearance** (`appearance.ts`, IMPL-0028 Phase 6). The page is on
-  `paper` (`review.html`), with `classic` selectable. `main.tsx` calls
-  `applyStoredAppearance()` before the first render, so `data-theme` and
-  `data-mode` come from `docz:theme` and `docz:mode` (the key exported
-  pages use too); with no stored mode `data-mode` stays unset and the
-  theme's `prefers-color-scheme` block applies. `useAppearance` holds
-  both, dispatches `docz:mode`, and calls `refreshMermaidTheme` after a
-  change (never on mount), which re-initializes mermaid from the new
-  tokens and redraws every mounted diagram; docz-site never calls it.
-  The toggle shows only on paper, since classic has one look. The page
+- **Appearance** (`appearance.ts`, IMPL-0030 Phase 2). The theme is the
+  repository's: `docz inspect` reports `.docz.yaml`'s `html.theme` as
+  `theme`, the server passes it in the session (`sessionTheme`, the first
+  document's, `paper` for a docz too old to say), and `main.tsx` fetches
+  the session BEFORE the first render, sets `data-theme` from it, and
+  seeds the query cache, so the page never paints in `review.html`'s
+  `paper` first. There is no theme selector and no `docz:theme` key.
+  The mode is the reader's: `applyStoredMode()` sets `data-mode` from
+  `docz:mode` (the key exported pages use too) before the first render;
+  with nothing stored `data-mode` stays unset and the theme's
+  `prefers-color-scheme` block applies. `useAppearance(theme, onChange)`
+  dispatches `docz:mode` and calls `refreshMermaidTheme` after a change
+  (never on mount), which re-initializes mermaid from the new tokens and
+  redraws every mounted diagram; docz-site never calls it. The toggle
+  shows only on a theme with modes (`hasModes`, `paper` today). The page
   drops its token from the URL, so a reload shows the "open the link"
   message: an e2e that reloads must `goto` the link again.
   `e2e/review.spec.ts` runs every spec and full-rule axe under paper
-  light, paper dark, and classic.
+  light, paper dark, and classic, picking the theme through
+  `POST /__fake/reset?theme=<name>`, which gives the fixture repository
+  that `html.theme`. `fake-server.ts` imports `sessionTheme` by a
+  RELATIVE path: `vite.config.ts` loads it through
+  `scripts/review-fake.ts`, where `@/` does not resolve, so only type
+  imports there may use the alias.
 - **The draft** (`draft.ts`) decides the outcome from the actionable set
   (an answer, comment, replace, delete, document comment, status change,
   or finding to fix); Approve is enabled only while it is empty, and

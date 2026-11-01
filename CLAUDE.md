@@ -183,9 +183,10 @@ the move changed about the repository.
   `classic`'s, because Tailwind generates the utilities from it; the
   unlayered theme blocks override it. `index.html` sets
   `data-theme="classic"`; `review.html` sets `paper` (IMPL-0028 Phase 6),
-  and the review page's header carries a theme selector (`docz:theme`) and,
-  on paper, a light/dark toggle sharing `docz:mode` with exported pages
-  (`src/review/appearance.ts`); a mode change redraws mermaid through
+  and the review page renders in the repository's `html.theme`, which
+  `docz inspect` reports and the session carries (IMPL-0030), with no theme
+  selector and, on paper, a light/dark toggle sharing `docz:mode` with
+  exported pages (`src/review/appearance.ts`); a mode change redraws mermaid through
   `refreshMermaidTheme`. `contrast.test.ts` holds every theme and mode to
   4.5:1, reading `pkg/theme`. Only the spec, the CLI schemas, and the themes cross the boundary; `.dockerignore` excludes `ui` from the api image's root context.
 - **Three components publish from one tag.** Bake has `-api` and `-ui` target
@@ -281,7 +282,7 @@ created. It is three pieces, and `ui/CLAUDE.md` has the detail.
 docz-html (DESIGN-0025, IMPL-0028) turns one docz document into one
 standalone HTML page in docz's theme. `docz export html` makes the page
 (`pkg/export/html`, above); the plugin, the marketplace's second, with its
-own version in `plugin.json` (0.2.0), is at **stage 2**: a skill that
+own version in `plugin.json` (0.3.0), is at **stage 2**: a skill that
 validates, runs the command, reports the page, and improves a page through
 the document's **markdown**, never its HTML. `references/layout.md`
 (region kind to tab and component) and `widgets.md` (the closed YAML of
@@ -291,6 +292,18 @@ carried a copy of `pkg/theme` and had the agent assemble pages by hand
 from `docz inspect`; the copy, `just plugin-theme-sync`/`-check`, and the
 plugin job's drift check went with it.
 
+- **The theme** is the repository's (IMPL-0030 Phase 2): `docz export
+  html` reads `.docz.yaml`'s `html.theme` when `--theme` is empty (the
+  flag's default) and `ExportOptions.Theme` empty means the same, so a
+  library caller gets the CLI's default; `--theme` is a one-off and is
+  still checked against `theme.Names()` (exit 2). The JSON report names
+  the theme a run used (`theme`, `export-html.schema.json` `$version`
+  1.1), and `docz inspect --format json` reports the repository's theme as
+  a top-level `theme` (`inspect.schema.json` `$version` 1.1, not required,
+  so an older docz's output still validates and docz-review reads its
+  absence as `paper`). The skill passes no `--theme` unless the user asks
+  for a theme.
+
 - **Widgets** are drawn by `pkg/theme/runtime.js` from a
   `figure.widget` holding a `script[type="application/json"][data-widget]`
   island, an empty `.widget-mount`, and a `.widget-fallback`. The drawers
@@ -298,7 +311,7 @@ plugin job's drift check went with it.
   fallback), and redraw on a mode change; an island that fails to parse
   or draw leaves the fallback. `pkg/export/html/widgets.go` writes the
   figure from a validated block.
-- **The skill's evals.** `plugins/docz-html/evals/` is a seven-case
+- **The skill's evals.** `plugins/docz-html/evals/` is an eight-case
   `claude plugin eval` suite over a fixture repository in
   `evals/fixture/repo/`, run with `just plugin-eval docz-html` (local only:
   each run is a Claude session). The run's sandboxed Bash gets a login
@@ -311,7 +324,9 @@ plugin job's drift check went with it.
   so the `ui-e2e` job, which builds docz first) exports copies of the
   parity fixtures with that docz and opens pages from `file://`: every
   tab, the mode toggle, the IMPL task filter, an open question, and the
-  three widgets, with no console error and no network request. It needs
+  three widgets, and a fixture whose `.docz.yaml` says `html: {theme:
+  classic}` exporting classic pages with no flag, with no console error and
+  no network request. It needs
   `just build` locally (or `DOCZ_EXPORT_DOCZ`).
 
 ## Helm chart (`charts/docz`)

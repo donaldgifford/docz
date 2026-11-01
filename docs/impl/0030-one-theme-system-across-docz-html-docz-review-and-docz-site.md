@@ -275,7 +275,7 @@ review session, and neither surface offers a theme selector.
   `argument-hint` follows. Version to 0.3.0. The eval case
   `docz-html-exp-002` still passes, and a case where the fixture's key
   picks the theme is added.
-- [ ] Update `ui/CLAUDE.md` (Appearance) and `CLAUDE.md` (docz-html,
+- [x] Update `ui/CLAUDE.md` (Appearance) and `CLAUDE.md` (docz-html,
   docz-review).
 
 <!--docz:tasks:end-->
