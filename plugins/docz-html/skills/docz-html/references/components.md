@@ -48,8 +48,9 @@ elements: `p`, `ul`/`ol`, `table`, `pre><code`, `blockquote`, `a`, `code`,
 </html>
 ```
 
-- `data-theme` is `paper` unless the user asks for `classic`. Inline only
-  that theme's token file.
+- `data-theme` is the repository's theme, `paper` unless `.docz.yaml` or
+  the user names `charcoal` or `classic`. Inline only that theme's token
+  file.
 - `data-doc` is the document id. The runtime namespaces the remembered
   tab and task filter by it.
 - Never set `data-mode`; the reader's system decides until they press the

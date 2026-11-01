@@ -402,7 +402,7 @@ offer it.
   selector offers it with no change to the selector.
 - [x] The e2e and axe runs of Phases 2 and 3 cover it through the theme
   list, with no new spec.
-- [ ] Mention the theme in the plugin's `references/` and in
+- [x] Mention the theme in the plugin's `references/` and in
   `docz_yaml.tmpl`'s comment.
 
 <!--docz:tasks:end-->

@@ -282,7 +282,7 @@ created. It is three pieces, and `ui/CLAUDE.md` has the detail.
 docz-html (DESIGN-0025, IMPL-0028) turns one docz document into one
 standalone HTML page in docz's theme. `docz export html` makes the page
 (`pkg/export/html`, above); the plugin, the marketplace's second, with its
-own version in `plugin.json` (0.3.0), is at **stage 2**: a skill that
+own version in `plugin.json` (0.3.1), is at **stage 2**: a skill that
 validates, runs the command, reports the page, and improves a page through
 the document's **markdown**, never its HTML. `references/layout.md`
 (region kind to tab and component) and `widgets.md` (the closed YAML of

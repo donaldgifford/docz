@@ -19,9 +19,9 @@ and how to make it read better.
 The document is `$ARGUMENTS` (an id like `DESIGN-0025` or a path under
 `docs/`). The theme is the repository's: `.docz.yaml`'s `html.theme`
 (`paper` when it names none), which `docz export html` reads by itself,
-so pass no flag for it. A second argument naming a theme (`classic`, or
-`paper`), or a user asking for one, is a one-off: pass `--theme` for that
-run and leave `.docz.yaml` alone.
+so pass no flag for it. A second argument naming a theme (`charcoal`,
+`classic`, or `paper`), or a user asking for one, is a one-off: pass
+`--theme` for that run and leave `.docz.yaml` alone.
 
 ## When
 
