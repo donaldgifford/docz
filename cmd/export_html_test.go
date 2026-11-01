@@ -141,3 +141,31 @@ func TestExportHTMLFailedPageExitsOne(t *testing.T) {
 		t.Errorf("the report does not name the failed page:\n%s", out)
 	}
 }
+
+// TestExportHTMLThemeFromConfig pins IMPL-0030 Phase 2: with no --theme
+// the run uses html.theme, an explicit --theme wins, and the JSON report
+// names the theme used.
+func TestExportHTMLThemeFromConfig(t *testing.T) {
+	tests := []struct {
+		name, flag, want string
+	}{
+		{name: "the key with no flag", want: "classic"},
+		{name: "the flag overrides the key", flag: "paper", want: "paper"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r, out, _ := fixtureRunner(t, "adr")
+			r.Cfg.HTML.Theme = "classic"
+
+			opts := &exportHTMLOpts{format: formatJSON, theme: tt.flag, mermaid: "source", dryRun: true}
+			if err := r.exportHTML(t.Context(), opts, nil); err != nil {
+				t.Fatalf("exportHTML = %v", err)
+			}
+
+			if want := `"theme": "` + tt.want + `"`; !strings.Contains(out.String(), want) {
+				t.Errorf("JSON report has no %s:\n%.300s", want, out)
+			}
+		})
+	}
+}

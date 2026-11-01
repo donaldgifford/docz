@@ -240,14 +240,14 @@ review session, and neither surface offers a theme selector.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `cmd/export_html.go`: `--theme` defaults to empty, which means
+- [x] `cmd/export_html.go`: `--theme` defaults to empty, which means
   `Cfg.HTML.Theme`. An explicit `--theme` still wins and is still checked
   against `theme.Names()` (exit 2). The `--help` text says where the
   default comes from.
 - [x] `pkg/export/html`: `ExportOptions.Theme` empty means the
   repository's `Cfg.HTML.Theme`, so a consumer calling `Export` without the
   CLI gets the same default. A test covers both paths.
-- [ ] The `export-html` JSON report gains `theme` (the theme the run
+- [x] The `export-html` JSON report gains `theme` (the theme the run
   used). `api/cli/export-html.schema.json` takes an additive `$version`
   bump, and the contract fixtures are regenerated with `-update`.
 - [ ] `docz inspect --format json` gains a top-level `theme`, the

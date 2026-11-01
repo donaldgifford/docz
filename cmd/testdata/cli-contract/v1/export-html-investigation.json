@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "out": "build/html",
+  "theme": "paper",
   "dry_run": false,
   "pages": [
     {
@@ -9,7 +10,7 @@
       "source": "docs/investigation/0001-evaluate-message-queue-options.md",
       "path": "investigation/0001-evaluate-message-queue-options.html",
       "action": "wrote",
-      "hash": "sha256:3502cd6e41078d95feab79d46437717e72f2391fb57020c9440b16dcddeeff8e",
+      "hash": "sha256:39f72c16f5b605d012bda26686a4ca995b080a356dadb3104ea3946c18e8a5ec",
       "unresolved_links": [],
       "problems": []
     },
@@ -19,7 +20,7 @@
       "source": "docs/investigation/0002-why-the-nightly-rebuild-flakes.md",
       "path": "investigation/0002-why-the-nightly-rebuild-flakes.html",
       "action": "wrote",
-      "hash": "sha256:d59690d8e104614b60d9b5b63844c37f1a7640932ebbe41f8a463b1553e41666",
+      "hash": "sha256:373cb148632ac6733d7631882a22e79ba57791c72ca6e418e12b4bc6383aabe0",
       "unresolved_links": [],
       "problems": []
     },
@@ -29,7 +30,7 @@
       "source": "",
       "path": "index.html",
       "action": "wrote",
-      "hash": "sha256:3d358a61b1e3ba2bacbb95df3da2087caa54ae4eae2fa439f41cd33bb065cfe7",
+      "hash": "sha256:ed67fc250436592c5da2a71c3ad40d0221c56063c6cdac0388cf74272ad6ebc4",
       "unresolved_links": [],
       "problems": []
     }

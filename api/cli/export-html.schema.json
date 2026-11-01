@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/donaldgifford/docz/schemas/cli/export-html/v1",
-  "$version": "1.0",
+  "$version": "1.1",
   "title": "docz export html",
   "description": "Output of `docz export html --format json`: the whole of stdout.",
   "type": "object",
@@ -13,6 +13,10 @@
     "out": {
       "type": "string",
       "description": "The output directory, relative to the repository root when it is under it"
+    },
+    "theme": {
+      "type": "string",
+      "description": "The pkg/theme theme the run rendered in: --theme, else the repository's html.theme (since $version 1.1)"
     },
     "dry_run": {
       "type": "boolean",
@@ -49,7 +53,7 @@
       "additionalProperties": false
     }
   },
-  "required": ["schema_version", "out", "dry_run", "pages", "total"],
+  "required": ["schema_version", "out", "theme", "dry_run", "pages", "total"],
   "additionalProperties": false,
   "$defs": {
     "page": {
