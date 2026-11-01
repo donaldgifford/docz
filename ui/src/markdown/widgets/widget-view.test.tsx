@@ -111,9 +111,9 @@ describe("widgets in the reader", () => {
     );
     // (1 × 2 + 0.5 × 1) / 3 = 83%.
     expect(within(figure).getByText("2.5 / 3.0")).toBeDefined();
-    expect(
-      within(figure).getByRole("progressbar").getAttribute("value"),
-    ).toBe("83");
+    expect(within(figure).getByRole("progressbar").getAttribute("value")).toBe(
+      "83",
+    );
     expect(within(figure).getByText("acme/docs")).toBeDefined();
   });
 
