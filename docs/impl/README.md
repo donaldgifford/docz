@@ -63,5 +63,6 @@ docz create impl "Your Implementation Title"
 | IMPL-0028 | docz-html: pkg/theme, the skill, docz export html, and the review page on paper | Completed | 2026-10-31 | Donald Gifford | [0028-docz-html-pkgtheme-the-skill-docz-export-html-and-the-review.md](0028-docz-html-pkgtheme-the-skill-docz-export-html-and-the-review.md) |
 | IMPL-0029 | docz-site on paper, with the widgets as React components | Draft | 2026-10-31 | Donald Gifford | [0029-docz-site-on-paper-with-the-widgets-as-react-components.md](0029-docz-site-on-paper-with-the-widgets-as-react-components.md) |
 | IMPL-0030 | One theme system across docz-html, docz-review, and docz-site, with the widgets in the reader | Draft | 2026-11-01 | Donald Gifford | [0030-one-theme-system-across-docz-html-docz-review-and-docz-site.md](0030-one-theme-system-across-docz-html-docz-review-and-docz-site.md) |
+| IMPL-0031 | The review page laid out like docz-html's exported page | Draft | 2026-11-01 | Donald Gifford | [0031-the-review-page-laid-out-like-docz-htmls-exported-page.md](0031-the-review-page-laid-out-like-docz-htmls-exported-page.md) |
 <!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->
