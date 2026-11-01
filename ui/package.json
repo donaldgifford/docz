@@ -62,7 +62,8 @@
     "shiki": "^4.3.1",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.1.0",
-    "unist-util-visit-parents": "^6.0.2"
+    "unist-util-visit-parents": "^6.0.2",
+    "yaml": "^2.9.0"
   },
   "overrides": {
     "dompurify": "^3.4.17",

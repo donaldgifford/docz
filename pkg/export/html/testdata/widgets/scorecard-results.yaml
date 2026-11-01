@@ -1,0 +1,3 @@
+checks: [{id: C, name: N, target: T}]
+example:
+  results: [1, {id: C, score: x}, {id: C, score: .5}, {id: C, score: null}]

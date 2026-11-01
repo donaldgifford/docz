@@ -1,0 +1,4 @@
+stages:
+  - {name: a, does: b}
+  - {name: c, does: d, colour: red}
+size: 3

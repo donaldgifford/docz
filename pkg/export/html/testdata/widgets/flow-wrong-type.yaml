@@ -1,0 +1,4 @@
+gates: two
+stages:
+  - {name: a, does: b}
+  - {name: c, does: d}

@@ -466,6 +466,33 @@ var yamlLine = regexp.MustCompile(`\bline (\d+)\b`)
 // typeName drops yaml.v3's Go type names from an error.
 var typeName = regexp.MustCompile(` (in|into) (type )?(\[\])?\*?html\.\w+`)
 
+// documentErrors rewrites decodeWidget's errors as a reader sees them:
+// yaml.v3's Go type names dropped, each "line N" of the block moved to
+// the document's line, and an error with no line given the fence's own.
+// first is the document line of the block's first YAML line. docz-site
+// ports this and decodeWidget to TypeScript; testdata/widgets holds the
+// two to the same output.
+func documentErrors(errs []string, first int) []string {
+	out := make([]string, len(errs))
+
+	for i, e := range errs {
+		e = typeName.ReplaceAllString(e, "")
+		e = yamlLine.ReplaceAllStringFunc(e, func(m string) string {
+			n, _ := strconv.Atoi(yamlLine.FindStringSubmatch(m)[1]) //nolint:errcheck // \d+ always parses.
+
+			return "line " + strconv.Itoa(first+n-1)
+		})
+
+		if !yamlLine.MatchString(e) {
+			e = "line " + strconv.Itoa(first-1) + ": " + e
+		}
+
+		out[i] = e
+	}
+
+	return out
+}
+
 // writeWidget writes a widget fence: the figure with its island, mount,
 // and fallback, or, for an invalid block, a caution callout naming each
 // error and the source as code, recorded in problems with its line. first
@@ -475,19 +502,8 @@ func (nr *nodeRenderer) writeWidget(w util.BufWriter, info string, body []byte, 
 
 	v, island, errs := decodeWidget(name, body)
 	if errs != nil {
-		for i, e := range errs {
-			e = typeName.ReplaceAllString(e, "")
-			e = yamlLine.ReplaceAllStringFunc(e, func(m string) string {
-				n, _ := strconv.Atoi(yamlLine.FindStringSubmatch(m)[1]) //nolint:errcheck // \d+ always parses.
-
-				return "line " + strconv.Itoa(first+n-1)
-			})
-
-			if !yamlLine.MatchString(e) {
-				e = "line " + strconv.Itoa(first-1) + ": " + e
-			}
-
-			errs[i] = e
+		errs = documentErrors(errs, first)
+		for _, e := range errs {
 			nr.problems = append(nr.problems, fmt.Errorf("html: invalid %s block: %s", info, e))
 		}
 

@@ -1,0 +1,5 @@
+checks:
+  - {id: C, name: N, target: T, weight: 0}
+  - {id: C, name: N, target: T, weight: -1}
+  - {id: '', name: ' ', target: ''}
+example: {}

@@ -437,7 +437,7 @@ docz-site, and in a review.
   sanitize and before Shiki. It moves the source onto a data attribute
   as mermaid's does, so sanitize never sees component markup and Shiki
   never replaces the block.
-- [ ] Validate each block in TypeScript with the rules of
+- [x] Validate each block in TypeScript with the rules of
   `pkg/export/html/widgets.go`: the same closed fields, required fields,
   and cross-references, and the same error text at the same document
   lines. The rules are ported by hand and kept in step by a shared

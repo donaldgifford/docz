@@ -1,0 +1,3 @@
+steps:
+  - {key: a, name: A, does: x}
+scenarios: []

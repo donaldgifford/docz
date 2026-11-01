@@ -1,0 +1,11 @@
+line 1: steps[0].key: "A" is not [a-z0-9-]+
+line 1: steps[1].key: "A" is not [a-z0-9-]+
+line 1: steps[2].key: required
+line 1: steps[2].name: required
+line 1: steps[2].does: required
+line 1: steps[4].key: "ok" is used twice
+line 1: scenarios[0].notes: "aa" is no step's key
+line 1: scenarios[0].notes: "zz" is no step's key
+line 1: scenarios[1].name: "S" is used twice
+line 1: scenarios[2].name: required
+line 1: scenarios[2].fails_at: "q" is no step's key

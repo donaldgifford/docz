@@ -1,0 +1,7 @@
+line 1: checks[0].weight: must be greater than 0
+line 1: checks[1].id: "C" is used twice
+line 1: checks[1].weight: must be greater than 0
+line 1: checks[2].id: required
+line 1: checks[2].name: required
+line 1: checks[2].target: required
+line 1: example.results: required

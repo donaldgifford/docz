@@ -1,0 +1,9 @@
+checks:
+  - {id: C1, name: N, target: T}
+example:
+  results:
+    - {id: C1, score: 1.5}
+    - {id: C1, score: -0.1}
+    - {id: C1}
+    - {id: C9, score: 1}
+    - {score: 0}
