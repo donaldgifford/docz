@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { rehypeWidgetMarker } from "@/markdown/widget-marker";
 
-import type { Element, Root } from "hast";
+import type { Element } from "hast";
 
 function firstPre(markdown: string): Element {
   const processor = unified()
