@@ -492,7 +492,7 @@ docz-site, and in a review.
 - [x] Mark DESIGN-0025's rollout complete, with this plan as step 5.
 - [ ] Close #214, #213, and #209 from the final PR, and comment on #212
   that Phase 5's components are in place.
-- [ ] Check `CLAUDE.md`, `ui/CLAUDE.md`, the chart README, and the
+- [x] Check `CLAUDE.md`, `ui/CLAUDE.md`, the chart README, and the
   plugin README against what shipped.
 - [ ] Regenerate the changelog as the last commit of every PR.
 

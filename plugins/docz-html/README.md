@@ -53,14 +53,16 @@ gone.
 
 ## Evals
 
-`evals/` is a `claude plugin eval` suite of seven cases: two explicit, two
-implicit, one contextual, and two near-miss negatives (a summary of a
-docz document, and HTML for a file that is not one). Each case's
+`evals/` is a `claude plugin eval` suite of eight cases: two explicit, two
+implicit, two contextual (the second a repository whose `.docz.yaml` sets
+`html.theme: classic`, where the page must be classic with no `--theme`
+flag), and two near-miss negatives (a summary of a docz document, and
+HTML for a file that is not one). Each case's
 `scaffold.sh` seeds the run's empty workspace from `evals/fixture/repo/`,
 a small docz repository about a rate limiter whose IMPL has one deliberate
 `docz validate` finding. The graders check what happened, not only what
 was said: that `docz validate` ran before `docz export html`, that the
-page exists under `build/html/`, that the classic theme is on the page,
+page exists under `build/html/`, that the classic theme is on the page when asked for or configured,
 that no `.html` file was edited, that the page was not opened unasked,
 and that neither negative fires the skill.
 

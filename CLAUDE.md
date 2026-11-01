@@ -310,7 +310,13 @@ plugin job's drift check went with it.
   build DOM with `textContent` only, mark the figure `drawn` (hiding the
   fallback), and redraw on a mode change; an island that fails to parse
   or draw leaves the fallback. `pkg/export/html/widgets.go` writes the
-  figure from a validated block.
+  figure from a validated block. docz-site's reader and docz-review draw
+  the same blocks in React (`ui/src/markdown/widgets/`, IMPL-0030 Phase
+  5) through a TypeScript port of the validator, held to `widgets.go` by
+  the shared corpus `pkg/export/html/testdata/widgets/` (`*.yaml` with a
+  `.json.golden` or `.errors.golden` each; `widgets_corpus_test.go` is
+  the Go side, `validate.test.ts` the UI's), so a block draws, or fails
+  with the same errors at the same lines, on all three surfaces.
 - **The skill's evals.** `plugins/docz-html/evals/` is an eight-case
   `claude plugin eval` suite over a fixture repository in
   `evals/fixture/repo/`, run with `just plugin-eval docz-html` (local only:
