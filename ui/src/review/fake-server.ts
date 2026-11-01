@@ -1,13 +1,16 @@
 import type { DoczInspect } from "@/cli/__generated__/inspect";
 import type { DoczReview } from "@/cli/__generated__/review";
-import {
-  type DocumentState,
-  type ReviewDocument,
-  type ReviewSession,
-  type Submission,
-  type SubmissionKey,
-  sessionTheme,
+import type {
+  DocumentState,
+  ReviewDocument,
+  ReviewSession,
+  Submission,
+  SubmissionKey,
 } from "@/review/api";
+// Relative, not "@/": vite.config.ts loads this file through
+// scripts/review-fake.ts, where the alias does not resolve, so only type
+// imports may use it.
+import { sessionTheme } from "./api";
 import type { Draft } from "@/review/draft";
 
 /*

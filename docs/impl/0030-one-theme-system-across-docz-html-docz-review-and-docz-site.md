@@ -264,7 +264,7 @@ review session, and neither surface offers a theme selector.
   (`THEMES`, `storedTheme`, `setTheme`, the `docz:theme` key) and the
   selector in `AppearanceControls`. The light/dark toggle stays, shown
   on every theme that has a dark block, which is `paper` today.
-- [ ] `ui/e2e/review.spec.ts`: open a session per theme by giving the
+- [x] `ui/e2e/review.spec.ts`: open a session per theme by giving the
   fixture repository a different `theme` (replacing the `docz:theme`
   init scripts), with full-rule axe on each. The e2e that stored a theme
   is removed.

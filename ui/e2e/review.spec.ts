@@ -8,9 +8,11 @@ import { expect, test, type Page } from "@playwright/test";
  * runs over e2e/fixtures/review-session.json. The fake keeps state, so
  * the specs run serially and reset it first.
  *
- * Every spec runs under each appearance (IMPL-0028 Phase 6): paper
- * light, paper dark, and classic, stored where the page reads them, and
- * each setting is also held to full-rule axe, contrast included.
+ * Every spec runs under each appearance: paper light, paper dark, and
+ * classic. The theme is the fixture repository's html.theme, set through
+ * the fake's reset as `docz inspect` would report it (IMPL-0030), and the
+ * mode is stored where the page reads it; each setting is also held to
+ * full-rule axe, contrast included.
  */
 
 const ORIGIN = "http://127.0.0.1:4174";
@@ -111,12 +113,22 @@ async function comment(page: Page, text: string) {
 
 for (const each of SETTINGS) {
   test.describe(each.name, () => {
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ page, request }) => {
       setting = each;
-      await page.addInitScript((s: Setting) => {
-        localStorage.setItem("docz:theme", s.theme);
-        localStorage.setItem("docz:mode", s.mode);
-      }, each);
+      await request.post(`${ORIGIN}/__fake/reset?theme=${each.theme}`);
+      await page.addInitScript((mode: Setting["mode"]) => {
+        localStorage.setItem("docz:mode", mode);
+      }, each.mode);
+    });
+
+    test("offers no theme selector, and a toggle only where it means something", async ({
+      page,
+    }) => {
+      await open(page);
+      await expect(page.getByLabel("Theme")).toHaveCount(0);
+      await expect(page.getByRole("button", { name: /Switch to/ })).toHaveCount(
+        each.theme === "paper" ? 1 : 0,
+      );
     });
 
     test("passes full-rule axe", async ({ page }) => {
@@ -318,8 +330,4 @@ test("with no stored choice it follows the system, then keeps the reader's", asy
   // The page drops its token from the URL, so reopen the link.
   await page.goto(`${ORIGIN}/review.html?t=${TOKEN}`);
   await expect(html).toHaveAttribute("data-mode", "light");
-  await page.getByLabel("Theme").selectOption("classic");
-  await page.goto(`${ORIGIN}/review.html?t=${TOKEN}`);
-  await expect(html).toHaveAttribute("data-theme", "classic");
-  await expect(page.getByRole("button", { name: /Switch to/ })).toHaveCount(0);
 });
