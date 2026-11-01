@@ -23,7 +23,7 @@ const tokensDir = join(here, "..", "..", "pkg", "theme", "tokens");
 const outDir = join(here, "..", "src", "theme", "__generated__");
 
 const DEFAULT_THEME = "paper";
-const DARK_BLOCK = /\[data-mode="dark"\]/;
+const DARK_BLOCK = `[data-mode="dark"]`;
 
 interface ThemeInfo {
   name: string;
@@ -35,7 +35,9 @@ async function themes(): Promise<ThemeInfo[]> {
   const found = await Promise.all(
     files.map(async (file) => ({
       name: basename(file, ".css"),
-      modes: DARK_BLOCK.test(await readFile(join(tokensDir, file), "utf8")),
+      modes: (await readFile(join(tokensDir, file), "utf8")).includes(
+        DARK_BLOCK,
+      ),
     })),
   );
   if (!found.some((t) => t.name === DEFAULT_THEME)) {
