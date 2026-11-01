@@ -137,16 +137,16 @@ docz-api serves each document's fragment.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `GET /api/v1/repos/{owner}/{name}/types/{type}/docs/{doc_id}/html`
+- [x] `GET /api/v1/repos/{owner}/{name}/types/{type}/docs/{doc_id}/html`
   in `api/openapi.yaml` (1.8.0) returning
   `{doc_id, html, hash, inferred, problems}`.
-- [ ] The handler: the type resolved as the document route does, the
+- [x] The handler: the type resolved as the document route does, the
   heading spec from the embedded template for a built-in and markers only
   otherwise, `Fragment: true`, `MermaidEmbed`, the theme from
   `config_snapshot`'s `html.theme`, and a link resolver to
   `/{owner}/{name}/{type}/{id}` for documents the repo holds and
   `/{owner}/{name}/pages/{path}` for its pages.
-- [ ] The OpenAPI contract test covers it; 404 for an unknown or
+- [x] The OpenAPI contract test covers it; 404 for an unknown or
   disallowed document, as the document route.
 - [ ] `just ui gen-api` regenerates the client; an MSW handler serves a
   fragment rendered from the fixtures (`just ui gen-fragments`, from a

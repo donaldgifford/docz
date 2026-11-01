@@ -90,6 +90,7 @@ func (h *Handler) Mount(r chi.Router, gate func(http.Handler) http.Handler, extr
 			r.Get("/types", h.listTypes)
 			r.Get("/types/{type}/docs", h.listDocs)
 			r.Get("/types/{type}/docs/{doc_id}", h.getDoc)
+			r.Get("/types/{type}/docs/{doc_id}/html", h.getDocHTML)
 		})
 		if h.searcher != nil {
 			r.Get("/search", h.searchDocs)
