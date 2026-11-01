@@ -328,7 +328,7 @@ surface is checked under each.
   and the light/dark toggle, between the nav pins and `SessionMenu`. The
   toggle shows only on a theme with a dark block. A change redraws
   mermaid through `refreshMermaidTheme`.
-- [ ] Shiki's contrast nudge: `theme-contrast.ts` pins `CODE_BG` to
+- [x] Shiki's contrast nudge: `theme-contrast.ts` pins `CODE_BG` to
   classic's `--color-code-bg`, and paper's is darker (`#0f1419`). Check
   every theme's `--color-code-bg` in `theme-contrast.test.tsx` (read from
   `pkg/theme/tokens`), so a theme whose code surface is lighter fails
