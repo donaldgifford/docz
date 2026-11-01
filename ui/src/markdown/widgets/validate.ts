@@ -9,6 +9,8 @@ import {
   type Node as YamlNode,
 } from "yaml";
 
+import type { WidgetName } from "@/markdown/widgets/fences";
+
 /*
  * The docz-flow, docz-stepper, and docz-scorecard validator, ported by
  * hand from pkg/export/html/widgets.go (IMPL-0030 Phase 5, Open
@@ -23,14 +25,7 @@ import {
  * library's own, so only its line is held.
  */
 
-export type WidgetName = "flow" | "stepper" | "scorecard";
-
-/** The fence info strings, mapped to the widget each draws. */
-export const WIDGET_FENCES: Readonly<Record<string, WidgetName>> = {
-  "docz-flow": "flow",
-  "docz-stepper": "stepper",
-  "docz-scorecard": "scorecard",
-};
+export type { WidgetName };
 
 export interface FlowStage {
   name: string;

@@ -33,6 +33,7 @@ import { MarkdownPre } from "@/markdown/markdown-pre";
 import { preprocessDoczMarkdown } from "@/markdown/preprocess";
 import { preLineCarrier, rehypeDataLine } from "@/markdown/rehype-data-line";
 import { rehypeMermaidMarker } from "@/markdown/mermaid-marker";
+import { rehypeWidgetMarker } from "@/markdown/widget-marker";
 import {
   resolveRelativeLinks,
   type RelativeLinkContext,
@@ -207,6 +208,8 @@ export async function renderMarkdown(
     // Before Shiki: strips language-mermaid so the highlighter never
     // replaces (and unmarks) the pre.
     .use(() => rehypeMermaidMarker())
+    // Beside it, for the same reason: the docz-* widget fences.
+    .use(() => rehypeWidgetMarker())
     .use(() => (review ? carrier.collect() : undefined))
     .use(() =>
       // HighlighterCore is HighlighterGeneric<never, never>; the plugin

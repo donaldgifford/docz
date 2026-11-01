@@ -432,7 +432,7 @@ docz-site, and in a review.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] A remark step, `widget-marker.ts`, beside `mermaid-marker.ts`, that
+- [x] A remark step, `widget-marker.ts`, beside `mermaid-marker.ts`, that
   marks `docz-flow`, `docz-stepper`, and `docz-scorecard` fences after
   sanitize and before Shiki. It moves the source onto a data attribute
   as mermaid's does, so sanitize never sees component markup and Shiki
