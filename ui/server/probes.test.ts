@@ -121,6 +121,8 @@ describe("invalidConfigVars", () => {
     expect(invalidConfigVars({ DOCZ_LOG_FORMAT: "logfmt" })).toEqual([
       "DOCZ_LOG_FORMAT",
     ]);
+    expect(invalidConfigVars({ DOCZ_THEME: "neon" })).toEqual(["DOCZ_THEME"]);
+    expect(invalidConfigVars({ DOCZ_THEME: " Classic " })).toEqual([]);
     expect(invalidConfigVars({ DOCZ_MERMAID_LAYOUT: "cytoscape" })).toEqual([
       "DOCZ_MERMAID_LAYOUT",
     ]);

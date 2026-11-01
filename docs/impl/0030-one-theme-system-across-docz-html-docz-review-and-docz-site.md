@@ -315,7 +315,7 @@ surface is checked under each.
   `pkg/theme/tokens/`, run before `typecheck`, `test`, and `build` and
   checked by a `gen-themes-check` in `just ui ci`. `Dockerfile.ui`
   already has `pkg/theme` as the `theme` named context (Open Question 5).
-- [ ] `server/serve.ts`: `resolveTheme(DOCZ_THEME)` validated against that
+- [x] `server/serve.ts`: `resolveTheme(DOCZ_THEME)` validated against that
   generated list, into `__DOCZ_CONFIG__.theme`. An unknown
   value falls back to `paper` and is reported by `invalidConfigVars`, so
   readiness fails on a typo as it does for the other whitelisted

@@ -6,6 +6,7 @@ import {
   resolveLogFormat,
   resolveLogLevel,
   resolveMermaidLayout,
+  resolveTheme,
   resolveNavLinks,
   runtimeConfigScript,
   type RuntimeConfig,
@@ -17,6 +18,7 @@ function config(overrides: Partial<RuntimeConfig> = {}): RuntimeConfig {
     authProviders: ["github"],
     nav: [],
     mermaidLayout: "elk",
+    theme: "paper",
     ...overrides,
   };
 }
@@ -103,6 +105,26 @@ describe("resolveNavLinks", () => {
   });
 });
 
+describe("resolveTheme", () => {
+  test("defaults to paper when unset, empty, or unknown", () => {
+    expect(resolveTheme(undefined)).toBe("paper");
+    expect(resolveTheme("")).toBe("paper");
+    expect(resolveTheme("neon")).toBe("paper");
+    expect(resolveTheme('classic"</script>')).toBe("paper");
+  });
+
+  test("keeps a theme pkg/theme has, folded", () => {
+    expect(resolveTheme("classic")).toBe("classic");
+    expect(resolveTheme(" Paper ")).toBe("paper");
+  });
+
+  test("publishes the theme in the runtime config", () => {
+    expect(
+      runtimeConfigScript(config({ theme: resolveTheme("classic") })),
+    ).toContain('"theme":"classic"');
+  });
+});
+
 describe("resolveMermaidLayout", () => {
   test("defaults to elk when unset, empty, or unknown", () => {
     expect(resolveMermaidLayout(undefined)).toBe("elk");
@@ -177,7 +199,7 @@ describe("runtimeConfigScript / injectRuntimeConfig", () => {
     );
     expect(script).toBe(
       '<script>window.__DOCZ_CONFIG__={"authProviders":["keycloak","github"],' +
-        '"nav":[],"mermaidLayout":"elk"};</script>',
+        '"nav":[],"mermaidLayout":"elk","theme":"paper"};</script>',
     );
   });
 
@@ -243,7 +265,7 @@ describe("runtimeConfigScript / injectRuntimeConfig", () => {
     );
     expect(script).toBe(
       '<script>window.__DOCZ_CONFIG__={"authProviders":["github"],' +
-        '"nav":[],"mermaidLayout":"elk"};</script>',
+        '"nav":[],"mermaidLayout":"elk","theme":"paper"};</script>',
     );
     // …and even a value that somehow carried "</" is escaped so the
     // parser can't see a terminator mid-string.
