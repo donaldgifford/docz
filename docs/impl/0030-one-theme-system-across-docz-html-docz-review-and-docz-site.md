@@ -270,7 +270,7 @@ review session, and neither surface offers a theme selector.
   is removed.
 - [x] `ui/e2e/export-html.spec.ts`: a fixture with `html: {theme: classic}`
   exports classic pages with no `--theme`.
-- [ ] Plugin `docz-html`: `SKILL.md` says the theme comes from
+- [x] Plugin `docz-html`: `SKILL.md` says the theme comes from
   `.docz.yaml`, with `classic` (or `--theme`) for a one-off, and the
   `argument-hint` follows. Version to 0.3.0. The eval case
   `docz-html-exp-002` still passes, and a case where the fixture's key
