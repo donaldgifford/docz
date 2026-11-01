@@ -220,6 +220,150 @@ describe("mermaid blocks stay inert", () => {
   });
 });
 
+/*
+ * The widget path (IMPL-0030 Phase 5): every string field of each
+ * widget carries each payload, the widget is driven until every field
+ * is on the page, and nothing executable may come out. The strings
+ * must still read as the text the author wrote.
+ */
+const WIDGET_PAYLOADS = [
+  "<script>alert(1)</script>",
+  "<img src=x onerror=alert(1)>",
+  "javascript:alert(1)",
+] as const;
+
+// A YAML double-quoted scalar is a JSON string, so this quotes any text.
+const q = (text: string): string => JSON.stringify(text);
+
+function flowBlock(p: string): string {
+  return [
+    "```docz-flow",
+    `title: ${q(p)}`,
+    `label: ${q(p)}`,
+    `legend: ${q(p)}`,
+    `alert: ${q(p)}`,
+    "stages:",
+    `  - {name: ${q(p)}, does: ${q(p)}, note: ${q(p)}}`,
+    `  - {name: ${q(`${p} 2`)}, does: ${q(p)}}`,
+    "gates: [1]",
+    "```",
+  ].join("\n");
+}
+
+function stepperBlock(p: string): string {
+  return [
+    "```docz-stepper",
+    `title: ${q(p)}`,
+    "steps:",
+    `  - {key: a, name: ${q(p)}, title: ${q(p)}, does: ${q(p)}}`,
+    `  - {key: b, name: ${q(`${p} 2`)}, does: ${q(p)}}`,
+    "scenarios:",
+    `  - name: ${q(p)}`,
+    "    fails_at: a",
+    `    fail_label: ${q(p)}`,
+    `    notes: {a: ${q(p)}, b: ${q(p)}}`,
+    "```",
+  ].join("\n");
+}
+
+function scorecardBlock(p: string): string {
+  return [
+    "```docz-scorecard",
+    `title: ${q(p)}`,
+    `note: ${q(p)}`,
+    "checks:",
+    `  - {id: C1, name: ${q(p)}, target: ${q(p)}, fixes: ${q(p)}, source: ${q(p)}}`,
+    "example:",
+    `  generated_at: ${q(p)}`,
+    `  subject: ${q(p)}`,
+    "  results:",
+    `    - {id: C1, score: 1, observed: ${q(p)}, evidence: ${q(p)}}`,
+    "```",
+  ].join("\n");
+}
+
+async function drawn(
+  container: HTMLElement,
+  name: string,
+): Promise<HTMLElement> {
+  return waitFor(() => {
+    const figure = container.querySelector<HTMLElement>(
+      `figure[data-widget="${name}"]`,
+    );
+    expect(figure).not.toBeNull();
+    return figure as HTMLElement;
+  });
+}
+
+describe("widget blocks stay inert", () => {
+  it.each(WIDGET_PAYLOADS)("flow strings: %s", async (p) => {
+    const container = await renderToDom(flowBlock(p));
+    const figure = await drawn(container, "flow");
+    const first = figure.querySelector("button");
+    first?.click();
+    await waitFor(() => {
+      expect(figure.querySelectorAll("p").length).toBeGreaterThan(4);
+    });
+    assertNeutralized(container);
+    expect(figure.querySelector("img, script, a")).toBeNull();
+    expect(figure.textContent).toContain(p);
+  });
+
+  it.each(WIDGET_PAYLOADS)("stepper strings: %s", async (p) => {
+    const container = await renderToDom(stepperBlock(p));
+    const figure = await drawn(container, "stepper");
+    assertNeutralized(container);
+    expect(figure.querySelector("img, script, a")).toBeNull();
+    expect(figure.textContent).toContain(p);
+  });
+
+  it.each(WIDGET_PAYLOADS)("scorecard strings: %s", async (p) => {
+    const container = await renderToDom(scorecardBlock(p));
+    const figure = await drawn(container, "scorecard");
+    const load = [...figure.querySelectorAll("button")].find(
+      (b) => b.textContent === "Load the example",
+    );
+    load?.click();
+    await waitFor(() => {
+      expect(figure.querySelector("table")).not.toBeNull();
+    });
+    assertNeutralized(container);
+    expect(figure.querySelector("img, script, a")).toBeNull();
+    expect(figure.textContent).toContain(p);
+  });
+
+  it.each(WIDGET_PAYLOADS)(
+    "an invalid block's source and errors: %s",
+    async (p) => {
+      const container = await renderToDom(
+        ["```docz-flow", `${q(p)}: 1`, `title: ${q(p)}`, "```"].join("\n"),
+      );
+      await waitFor(() => {
+        expect(container.querySelector(".widget-invalid li")).not.toBeNull();
+      });
+      assertNeutralized(container);
+      expect(
+        container.querySelector(".widget-invalid img, .widget-invalid a"),
+      ).toBeNull();
+      expect(
+        container.querySelector(".widget-invalid li")?.textContent,
+      ).toContain(p);
+    },
+  );
+
+  it("gives a forged marker attribute in raw HTML nothing to draw", async () => {
+    const container = await renderToDom(
+      '<pre data-widget="scorecard" data-widget-source="checks: [{id: EVIL, name: E, target: T}]" data-widget-line="1"><code>plain</code></pre>',
+    );
+    assertNeutralized(container);
+    expect(
+      container.querySelector("figure.widget, .widget-invalid"),
+    ).toBeNull();
+    expect(container.innerHTML).not.toContain("EVIL");
+    expect(container.querySelector("[data-widget]")).toBeNull();
+  });
+});
+
 describe("relative link resolution stays inert", () => {
   // The resolver active, as in the reader: hostile hrefs must come out
   // either untouched (miss) or as the map's API-built route — never as

@@ -207,19 +207,14 @@ function ScoreTable({
             </span>
           ))}
         </div>
-        <div
-          role="meter"
+        {/* A native bar, so no style attribute reaches the page: the XSS
+            gate allows inline style only inside a Shiki block. */}
+        <progress
           aria-label="Score"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={pct}
-          className="mt-2 h-1.5 bg-bg-elevated"
-        >
-          <div
-            className="h-full bg-accent"
-            style={{ width: `${String(pct)}%` }}
-          />
-        </div>
+          max={100}
+          value={pct}
+          className="mt-2 block h-1.5 w-full appearance-none bg-bg-elevated [&::-moz-progress-bar]:bg-accent [&::-webkit-progress-bar]:bg-bg-elevated [&::-webkit-progress-value]:bg-accent"
+        />
         <p className="mt-2 text-[13px] text-fg-tertiary">
           {pct}% of the target, measured on {measured} of {checks.length}{" "}
           checks.{note === undefined ? "" : ` ${note}`}

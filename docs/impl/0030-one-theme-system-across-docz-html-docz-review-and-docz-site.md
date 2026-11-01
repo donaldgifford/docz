@@ -454,7 +454,7 @@ docz-site, and in a review.
 - [x] `MarkdownPre` routes marked blocks to the components, and the
   review render mode keeps `data-line` on the widget root, as
   `MermaidBlock` does, so annotations anchor to it.
-- [ ] Extend the XSS suite (`processor.xss.test.tsx`) to the widget path:
+- [x] Extend the XSS suite (`processor.xss.test.tsx`) to the widget path:
   script, an event handler, and a `javascript:` URL in every string
   field, and a forged marker attribute in raw HTML.
 - [ ] The markdown specimen gains a section per widget, and the axe
