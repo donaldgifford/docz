@@ -21,9 +21,10 @@ export function accentProperties(accent: string): Record<string, string> {
 }
 
 /**
- * DocSurface is the document theme around markdown the reader renders
- * itself (DESIGN-0026 §3): a published page, the repo home, the
- * changelog, a type's index, and a document whose fragment did not load.
+ * DocSurface is the document theme around markdown a page renders itself
+ * (DESIGN-0026 §3): in the reader a published page, the repo home, the
+ * changelog, a type's index, and a document whose fragment did not load;
+ * on the review page the document column, in the repository's theme.
  * It is the .docz-page a fragment arrives in, so page.css gives it the
  * deployment's document theme and the export's type, and the shell's look
  * stops at its edge.
@@ -31,14 +32,17 @@ export function accentProperties(accent: string): Record<string, string> {
 export function DocSurface({
   children,
   accent,
+  theme = defaultTheme(),
 }: {
   children: ReactNode;
   accent?: string;
+  /** The document theme; the deployment's when omitted. */
+  theme?: string;
 }) {
   return (
     <div
       className="docz-page rounded-sm px-8 py-6"
-      data-theme={defaultTheme()}
+      data-theme={theme}
       data-testid="doc-surface"
       style={accent === undefined ? undefined : accentProperties(accent)}
     >

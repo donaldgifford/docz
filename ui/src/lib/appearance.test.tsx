@@ -2,14 +2,8 @@ import { act, render, renderHook, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  applyStoredMode,
-  applyTheme,
-  hasModes,
-  storedMode,
-  useAppearance,
-} from "@/lib/appearance";
-import { AppearanceControls } from "@/review/controls";
+import { AppearanceControls } from "@/components/appearance-controls";
+import { applyStoredMode, storedMode, useAppearance } from "@/lib/appearance";
 
 const root = document.documentElement;
 
@@ -33,14 +27,14 @@ function stubSystem(dark: boolean) {
   };
 }
 
-function Controls({ theme }: { theme: string }) {
-  return <AppearanceControls appearance={useAppearance(theme)} />;
+function Controls() {
+  const { mode, toggleMode } = useAppearance();
+  return <AppearanceControls mode={mode} onToggleMode={toggleMode} />;
 }
 
 afterEach(() => {
   vi.unstubAllGlobals();
   root.removeAttribute("data-mode");
-  root.setAttribute("data-theme", "paper");
 });
 
 describe("stored appearance", () => {
@@ -57,24 +51,16 @@ describe("stored appearance", () => {
     expect(root.getAttribute("data-mode")).toBe("dark");
   });
 
-  it("ignores a mode it does not know, and never stores a theme", () => {
+  it("ignores a mode it does not know", () => {
     localStorage.setItem("docz:mode", "dim");
     expect(storedMode()).toBeNull();
-    applyTheme("classic");
-    expect(root.getAttribute("data-theme")).toBe("classic");
-    expect(localStorage.getItem("docz:theme")).toBeNull();
-  });
-
-  it("knows which themes have modes", () => {
-    expect(hasModes("paper")).toBe(true);
-    expect(hasModes("classic")).toBe(false);
   });
 });
 
 describe("useAppearance", () => {
   it("follows the system until the reader picks a mode", () => {
     const flip = stubSystem(false);
-    const { result } = renderHook(() => useAppearance("paper"));
+    const { result } = renderHook(() => useAppearance());
     expect(result.current.mode).toBe("light");
     act(() => {
       flip(true);
@@ -89,7 +75,7 @@ describe("useAppearance", () => {
     const listen = (e: Event) => heard.push((e as CustomEvent).detail);
     document.addEventListener("docz:mode", listen);
     const onChange = vi.fn();
-    const { result } = renderHook(() => useAppearance("paper", onChange));
+    const { result } = renderHook(() => useAppearance(onChange));
     onChange.mockClear();
     act(() => {
       result.current.toggleMode();
@@ -97,25 +83,21 @@ describe("useAppearance", () => {
     document.removeEventListener("docz:mode", listen);
     expect(localStorage.getItem("docz:mode")).toBe("dark");
     expect(root.getAttribute("data-mode")).toBe("dark");
-    expect(heard.at(-1)).toEqual({ mode: "dark", theme: "paper" });
+    expect(heard.at(-1)).toEqual({ mode: "dark" });
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
-  it("writes the session's theme to <html>", () => {
-    const { rerender } = renderHook(({ theme }) => useAppearance(theme), {
-      initialProps: { theme: "classic" },
-    });
-    expect(root.getAttribute("data-theme")).toBe("classic");
-    rerender({ theme: "paper" });
-    expect(root.getAttribute("data-theme")).toBe("paper");
+  it("never puts a theme on <html>", () => {
+    renderHook(() => useAppearance());
+    expect(root.hasAttribute("data-theme")).toBe(false);
   });
 });
 
 describe("AppearanceControls", () => {
-  it("offers the toggle on paper and no theme selector", async () => {
+  it("offers the toggle and no theme selector", async () => {
     stubSystem(false);
     const user = userEvent.setup();
-    render(<Controls theme="paper" />);
+    render(<Controls />);
     await user.click(
       screen.getByRole("button", { name: "Switch to dark mode" }),
     );
@@ -123,10 +105,5 @@ describe("AppearanceControls", () => {
       screen.getByRole("button", { name: "Switch to light mode" }),
     ).toBeTruthy();
     expect(screen.queryByLabelText("Theme")).toBeNull();
-  });
-
-  it("offers nothing on classic, which has one look", () => {
-    render(<Controls theme="classic" />);
-    expect(screen.queryByRole("button", { name: /Switch to/ })).toBeNull();
   });
 });

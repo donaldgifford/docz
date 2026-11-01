@@ -7,18 +7,14 @@
  */
 @import "tailwindcss";
 
-/* The themes (DESIGN-0025 §3) live once, in pkg/theme, which the docz
- * binary embeds for exported pages. Each is a :root[data-theme="…"]
- * block of these same variable names; being unlayered, it overrides the
- * @theme values below, which Tailwind still needs to generate every
- * utility. review.html sets data-theme; the site's <html> carries none,
- * so shell.css (DESIGN-0026 §2), repo-guardian's look in light and
- * dark, is what it shows, and its @theme values are the shell's dark
- * set (shell.test.ts). */
+/* The shell (DESIGN-0026 §2): repo-guardian's look in light and dark,
+ * which both the site and the review page wear. Being unlayered, it
+ * overrides the @theme values below, which Tailwind still needs to
+ * generate every utility; they are the shell's dark set (shell.test.ts).
+ * Neither page sets data-theme on <html>: a document's theme (pkg/theme,
+ * DESIGN-0025 §3) arrives scoped to its .docz-page through
+ * __generated__/page.css, which DocSurface and DocPane import. */
 @import "./shell.css";
-@import "../../../pkg/theme/tokens/charcoal.css";
-@import "../../../pkg/theme/tokens/classic.css";
-@import "../../../pkg/theme/tokens/paper.css";
 
 /* `static` so every token is emitted even before a utility references
  * it — the type/status color module resolves tokens at runtime via

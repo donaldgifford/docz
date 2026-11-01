@@ -1,8 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { THEMES_WITH_MODES } from "../src/theme/__generated__/themes";
-import { APPEARANCES } from "./appearances";
+import { THEMES } from "../src/theme/__generated__/themes";
+import { SHELL_MODES } from "./appearances";
 
 /*
  * docz-review's page in a real browser (DESIGN-0024 section 7: the
@@ -11,11 +11,12 @@ import { APPEARANCES } from "./appearances";
  * runs over e2e/fixtures/review-session.json. The fake keeps state, so
  * the specs run serially and reset it first.
  *
- * Every spec runs under each appearance in e2e/appearances.ts (every
- * pkg/theme theme, both modes where it has them). The theme is the fixture repository's html.theme, set through
- * the fake's reset as `docz inspect` would report it (IMPL-0030), and the
- * mode is stored where the page reads it; each setting is also held to
- * full-rule axe, contrast included.
+ * Every spec runs under every pkg/theme theme in both shell modes
+ * (DESIGN-0026 §9): the page wears the shell, and its document column is
+ * a .docz-page in the fixture repository's html.theme, set through the
+ * fake's reset as `docz inspect` would report it (IMPL-0030). The mode is
+ * stored where the page reads it; each setting is also held to full-rule
+ * axe, contrast included.
  */
 
 const ORIGIN = "http://127.0.0.1:4174";
@@ -33,13 +34,13 @@ interface Setting {
   mode: "light" | "dark";
 }
 
-// A theme without modes is dark in every mode, so the stored mode is
-// "dark", which is also what the page reports for it.
-const SETTINGS: Setting[] = APPEARANCES.map((appearance) => ({
-  name: appearance.label,
-  theme: appearance.theme,
-  mode: appearance.mode ?? "dark",
-}));
+const SETTINGS: Setting[] = THEMES.flatMap((theme) =>
+  SHELL_MODES.map((shell) => ({
+    name: `${theme} in ${shell.label}`,
+    theme,
+    mode: shell.mode,
+  })),
+);
 
 const PAPER_LIGHT: Setting = {
   name: "paper light",
@@ -55,8 +56,12 @@ async function open(page: Page) {
     page.getByRole("heading", { name: "Review cache", level: 1 }),
   ).toBeVisible();
   const html = page.locator("html");
-  await expect(html).toHaveAttribute("data-theme", setting.theme);
+  await expect(html).not.toHaveAttribute("data-theme", /.*/);
   await expect(html).toHaveAttribute("data-mode", setting.mode);
+  await expect(page.locator(".docz-page")).toHaveAttribute(
+    "data-theme",
+    setting.theme,
+  );
 }
 
 // Selects from the first occurrence of `from` (the `nth` one) through the
@@ -126,13 +131,13 @@ for (const each of SETTINGS) {
       }, each.mode);
     });
 
-    test("offers no theme selector, and a toggle only where it means something", async ({
+    test("offers the shell's toggle and no theme selector", async ({
       page,
     }) => {
       await open(page);
       await expect(page.getByLabel("Theme")).toHaveCount(0);
       await expect(page.getByRole("button", { name: /Switch to/ })).toHaveCount(
-        (THEMES_WITH_MODES as readonly string[]).includes(each.theme) ? 1 : 0,
+        1,
       );
     });
 
@@ -318,7 +323,6 @@ test("with no stored choice it follows the system, then keeps the reader's", asy
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto(`${ORIGIN}/review.html?t=${TOKEN}`);
   const html = page.locator("html");
-  await expect(html).toHaveAttribute("data-theme", "paper");
   await expect(html).not.toHaveAttribute("data-mode", /.*/);
   const bg = () =>
     page.evaluate(() =>
@@ -326,11 +330,12 @@ test("with no stored choice it follows the system, then keeps the reader's", asy
         .getPropertyValue("--color-bg-base")
         .trim(),
     );
-  expect(await bg()).toBe("#15171a");
+  // The shell's dark and light surfaces (shell.css).
+  expect(await bg()).toBe("#17191c");
 
   await page.getByRole("button", { name: "Switch to light mode" }).click();
   await expect(html).toHaveAttribute("data-mode", "light");
-  expect(await bg()).toBe("#f6f5f1");
+  expect(await bg()).toBe("#f6f7f9");
 
   // The page drops its token from the URL, so reopen the link.
   await page.goto(`${ORIGIN}/review.html?t=${TOKEN}`);

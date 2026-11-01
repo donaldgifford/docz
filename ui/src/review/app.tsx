@@ -10,7 +10,8 @@ import {
   type ReviewDocument,
 } from "@/review/api";
 import { useAppearance } from "@/lib/appearance";
-import { AppearanceControls, ReviewButton } from "@/review/controls";
+import { AppearanceControls } from "@/components/appearance-controls";
+import { ReviewButton } from "@/review/controls";
 import { DocumentReview } from "@/review/document-review";
 import { emptyDraft, type Draft } from "@/review/draft";
 
@@ -46,10 +47,8 @@ export function ReviewApp({ client }: { client: ReviewClient }) {
     queryKey: SESSION_KEY,
     queryFn: () => client.session(),
   });
-  const appearance = useAppearance(
-    session.data?.theme ?? DEFAULT_THEME,
-    refreshMermaidTheme,
-  );
+  const appearance = useAppearance(refreshMermaidTheme);
+  const theme = session.data?.theme ?? DEFAULT_THEME;
   const [active, setActive] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [stale, setStale] = useState<Record<string, string>>({});
@@ -144,66 +143,86 @@ export function ReviewApp({ client }: { client: ReviewClient }) {
 
   const allDone = documents.every((d) => d.state !== "open");
   return (
-    <main className="mx-auto max-w-[1280px] p-6">
-      <nav
-        aria-label="Documents"
-        className="mb-6 flex flex-wrap items-center gap-2"
-      >
-        {documents.map((d) => (
+    <>
+      <header className="sticky top-0 z-50 flex h-10 items-center gap-4 border-b border-border-default bg-bg-raised px-4">
+        <span className="flex items-center gap-[0.55rem]">
+          <span
+            aria-hidden
+            className="grid size-[20px] place-items-center rounded-sm bg-accent font-mono text-[12px] font-bold text-(--color-on-accent)"
+          >
+            D
+          </span>
+          <span className="text-[14px] font-semibold">docz</span>
+          <span className="text-[14px] text-fg-muted">· review</span>
+        </span>
+        <div className="ml-auto flex items-center gap-2 text-[13px]">
+          <AppearanceControls
+            mode={appearance.mode}
+            onToggleMode={appearance.toggleMode}
+          />
           <ReviewButton
-            key={d.key}
-            aria-current={d.key === doc?.key ? "page" : undefined}
-            variant={d.key === doc?.key ? "selected" : "plain"}
             onClick={() => {
-              setActive(d.key);
+              if (
+                !dirty ||
+                window.confirm(
+                  "Leave without an outcome for the open documents?",
+                )
+              ) {
+                void client.done().then(() => {
+                  setClosed("done");
+                });
+              }
             }}
           >
-            {d.key} · {d.state}
+            Done
           </ReviewButton>
-        ))}
-        <div className="ml-auto flex items-center gap-2">
-          <AppearanceControls appearance={appearance} />
         </div>
-        <ReviewButton
-          onClick={() => {
-            if (
-              !dirty ||
-              window.confirm("Leave without an outcome for the open documents?")
-            ) {
-              void client.done().then(() => {
-                setClosed("done");
-              });
-            }
-          }}
+      </header>
+      <main className="mx-auto max-w-[1280px] p-6">
+        <nav
+          aria-label="Documents"
+          className="mb-6 flex flex-wrap items-center gap-2"
         >
-          Done
-        </ReviewButton>
-      </nav>
-      {allDone && (
-        <p className="mb-4 font-mono text-[12.5px] text-fg-secondary">
-          Every document has an outcome. You can close this tab.
-        </p>
-      )}
-      {doc !== undefined && (
-        <DocumentReview
-          key={`${doc.key}:${doc.round}`}
-          doc={doc}
-          draft={draftFor(doc)}
-          onDraft={(next) => {
-            setDraft(doc, next);
-          }}
-          newSubmissionId={newSubmissionId}
-          stale={stale[doc.key] ?? null}
-          onReload={() => {
-            void queryClient.invalidateQueries({ queryKey: SESSION_KEY });
-          }}
-          actions={{
-            submit: (body) => settle(doc, () => client.submit(doc.key, body)),
-            approve: (key) => settle(doc, () => client.approve(doc.key, key)),
-            dismiss: (key) => settle(doc, () => client.dismiss(doc.key, key)),
-          }}
-        />
-      )}
-    </main>
+          {documents.map((d) => (
+            <ReviewButton
+              key={d.key}
+              aria-current={d.key === doc?.key ? "page" : undefined}
+              variant={d.key === doc?.key ? "selected" : "plain"}
+              onClick={() => {
+                setActive(d.key);
+              }}
+            >
+              {d.key} · {d.state}
+            </ReviewButton>
+          ))}
+        </nav>
+        {allDone && (
+          <p className="mb-4 font-mono text-[12.5px] text-fg-secondary">
+            Every document has an outcome. You can close this tab.
+          </p>
+        )}
+        {doc !== undefined && (
+          <DocumentReview
+            key={`${doc.key}:${doc.round}`}
+            doc={doc}
+            draft={draftFor(doc)}
+            onDraft={(next) => {
+              setDraft(doc, next);
+            }}
+            newSubmissionId={newSubmissionId}
+            stale={stale[doc.key] ?? null}
+            theme={theme}
+            onReload={() => {
+              void queryClient.invalidateQueries({ queryKey: SESSION_KEY });
+            }}
+            actions={{
+              submit: (body) => settle(doc, () => client.submit(doc.key, body)),
+              approve: (key) => settle(doc, () => client.approve(doc.key, key)),
+              dismiss: (key) => settle(doc, () => client.dismiss(doc.key, key)),
+            }}
+          />
+        )}
+      </main>
+    </>
   );
 }

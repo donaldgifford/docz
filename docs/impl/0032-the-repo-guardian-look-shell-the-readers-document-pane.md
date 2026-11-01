@@ -253,9 +253,9 @@ A document in the reader is its exported page.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] The review page's chrome on the shell; its document column a
+- [x] The review page's chrome on the shell; its document column a
   `.docz-page` in the session's theme.
-- [ ] The review e2e under both modes.
+- [x] The review e2e under both modes.
 - [ ] `CLAUDE.md`, `ui/CLAUDE.md`, the chart README, and DESIGN-0025's
   §3 note on the site's theme.
 - [ ] Regenerate the changelog as the last commit.

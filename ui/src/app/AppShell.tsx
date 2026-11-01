@@ -80,7 +80,7 @@ export function AppShell() {
   const pins = enabledNavLinks();
   // The shell's mode (DESIGN-0026 §2); a change redraws every mounted
   // diagram from the new tokens.
-  const appearance = useAppearance(undefined, refreshMermaidTheme);
+  const appearance = useAppearance(refreshMermaidTheme);
   const type = useMatches()
     .map((match) => match.params.type)
     .find((param) => param !== undefined);
