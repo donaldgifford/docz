@@ -198,7 +198,7 @@ repository.
 - [x] `docz_yaml.tmpl`: write `html:` with `theme: paper` and a comment that names
   the themes and says it sets `docz export html` and docz-review, not
   docz-site. `DefaultConfigYAML()` and `docz init` pick it up.
-- [ ] `test/parity`: an `HTMLNormalizer` that drops the `html:` block and
+- [x] `test/parity`: an `HTMLNormalizer` that drops the `html:` block and
   its comment from a generated `.docz.yaml` and from `docz config`
   (`dropTopLevelBlock`, as `AccessNormalizer` does), in `runCase`'s
   both-sides list, with a unit test in `parity_norm_test.go`. v1.2.2
