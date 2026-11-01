@@ -21,6 +21,25 @@ created: 2026-09-25
 
 <!--docz:last-verified:end-->
 
+## Flow
+
+```mermaid
+flowchart LR
+  A[Write the secret] --> B[Restart the site] --> C[Sign in again]
+```
+
+```docz-flow
+title: A rotation
+stages:
+  - name: Write
+    does: The new secret goes to the cluster.
+  - name: Restart
+    does: The rollout picks it up.
+  - name: Sign in
+    does: Old sessions end; a new one starts.
+gates: [2]
+```
+
 <!--docz:procedure:start-->
 ### Procedure 1: Rotate
 

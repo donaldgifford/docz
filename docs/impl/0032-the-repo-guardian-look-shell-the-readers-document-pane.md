@@ -231,7 +231,7 @@ A document in the reader is its exported page.
   the pane's `--color-accent` takes it. `--color-t-*` per shell mode and
   document theme, held to 4.5:1.
 - [x] The XSS suite over a hostile fragment; axe over the reader.
-- [ ] e2e: tabs, the IMPL filter, a question, a widget, a diagram, an
+- [x] e2e: tabs, the IMPL filter, a question, a widget, a diagram, an
   in-app link, and both modes.
 
 <!--docz:tasks:end-->
