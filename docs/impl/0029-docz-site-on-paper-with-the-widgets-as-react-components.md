@@ -1,7 +1,7 @@
 ---
 id: IMPL-0029
 title: "docz-site on paper, with the widgets as React components"
-status: Draft
+status: Cancelled
 author: Donald Gifford
 created: 2026-10-31
 ---
@@ -36,6 +36,12 @@ created: 2026-10-31
 
 <!--docz:objective:start-->
 ## Objective
+
+> **Cancelled 2026-11-01.** No phase was started. IMPL-0030 took its
+> scope (Open Question 10): docz-site on `paper` with `classic` and
+> `charcoal` selectable, the theme from `html.theme`, and the widgets as
+> React components held to the export's validator by a shared corpus.
+> The plan is kept as written.
 
 Move docz-site to the `paper` theme with `classic` selectable, and draw
 the three docz widgets (`docz-flow`, `docz-stepper`, `docz-scorecard`) in
