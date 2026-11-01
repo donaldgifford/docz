@@ -1,5 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdtempSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -58,12 +64,22 @@ checks:
 \`\`\`
 `;
 
-/** Exports a copy of a parity fixture and returns its output directory. */
-function exportFixture(name: string, extra?: Record<string, string>): string {
+/**
+ * Exports a copy of a parity fixture and returns its output directory.
+ * `config` is appended to the copy's .docz.yaml.
+ */
+function exportFixture(
+  name: string,
+  extra?: Record<string, string>,
+  config?: string,
+): string {
   const root = mkdtempSync(join(tmpdir(), `e2e-export-${name}-`));
   cpSync(join(FIXTURES, name), root, { recursive: true });
   for (const [path, body] of Object.entries(extra ?? {})) {
     writeFileSync(join(root, path), body);
+  }
+  if (config !== undefined) {
+    appendFileSync(join(root, ".docz.yaml"), config);
   }
   const out = join(root, "out");
   execFileSync(DOCZ, ["export", "html", "--repo-root", root, "--out", out], {
@@ -210,6 +226,25 @@ test("each widget draws", async ({ page }) => {
   }
   await toggleMode(page);
   await expect(page.locator("figure.widget.drawn")).toHaveCount(3);
+  expect(errors).toEqual([]);
+  expect(requests).toEqual([]);
+});
+
+test("the repository's html.theme picks the theme with no --theme", async ({
+  page,
+}) => {
+  const out = exportFixture("design", {}, "\nhtml:\n  theme: classic\n");
+  const { errors, requests } = await open(
+    page,
+    join(out, "design/0002-wiki-nav-generation.html"),
+  );
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "classic");
+  const bg = await page.evaluate(() =>
+    getComputedStyle(document.documentElement)
+      .getPropertyValue("--color-bg-base")
+      .trim(),
+  );
+  expect(bg).toBe("#0c1017");
   expect(errors).toEqual([]);
   expect(requests).toEqual([]);
 });

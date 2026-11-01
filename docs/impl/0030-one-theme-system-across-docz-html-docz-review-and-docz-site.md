@@ -268,7 +268,7 @@ review session, and neither surface offers a theme selector.
   fixture repository a different `theme` (replacing the `docz:theme`
   init scripts), with full-rule axe on each. The e2e that stored a theme
   is removed.
-- [ ] `ui/e2e/export-html.spec.ts`: a fixture with `html: {theme: classic}`
+- [x] `ui/e2e/export-html.spec.ts`: a fixture with `html: {theme: classic}`
   exports classic pages with no `--theme`.
 - [ ] Plugin `docz-html`: `SKILL.md` says the theme comes from
   `.docz.yaml`, with `classic` (or `--theme`) for a one-off, and the
