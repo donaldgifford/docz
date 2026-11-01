@@ -340,7 +340,7 @@ surface is checked under each.
 - [x] Chart: `site.config.theme` (enum in `values.schema.json` from the
   theme list, empty by default) renders `DOCZ_THEME` only when set;
   helm-unittest for both, and `just chart docs`.
-- [ ] `e2e/a11y.spec.ts` and the rendering specs run under every theme
+- [x] `e2e/a11y.spec.ts` and the rendering specs run under every theme
   and, on paper, both modes. Full-rule axe passes on every core view.
 - [ ] The markdown specimen is checked under each theme, and any
   screenshot in a spec is regenerated.

@@ -487,6 +487,11 @@
     margin: 1rem 0 1.4rem;
     /* Shiki inlines the theme background; the mockup's code-bg wins. */
     background: var(--color-code-bg) !important;
+    /* Code stays dark in every mode, so a block Shiki did not color
+       (plain text, a pre the app writes) takes the code surface's own
+       text color rather than the light page's prose color. Shiki's
+       inline color still wins for a highlighted block. */
+    color: var(--color-code-fg);
   }
   .doc-prose pre code {
     background: none;

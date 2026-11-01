@@ -115,6 +115,55 @@ describe.each(THEMES)("%s text token contrast", (_, css) => {
   });
 });
 
+/*
+ * The accent tint (IMPL-0030 Phase 3): a selected nav item and a
+ * pressed toggle set accent text on --color-accent-bg, a translucent
+ * fill, so the pair is checked on that fill composited over the two
+ * surfaces those controls sit on (the page and a raised panel; none
+ * sits on bg-elevated). Real-browser axe found paper light 0.05 short
+ * of AA here.
+ */
+const TINT_SURFACES = ["bg-base", "bg-raised"] as const;
+
+function composite(rgba: string, bg: string): string {
+  const match = /rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/.exec(rgba);
+  if (match === null) {
+    throw new Error(`not an rgba() value: ${rgba}`);
+  }
+  const alpha = Number(match[4]);
+  return `#${[1, 2, 3]
+    .map((i) => {
+      const fg = Number(match[i]);
+      const under = parseInt(bg.slice(2 * i - 1, 2 * i + 1), 16);
+      return Math.round(alpha * fg + (1 - alpha) * under)
+        .toString(16)
+        .padStart(2, "0");
+    })
+    .join("")}`;
+}
+
+describe.each(THEMES)("%s accent tint contrast", (_, css) => {
+  const tokens = parseTokens(css);
+  const tint = /--color-accent-bg:\s*(rgba\([^)]*\))/.exec(css)?.[1];
+
+  it.each(TINT_SURFACES)(
+    "accent holds 4.5:1 on accent-bg over %s",
+    (surface) => {
+      const accent = tokens.get("accent");
+      const bg = tokens.get(surface);
+      if (accent === undefined || bg === undefined || tint === undefined) {
+        throw new Error("accent, accent-bg, or the surface is missing");
+      }
+      const fill = composite(tint, bg);
+      const ratio = contrastRatio(accent, fill);
+      expect(
+        ratio,
+        `--color-accent (${accent}) on accent-bg over --color-${surface} (${fill}) is ${ratio.toFixed(2)}:1`,
+      ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+    },
+  );
+});
+
 describe.each(THEMES)("%s admonition tint contrast", (_, css) => {
   const tokens = parseTokens(css);
   // Each alert kind renders its label in the mapped status color and
