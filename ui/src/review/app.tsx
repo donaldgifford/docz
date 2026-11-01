@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
-import { refreshMermaidTheme } from "@/markdown/mermaid-block";
+import { refreshMermaidTheme } from "@/lib/mermaid-theme";
 import {
   DEFAULT_THEME,
   newSubmissionId,

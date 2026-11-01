@@ -2,6 +2,12 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import type { Mermaid, MermaidConfig } from "mermaid";
 
+import {
+  _resetMermaidTheme,
+  mermaidThemeGeneration,
+  refreshMermaidTheme,
+  subscribeMermaidTheme,
+} from "@/lib/mermaid-theme";
 import { mermaidLayout } from "@/lib/mermaidLayout";
 
 /*
@@ -48,35 +54,18 @@ const SVG_CACHE = new Map<string, string>();
 let mermaidPromise: Promise<Mermaid> | undefined;
 let renderSeq = 0;
 
-/*
- * The theme generation. A page that changes its theme or mode
- * (docz-review, IMPL-0028 Phase 6) calls refreshMermaidTheme after the
- * attributes move: mermaid is initialized again from the new tokens the
- * next time it renders, the cache (keyed by generation) misses, and
- * every mounted block renders again. docz-site never calls it, so it
- * initializes once.
- */
-let themeVersion = 0;
+// The theme generation lives in src/lib/mermaid-theme.ts; a refresh
+// re-initializes mermaid on its next render and the cache, keyed by
+// generation, misses. Old entries are cleared as each refresh lands.
 let initializedVersion = -1;
-const themeListeners = new Set<() => void>();
-
-function subscribeTheme(onChange: () => void): () => void {
-  themeListeners.add(onChange);
-  return () => {
-    themeListeners.delete(onChange);
-  };
-}
-
-const currentTheme = () => themeVersion;
+const subscribeTheme = subscribeMermaidTheme;
+const currentTheme = mermaidThemeGeneration;
+subscribeMermaidTheme(() => {
+  SVG_CACHE.clear();
+});
 
 /** refreshMermaidTheme redraws every diagram from the current tokens. */
-export function refreshMermaidTheme(): void {
-  themeVersion += 1;
-  SVG_CACHE.clear();
-  for (const fn of themeListeners) {
-    fn();
-  }
-}
+export { refreshMermaidTheme };
 
 const cacheKey = (version: number, source: string) =>
   `${String(version)}\n${source}`;
@@ -84,9 +73,9 @@ const cacheKey = (version: number, source: string) =>
 async function getMermaid(): Promise<Mermaid> {
   mermaidPromise ??= import("mermaid").then((mod) => mod.default);
   const mermaid = await mermaidPromise;
-  if (initializedVersion !== themeVersion) {
+  if (initializedVersion !== mermaidThemeGeneration()) {
     mermaid.initialize(mermaidInitConfig());
-    initializedVersion = themeVersion;
+    initializedVersion = mermaidThemeGeneration();
   }
   return mermaid;
 }
@@ -323,6 +312,6 @@ export function MermaidBlock({
 export function _resetMermaidBlock(): void {
   SVG_CACHE.clear();
   mermaidPromise = undefined;
-  themeVersion = 0;
+  _resetMermaidTheme();
   initializedVersion = -1;
 }

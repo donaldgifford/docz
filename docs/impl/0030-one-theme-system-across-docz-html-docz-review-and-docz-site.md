@@ -324,7 +324,7 @@ surface is checked under each.
 - [x] `index.html` keeps a `data-theme` for the no-JavaScript first
   paint, and `src/main.tsx` applies the resolved theme and stored mode
   before the first render.
-- [ ] `AppShell` topbar: a labelled theme selector over the theme list
+- [x] `AppShell` topbar: a labelled theme selector over the theme list
   and the light/dark toggle, between the nav pins and `SessionMenu`. The
   toggle shows only on a theme with a dark block. A change redraws
   mermaid through `refreshMermaidTheme`.
