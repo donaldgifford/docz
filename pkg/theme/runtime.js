@@ -124,7 +124,7 @@
   }
 
   function cssEscape(s) {
-    return window.CSS && CSS.escape ? CSS.escape(s) : s.replace(/"/g, '\\"');
+    return window.CSS && CSS.escape ? CSS.escape(s) : s.replace(/["\\]/g, '\\$&');
   }
 
   function edges() {

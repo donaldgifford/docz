@@ -2303,7 +2303,7 @@ From <code>../../design/testdata/docz-design-0009.md</code>, sha256 <code>e70ef2
   }
 
   function cssEscape(s) {
-    return window.CSS && CSS.escape ? CSS.escape(s) : s.replace(/"/g, '\\"');
+    return window.CSS && CSS.escape ? CSS.escape(s) : s.replace(/["\\]/g, '\\$&');
   }
 
   function edges() {
