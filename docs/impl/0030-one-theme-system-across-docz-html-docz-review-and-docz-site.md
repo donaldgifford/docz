@@ -211,7 +211,7 @@ repository.
   `ParseBytes` reads the key, through the public path.
 - [x] This repository's own `.docz.yaml` gains `html: {theme: paper}`, and
   `test/archive` still passes.
-- [ ] Update `CLAUDE.md` (the config bullet and the parity list).
+- [x] Update `CLAUDE.md` (the config bullet and the parity list).
 
 <!--docz:tasks:end-->
 
