@@ -2,9 +2,11 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   createReviewClient,
+  DEFAULT_THEME,
   newSubmissionId,
   parseEvent,
   ReviewApiError,
+  sessionTheme,
   StaleError,
   takeToken,
   type ReviewEvent,
@@ -166,5 +168,16 @@ describe("parseEvent", () => {
       type: "closed",
       reason: "deadline",
     });
+  });
+});
+
+describe("sessionTheme", () => {
+  it("is the theme docz inspect reported", () => {
+    expect(sessionTheme([{ inspect: { theme: "classic" } }])).toBe("classic");
+  });
+
+  it("is paper for a docz too old to report one, or no documents", () => {
+    expect(sessionTheme([{ inspect: {} }])).toBe(DEFAULT_THEME);
+    expect(sessionTheme([])).toBe("paper");
   });
 });

@@ -255,7 +255,7 @@ review session, and neither surface offers a theme selector.
   additive `$version` bump; `SchemaVersionInspect` stays 1. The review
   fixture is regenerated (`just build && just ui gen-review-fixture`) so
   `cmd/review_fixture_test.go` passes.
-- [ ] docz-review server (`ui/review/`): pass the inspected theme to the
+- [x] docz-review server (`ui/review/`): pass the inspected theme to the
   page in the session payload. A docz too old to report one means
   `paper`, with no refusal and no `SUPPORTED.minDocz` bump (Open
   Question 4).

@@ -1,11 +1,12 @@
 import type { DoczInspect } from "@/cli/__generated__/inspect";
 import type { DoczReview } from "@/cli/__generated__/review";
-import type {
-  DocumentState,
-  ReviewDocument,
-  ReviewSession,
-  Submission,
-  SubmissionKey,
+import {
+  type DocumentState,
+  type ReviewDocument,
+  type ReviewSession,
+  type Submission,
+  type SubmissionKey,
+  sessionTheme,
 } from "@/review/api";
 import type { Draft } from "@/review/draft";
 
@@ -145,6 +146,7 @@ export class FakeReviewServer {
   private session(): ReviewSession {
     return {
       deadline: this.deadline,
+      theme: sessionTheme([...this.entries.values()].map((e) => e.served)),
       documents: [...this.entries.values()].map((e) => ({
         ...e.served,
         draft: this.drafts.get(e.served.key) ?? e.served.draft,

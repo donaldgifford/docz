@@ -49,6 +49,12 @@ const changes = {
 };
 
 describe("Review.open", () => {
+  test("serves the theme docz inspect reported", async () => {
+    const { review } = await opened();
+    expect(review.view().theme).toBe(A.inspect.theme ?? "paper");
+    expect(review.view().theme).toBe("paper");
+  });
+
   test("opens round 1 from a snapshot and keeps it for the next diff", async () => {
     const { doc, session, entries } = await opened();
     expect(doc).toMatchObject({

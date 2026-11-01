@@ -39,6 +39,25 @@ export interface ReviewSession {
   documents: ReviewDocument[];
   /** When the server gives up waiting, RFC 3339. */
   deadline: string;
+  /**
+   * The repository's theme (`html.theme`), from `docz inspect`. The page
+   * renders in it and offers no other (DESIGN-0025 §3).
+   */
+  theme: string;
+}
+
+/** The theme a page shows when docz names none (IMPL-0030 question 4). */
+export const DEFAULT_THEME = "paper";
+
+/**
+ * sessionTheme is the theme `docz inspect` reported for the session's
+ * documents. They share one repository, so the first one's answers for
+ * all; a docz too old to report one means DEFAULT_THEME, never a refusal.
+ */
+export function sessionTheme(
+  documents: readonly { inspect: Pick<DoczInspect, "theme"> }[],
+): string {
+  return documents[0]?.inspect.theme ?? DEFAULT_THEME;
 }
 
 /** Every mutation names the bytes and round it was made against. */
