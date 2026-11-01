@@ -102,3 +102,65 @@ func TestUIFragmentFixtures(t *testing.T) {
 		t.Errorf("%s is stale; run go test ./internal/httpapi/ -run TestUIFragmentFixtures -update", golden)
 	}
 }
+
+// TestUIHostileFragments renders the UI's XSS payloads
+// (ui/src/mocks/content/xss-payloads.json), each as the body of a
+// document, through renderFragment, into the JSON the site's
+// doc-pane.xss.test.tsx mounts: the fragment path's XSS gate runs over
+// what docz-api really sends (IMPL-0032 Phase 4). Regenerate with
+// go test -update.
+func TestUIHostileFragments(t *testing.T) {
+	t.Parallel()
+
+	mocks := filepath.Join("..", "..", "ui", "src", "mocks")
+
+	raw, err := os.ReadFile(filepath.Join(mocks, "content", "xss-payloads.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var payloads [][2]string
+	if err := json.Unmarshal(raw, &payloads); err != nil {
+		t.Fatal(err)
+	}
+
+	repo := &store.Repo{Owner: "acme", Name: "hostile", DocsDir: "docs", ConfigSnapshot: json.RawMessage(`{}`)}
+	out := make(map[string]string, len(payloads))
+
+	for i, p := range payloads {
+		md := "---\nid: RFC-0001\ntitle: Hostile\nstatus: Draft\ncreated: 2026-03-04\n---\n\n# RFC-0001: Hostile\n\n## Summary\n\n" + p[1] + "\n"
+		doc := &store.Document{Type: "rfc", DocID: "RFC-0001", Path: "docs/rfc/0001-hostile.md", RawMd: md}
+
+		dto, err := renderFragment(repo, doc, uiTypes, nil)
+		if err != nil {
+			t.Fatalf("payload %d (%s): %v", i, p[0], err)
+		}
+
+		out[p[0]] = dto.HTML
+	}
+
+	got, err := json.MarshalIndent(out, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got = append(got, '\n')
+	golden := filepath.Join(mocks, "__generated__", "hostile-fragments.json")
+
+	if *update {
+		if err := os.WriteFile(golden, got, 0o600); err != nil {
+			t.Fatal(err)
+		}
+
+		return
+	}
+
+	want, err := os.ReadFile(golden)
+	if err != nil {
+		t.Fatalf("%v (run go test ./internal/httpapi/ -update)", err)
+	}
+
+	if !bytes.Equal(got, want) {
+		t.Errorf("%s is stale; run go test ./internal/httpapi/ -run TestUIHostileFragments -update", golden)
+	}
+}

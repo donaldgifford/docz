@@ -3,11 +3,11 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { routes } from "@/app/router";
 import { DEMO_DOCS } from "@/mocks/fixtures";
-import { server } from "@/test/server";
+import { failDocFragments, server } from "@/test/server";
 
 const DOC_URL = "/donaldgifford/docz-site/design/DESIGN-0001";
 const DOC_ENDPOINT = "*/api/v1/repos/:owner/:name/types/:type/docs/:docId";
@@ -23,6 +23,13 @@ function mountAt(path: string) {
     </QueryClientProvider>,
   );
 }
+
+// These suites cover the reader's own markdown render, the fallback for a
+// fragment that does not load; the fragment path has its own suite in
+// doc-pane.test.tsx.
+beforeEach(() => {
+  failDocFragments();
+});
 
 async function findRenderedDesign0001() {
   return await screen.findByRole(

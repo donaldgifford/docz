@@ -6,7 +6,7 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 
 import { routes } from "@/app/router";
-import { server } from "@/test/server";
+import { failDocFragments, server } from "@/test/server";
 
 /*
  * Published-page reader states (DESIGN-0004 Component 4) plus the
@@ -175,6 +175,7 @@ describe("doc↔page link resolution", () => {
   });
 
   it("resolves a doc's relative link to a page route", async () => {
+    failDocFragments();
     server.use(
       http.get("*/api/v1/repos/:owner/:name/types/:type/docs/:docId", () =>
         HttpResponse.json({

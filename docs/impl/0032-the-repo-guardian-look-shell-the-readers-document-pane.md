@@ -216,13 +216,13 @@ A document in the reader is its exported page.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] The document route fetches the fragment beside the document, puts
+- [x] The document route fetches the fragment beside the document, puts
   it in the pane, calls `docz.mount(el, {hash: false})`, draws
   `pre.mermaid` with the site's mermaid, and routes clicks on site links
   in-app. The tab lives in `?tab=`.
-- [ ] Fallback to the React render when the fragment fails, with a quiet
+- [x] Fallback to the React render when the fragment fails, with a quiet
   note.
-- [ ] The breadcrumb, metadata table, lifecycle, and view switch stay
+- [x] The breadcrumb, metadata table, lifecycle, and view switch stay
   above the pane; "html" shows the fragment.
 - [ ] The reader's pages, index, and changelog render inside a
   `.docz-page`.
