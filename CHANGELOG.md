@@ -97,6 +97,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(plugin)* Sync pkg/theme into the docz-html skill, checked in CI (IMPL-0028 2.3)
 - Drop the docz-html source skill from the working tree (IMPL-0028 2.12)
 - *(review)* Rebuilt binary walked through in paper light, paper dark, and classic (IMPL-0028 6.6)
+- *(trufflehog)* Exclude the export goldens rendered from the placeholder DSN corpus
 
 ## [2.3.0] - 2026-10-31
 
