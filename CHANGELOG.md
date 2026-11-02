@@ -13,6 +13,12 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Merge main into docs/impl-0032-completed
 
+## [2.6.1] - 2026-11-02
+
+### Miscellaneous Tasks
+
+- *(chart)* Bump docz to 1.4.0 for v2.6.1
+
 ## [2.6.0] - 2026-11-02
 
 ### Features
