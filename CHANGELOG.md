@@ -18,6 +18,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(plugin)* The core docz skill under 150 lines, as claude-skills' harness requires
 - *(inv)* INV-0032, docz-review's page after Plannotator
 - *(inv)* INV-0032 review fixes, INV-0030 question 2 folded in
+- *(inv)* INV-0032 adversarial review and responses
 
 ## [2.6.1] - 2026-11-02
 
