@@ -133,8 +133,8 @@ wiki:
     design: Design
     impl: Implementation Plans
     investigation: Investigations
-    plan: Plans
     rfc: RFCs
+    runbook: Runbooks
 ```
 
 ## What this skill does not do

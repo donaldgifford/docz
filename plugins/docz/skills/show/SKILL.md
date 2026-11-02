@@ -24,17 +24,20 @@ Print the resolved template for a document type with `docz template show <type>`
    | RFC, proposal | `rfc` |
    | design doc, design spec | `design` |
    | implementation, impl | `impl` |
-   | plan, planning doc | `plan` |
    | investigation, spike, INV | `inv` |
+   | runbook, procedure, RB | `runbook` |
+   | anything else | possibly a custom type — check `docz config`; one with no template shows docz's generic template |
 
 2. **Print the template**:
    ```bash
    docz template show <type>
    ```
 
+   Each section sits between `<!--docz:<kind>:start-->` / `:end-->` region markers; tell the user to write inside them and keep them, since `docz validate` reads them.
+
    The CLI embeds every default template and resolves overrides automatically (config path → `docs/templates/<type>.md` → embedded default), so this reflects exactly what `docz create` would write. It works for disabled types too — template resolution ignores `enabled`.
 
-   If `docz` is not on `PATH`, stop and tell the user to install it (≥ v1.2.0, e.g. `mise use github:donaldgifford/docz@latest`). This skill has no offline path.
+   If `docz` is not on `PATH`, stop and tell the user to install it (≥ v2.0.0, e.g. `mise use github:donaldgifford/docz@latest`). This skill has no offline path.
 
 3. **Explain the sections** in plain language after printing the raw template — what to write in each section and common mistakes to avoid.
 

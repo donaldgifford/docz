@@ -7,8 +7,20 @@
 # About the `types:` block:
 #   If you include `types:`, docz uses ONLY the types you list. Omitting a
 #   type opts it out of scaffolding and updates. Remove the `types:` block
-#   entirely to keep all six built-in types (rfc, adr, design, impl, plan,
-#   investigation).
+#   entirely to keep all six built-in types (rfc, adr, design, impl,
+#   investigation, runbook) at their defaults.
+#
+#   `runbook` ships disabled. Set `types.runbook.enabled: true` to scaffold
+#   docs/runbook/ and use `docz create runbook` (alias: rb). A short
+#   `runbook: {enabled: true}` gets every other field from the defaults,
+#   but a `types:` block that lists ONLY runbook switches the other five
+#   off: add it to this block rather than replacing the block with it.
+#
+#   `plan` was a built-in through v1 and is not one in v2 (ADR-0003). A repo
+#   that still wants it keeps its `types.plan` block, which now declares a
+#   custom type: add `docs/templates/plan.md` — `docz template override plan`
+#   scaffolds one — and everything except `docz create plan` keeps working
+#   until you do.
 #
 # Custom types:
 #   Add your own type by giving it a unique `id_prefix` and `dir`. It can then
@@ -81,20 +93,6 @@ types:
     status_field: "status"
     plural_label: "Investigations"
 
-  plan:
-    enabled: false
-    dir: plan
-    template: ""
-    id_prefix: "PLAN"
-    id_width: 4
-    statuses:
-      - Draft
-      - In Progress
-      - Completed
-      - Cancelled
-    status_field: "status"
-    plural_label: "Plans"
-
   rfc:
     enabled: true
     dir: rfc
@@ -109,6 +107,20 @@ types:
       - Superseded
     status_field: "status"
     plural_label: "RFCs"
+
+  runbook:
+    enabled: false
+    dir: runbook
+    template: ""
+    id_prefix: "RUNBOOK"
+    id_width: 4
+    statuses:
+      - Draft
+      - Active
+      - Needs Review
+      - Deprecated
+    status_field: "status"
+    plural_label: "Runbooks"
 
   # Example custom type (uncomment and edit):
   # frameworks:
@@ -146,8 +158,8 @@ wiki:
     design: Design
     impl: Implementation Plans
     investigation: Investigations
-    plan: Plans
     rfc: RFCs
+    runbook: Runbooks
 
 toc:
   enabled: true
@@ -170,12 +182,60 @@ changelog:
 api:
   enabled: false
   # Optional; defaults to <docs_dir>/index.md.
-  landing_page:
+  landing_page: ""
   # Path prefixes under docs_dir that are never published, e.g.
   #   exclude:
   #     - scratch
-  exclude:
+  exclude: []
   # Markdown outside docs_dir; anything inside it is already consumed, e.g.
   #   additional_docs:
   #     - CONTRIBUTING.md
-  additional_docs:
+  additional_docs: []
+
+# Export targets for `docz export confluence` and docz-api (DESIGN-0020,
+# DESIGN-0021). Off by default and never validated until enabled.
+# Credentials come from the environment, never from this file:
+# ATLASSIAN_EMAIL and ATLASSIAN_API_TOKEN. A scoped API token is preferred
+# and needs read:space:confluence, read:page:confluence,
+# write:page:confluence, read:folder:confluence, write:folder:confluence,
+# and read:hierarchical-content:confluence.
+sync:
+  confluence:
+    enabled: false
+    # The Cloud site, e.g. https://example.atlassian.net.
+    site: ""
+    # The space key. Several repositories may share one space.
+    space: ""
+    # folder: one Confluence folder per repository, every title prefixed
+    # with its name. page: everything under the parent page, unprefixed.
+    layout: folder
+    # The folder's title; empty means the repository's name.
+    # folder: my-repo
+    # The page the folder sits under (optional), or the root page in the
+    # page layout (required there).
+    parent: ""
+    # Types to export; empty exports every enabled type except impl.
+    types: []
+    # Path prefixes under docs_dir that are never exported.
+    exclude: []
+    # Also export the api: block's landing page and additional docs.
+    api_pages: false
+    mermaid:
+      # auto (the Mermaid diagrams viewer), off (a code panel), or an
+      # extension key.
+      viewer: auto
+
+# Who may read this repository through docz-api (DESIGN-0023). A scope is
+# <audience>:read. public:read means every signed-in reader; a team
+# audience such as platform-team:read hides the repository from everyone
+# who does not hold that scope. The write action is reserved.
+access:
+  scopes:
+    - public:read
+
+# The HTML docz writes for this repository (DESIGN-0025 §3). theme sets
+# the look of `docz export html` pages and the docz-review page: paper
+# (light and dark), charcoal (dark), or classic (dark). docz-site is
+# themed by its deployment, not by this file.
+html:
+  theme: paper

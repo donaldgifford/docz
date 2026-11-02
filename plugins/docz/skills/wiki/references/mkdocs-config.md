@@ -111,7 +111,7 @@ The skill:
 1. Walks `docs/` recursively.
 2. Groups files by their top-level directory (matching
    docz doc types: `adr/`, `rfc/`, `design/`, `impl/`,
-   `plan/`, `investigation/`).
+   `investigation/`, `runbook/`).
 3. Applies `wiki.nav_titles` overrides from `.docz.yaml`
    for display names.
 4. Respects `wiki.exclude` to skip directories.

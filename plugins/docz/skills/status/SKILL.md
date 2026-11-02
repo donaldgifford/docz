@@ -16,13 +16,13 @@ argument-hint: "<type> <id> <status>"
 Set a document's status with `docz status set <type> <id> <new-status>`.
 This is the canonical mutator — never hand-edit the `status:` frontmatter key.
 
-Requires the `docz` CLI ≥ v1.2.0 on `PATH` (`status set` landed in v1.1.1).
+Requires the `docz` CLI ≥ v2.0.0 on `PATH`.
 
 ## Process
 
 1. **Resolve the type and id** from the request. The type accepts a canonical
    name, an alias, or an `id_prefix` (`adr`, `investigation`, `inv`, `impl`,
-   `implementation`, or a custom type). The id is the frontmatter `id`, matched
+   `implementation`, `runbook`, `rb`, or a custom type). The id is the frontmatter `id`, matched
    **case-sensitively** — `ADR-0003`, never `adr-0003`.
 
 2. **Confirm the target status** if the request is vague ("close this out").
@@ -61,7 +61,7 @@ Branch on these in scripts; `--quiet` suppresses stdout but leaves them unchange
 |------|---------|
 | `0` | Applied, no-op (`already at X`), or `--dry-run` |
 | `1` | Id not found in the type's directory, or the write failed |
-| `2` | Unknown type, invalid status, or unsupported line endings |
+| `2` | Unknown or disabled type, invalid status, or unsupported line endings |
 
 A wrong-case id returns `1` (it simply is not found); a wrong-case status
 returns `2` with the valid list printed. Both are easy to misdiagnose.
@@ -88,9 +88,9 @@ the status field; body edits are ordinary file edits.
 
 ## Disabled and Missing Types
 
-- A disabled type (PLAN is off by default since docz v1.1.1) has no documents
-  to find, so `status set` returns `1` with `no plan document with id … found
-  in docs/plan`. Check `docz config` before assuming the id is wrong.
+- A disabled type (RUNBOOK ships disabled) is refused with exit `2` and
+  `document type "runbook" is disabled`. Check `docz config` and say which
+  key turns it on rather than retrying.
 - An unrecognized type word may be a **custom type** defined in `.docz.yaml`.
   Run `docz config` and check `types:` before treating it as a typo.
 

@@ -10,8 +10,8 @@ Use this decision tree:
 2. **Has a decision already been made and needs to be recorded?** → ADR
 3. **Is this working out the implementation details of an accepted decision?** → DESIGN
 4. **Is this a phased execution plan with tasks to check off?** → IMPL
-5. **Is this mid-level planning that bridges an RFC and an IMPL?** → PLAN (opt-in; see below)
-6. **Is this time-boxed research to answer a question before deciding?** → INV
+5. **Is this time-boxed research to answer a question before deciding?** → INV
+6. **Is this a procedure someone runs — onboarding, an operation, a fix for a symptom?** → RUNBOOK (disabled by default; see below)
 
 ## RFC — Request for Comments
 
@@ -106,7 +106,7 @@ Use this decision tree:
 - Tracking migration progress (e.g., "Phase 1: schema changes, Phase 2: backfill, Phase 3: cutover")
 
 **Key sections to fill** (run `docz template show impl` to see them):
-- **Objective** — what is being implemented, with an **Implements:** line linking the RFC/DESIGN/PLAN
+- **Objective** — what is being implemented, with an **Implements:** line linking the RFC or DESIGN
 - **Scope** — explicit **In Scope** and **Out of Scope** subsections
 - **Implementation Phases** — numbered phases, each with its own **Tasks** checkbox list and **Success Criteria**
 - **File Changes** — a table of file, action, description
@@ -119,31 +119,6 @@ Use this decision tree:
 - One IMPL per coherent unit of work; large projects may have multiple IMPLs per phase
 - Keep phase tasks small enough to check off within a day or two
 - Update status promptly — stale IMPLs are worse than none
-
----
-
-## PLAN — Planning Document
-
-**Enabled**: opt-in. Since docz v1.1.1, `types.plan.enabled` defaults to `false` — `docz init` does not scaffold `docs/plan/`, and `docz create plan` fails with `document type "plan" is disabled in configuration`. Set `types.plan.enabled: true` in `.docz.yaml` to use it.
-
-**Purpose**: Mid-level planning that sits between a high-level RFC and a detailed IMPL.
-
-**When to write a PLAN doc**:
-- Quarterly or sprint planning artifacts
-- Feature roadmaps that aren't yet at implementation detail
-- Organizing work across multiple IMPLs
-
-**Key sections to fill** (run `docz template show plan` to see them):
-- **Goal** — the end state, ideally with a concrete example of success
-- **Context** — why this work is needed now, and what breaks without it
-- **Approach** — how to get there, broken into named **Part N** subsections
-- **Components** — a table of the major pieces and their purpose
-- **File Changes** — a table of file, action, description
-- **Verification** — commands to run and behaviours to check when complete
-- **Dependencies** — prerequisite work, tools, or blocking issues
-- **Open Questions** — unresolved decisions, moved out as they are answered
-
-**Status flow**: Draft → In Progress → Completed | Cancelled
 
 ---
 
@@ -172,3 +147,32 @@ Use this decision tree:
 - State the question before starting — vague investigations produce vague results
 - Timebox aggressively; if you don't have a recommendation by the deadline, write one anyway with uncertainty noted
 - An INV should feed directly into an RFC or ADR
+
+---
+
+## RUNBOOK — Runbook
+
+**Enabled**: off by default. `types.runbook.enabled: false` is in every generated `.docz.yaml`, and `docz create runbook` fails naming that key. Set it to `true` to use the type; the alias is `rb`.
+
+**Purpose**: Procedures someone runs: onboarding a service, an operation like a key rotation or a deploy, and troubleshooting a known symptom.
+
+**When to write a RUNBOOK**:
+- An operation is done by hand often enough that the steps should be written once
+- An alert needs a documented response
+- A new person needs a checklist to get a system running
+
+**Key sections to fill** (run `docz template show runbook` to see them):
+- **Last Verified** — a one-row table of date (`YYYY-MM-DD`), PR, commit, and verified by, plus a **Notes:** line. Replace the row each time someone runs it end to end; git keeps the history
+- **Overview** — what the runbook covers, with **Service** and **Owner** lines
+- **When to Use** — the situations or alerts that call for it
+- **Prerequisites** — access, tools, and state needed before starting
+- **Procedures** — one `### Procedure <token>: <title>` per operation (`Procedure 1: Rotate`, `Procedure 2B: Deploy`), each with **Steps** (a **numbered** list; a fenced block under a step is its command, an `**Expected:**` line what success looks like), **Verification**, and **Rollback**
+- **Troubleshooting** — one `### Scenario: <symptom>` per known failure, with **Alert:** and **Likely cause:** lines and numbered **Steps**
+- **Escalation** — a who / when / how table for when the runbook does not fix it
+
+**Status flow**: Draft → Active → Needs Review | Deprecated
+
+**Tips**:
+- Steps must be an ordered list (`1.`), not bullets: docz reads each numbered item as a step with an id like `1.3`, and `docz validate` reports unordered steps
+- Each procedure's token must be unique within the runbook
+- A Last Verified row is checked for its shape (date, PR, commit), never its age; nothing reads the clock

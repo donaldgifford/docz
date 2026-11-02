@@ -78,20 +78,6 @@ types:
       - Implemented
       - Abandoned
 
-  plan:
-    enabled: false        # opt-in since docz v1.1.1; init does not scaffold docs/plan/
-    dir: plan
-    template: ""
-    id_prefix: "PLAN"
-    id_width: 4
-    status_field: "status"
-    plural_label: "Plans"
-    statuses:
-      - Draft
-      - In Progress
-      - Completed
-      - Cancelled
-
   impl:
     enabled: true
     dir: impl
@@ -120,7 +106,23 @@ types:
       - Concluded
       - Inconclusive
       - Abandoned
+
+  runbook:                # CLI type arg is "runbook" or "rb"
+    enabled: false        # ships disabled; see "Enable RUNBOOK" below
+    dir: runbook
+    template: ""
+    id_prefix: "RUNBOOK"
+    id_width: 4
+    status_field: "status"
+    plural_label: "Runbooks"
+    statuses:
+      - Draft
+      - Active
+      - Needs Review
+      - Deprecated
 ```
+
+There is no `plan` type in docz v2. A repository that keeps a `types.plan` block gets a **custom** type named `plan`, so its documents keep working; see Custom Document Types.
 
 ## Status Field
 
@@ -136,7 +138,7 @@ types:
 
 1. **Config path** — `types.<type>.template`
 2. **Local override** — `<docs_dir>/templates/<type>.md`
-3. **Embedded default** — built into the binary (built-in types only)
+3. **Embedded default** — built into the binary; a type with none (a custom type) gets the embedded **generic** template
 
 ```bash
 docz template override adr   # copies built-in to docs/templates/adr.md
@@ -181,25 +183,17 @@ docz status set FW FW-0001 Active       # aliases work wherever a type is accept
 
 **Resolution precedence** — a type word is matched case-insensitively as **canonical name → alias → `id_prefix`**, so a canonical name always wins over a colliding alias or prefix. A duplicate `id_prefix`, or an alias that collides with another type's name, alias, or prefix, is rejected when the config loads.
 
-**A custom type requires a template file.** Unlike the built-ins, custom types have no embedded default. Create `<docs_dir>/templates/<name>.md` — named after the type's **canonical name**, so `frameworks` needs `docs/templates/frameworks.md` — before running any command that resolves the type. Without it every command fails with:
+**A custom type needs no template file.** With none at `<docs_dir>/templates/<name>.md` (named after the type's **canonical name**), docz renders the embedded generic template and says so on stderr:
 
 ```
-Error: creating frameworks document: resolving template: no embedded template
-for type "frameworks": open templates/frameworks.md: file does not exist
+note: frameworks has no template; used the generic one. Run "docz template override frameworks" to write one.
 ```
 
-`docz template override` only works for built-in types, so start from an existing template:
-
-```bash
-mkdir -p docs/templates
-docz template show design > docs/templates/frameworks.md   # then edit
-```
-
-> The upstream docz README states that a custom type without a template "falls back to the embedded generic document template." Verified against v1.2.0–v1.2.2, it does not — there is no generic embedded template. Tracked as [donaldgifford/docz#92](https://github.com/donaldgifford/docz/issues/92). The same inaccurate comment appears in `docz init` output (and therefore in `example.docz.yaml`, which is a verbatim copy).
+`docz template override <custom type>` scaffolds that generic template and its marker schema into `docs/templates/` to customise. A `template:` path in the config that names a missing file is still an error.
 
 **Harmless warning.** docz prints `Warning: config declares non-built-in type "<name>" (typo?)` on every command for any type outside the built-in set. It is informational — it exists so a genuine typo is easy to spot — and does not affect the exit code.
 
-**Built-in aliases**: `implementation` → `impl`, `inv` → `investigation`.
+**Built-in aliases**: `implementation` → `impl`, `inv` → `investigation`, `rb` → `runbook`.
 
 If a user names a type you do not recognize, run `docz config` and check the `types:` block before assuming it is a typo.
 
@@ -251,6 +245,50 @@ The fields:
 
 Files in `additional_docs` have no frontmatter, so consumers derive their title from the document's H1 — give them a real one.
 
+## Sync Block
+
+Configures `docz export confluence` (and docz-api's export, when the server has a Confluence credential). Dormant and never validated until enabled.
+
+```yaml
+sync:
+  confluence:
+    enabled: false
+    site: ""              # https://<name>.atlassian.net, no path
+    space: ""             # the space key; several repos may share one
+    layout: folder        # folder (one folder per repo, titles prefixed) or page
+    parent: ""            # the page the folder sits under; required for layout: page
+    types: []             # empty = every enabled type except impl
+    exclude: []           # path prefixes under docs_dir never exported
+    api_pages: false      # also export the api: landing page and additional docs
+    mermaid:
+      viewer: auto        # auto, off, or an extension key
+```
+
+Credentials are **never** in the file: `ATLASSIAN_EMAIL` and `ATLASSIAN_API_TOKEN` come from the environment. IMPLs are opt-in: list `impl` in `types` to export them. Run `docz export confluence --dry-run` before the first real export.
+
+## Access Block
+
+Who may read the repository through docz-api. Always present; the default is every signed-in reader.
+
+```yaml
+access:
+  scopes:
+    - public:read
+```
+
+A scope is `<audience>:read`; a team audience such as `docs-team:read` hides the repository from anyone without that scope. The `write` action is reserved and rejected (the one exception is `confluence:write`, which lets the export run on a repository whose scopes grant nothing public). No local docz command reads this block.
+
+## HTML Block
+
+The theme `docz export html` pages and the docz-review page render in. Always present.
+
+```yaml
+html:
+  theme: paper    # paper (light and dark), charcoal (dark), or classic (dark)
+```
+
+An unknown name is a **warning**, not an error, and falls back to `paper`. `docz export html --theme <name>` overrides it for one run.
+
 ## Path Validation
 
 `changelog.file` and all three `api:` path fields are validated as clean repo-relative paths when their block is enabled. Both blocks are dormant while `enabled: false`, so an invalid path in a disabled block loads fine.
@@ -268,17 +306,17 @@ API path failures wrap `config.ErrInvalidAPIPath`.
 
 ## Common Customizations
 
-### Enable PLAN
+### Enable RUNBOOK
 
-PLAN ships disabled (docz v1.1.1+). Turn it on explicitly:
+RUNBOOK ships disabled. Turn it on in the existing `types:` block:
 
 ```yaml
 types:
-  plan:
+  runbook:
     enabled: true
 ```
 
-Then run `docz init` to scaffold `docs/plan/` with its index README.
+A short `runbook: {enabled: true}` gets every other field from the defaults. **Add it to the `types:` block rather than replacing the block with it**: a `types:` block that lists only `runbook` switches the other five built-ins off. Then run `docz init` to scaffold `docs/runbook/` with its index README.
 
 ### Disable unused types
 
@@ -373,8 +411,8 @@ wiki:
     design: Design
     impl: Implementation Plans
     investigation: Investigations
-    plan: Plans
     rfc: RFCs
+    runbook: Runbooks
 ```
 
 ### Wiki fields
@@ -389,15 +427,20 @@ wiki:
 Docz maintains bounded sections in README files:
 
 ```markdown
-## ADRs
+# Architecture Decision Records
+
+Content above the markers is preserved when preserve_header is true.
 
 <!-- BEGIN DOCZ AUTO-GENERATED -->
-| ID | Title | Status | Date |
-|----|-------|--------|------|
-| ADR-0001 | Use PostgreSQL | Accepted | 2024-01-15 |
-<!-- END DOCZ AUTO-GENERATED -->
+## All ADRs
 
-Content here is preserved when preserve_header is true.
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
+| ID | Title | Status | Date | Author | Link |
+| --- | --- | --- | --- | --- | --- |
+| ADR-0001 | Use PostgreSQL | Accepted | 2026-03-04 | Jane Smith | [0001-use-postgresql.md](0001-use-postgresql.md) |
+<!-- markdownlint-restore -->
+<!-- END DOCZ AUTO-GENERATED -->
 ```
 
 Never hand-edit between the `BEGIN`/`END` markers — run `docz update` instead.

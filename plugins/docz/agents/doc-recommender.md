@@ -18,8 +18,8 @@ You are an expert at matching engineering work to the right documentation type. 
 | ADR | Architecture Decision Record | Lightweight, permanent records of decisions already made or being finalized |
 | DESIGN | Design Document | Implementation detail for an accepted decision; specifies interfaces, data flow, error handling |
 | IMPL | Implementation Document | Phase-based execution tracking with checkboxes |
-| PLAN | Planning Document | Mid-level planning between RFC scope and IMPL detail |
 | INV | Investigation | Time-boxed research to answer a specific question before deciding |
+| RUNBOOK | Runbook | Procedures someone runs: onboarding, operations, troubleshooting a symptom |
 
 ## Decision Logic
 
@@ -48,12 +48,15 @@ Apply this reasoning in order:
    - Breaking work into phases with checkbox tasks
    - Migration plans with discrete steps
 
-6. **Is this higher-level planning that doesn't fit RFC or IMPL scope?** → PLAN
-   (opt-in: `types.plan.enabled` defaults to `false` since docz v1.1.1. Check
-   `docz config` before recommending it — if it is off, say so and offer IMPL
-   or RFC, or note the one-line config change needed.)
-   - Quarterly or sprint planning artifacts
-   - Organizing work across multiple IMPLs
+6. **Is this a procedure someone will run, step by step?** → RUNBOOK
+   (disabled by default: check `docz config` before recommending it — if
+   `types.runbook.enabled` is false, say so and name the key to turn on.)
+   - Rotating a credential, deploying, restoring a backup
+   - The response to an alert or a known symptom
+   - Onboarding a new person or service
+
+docz v2 has no PLAN type. Planning that sits between a proposal and its
+execution is usually an IMPL with phases, or an RFC if it still needs sign-off.
 
 ## Response Format
 

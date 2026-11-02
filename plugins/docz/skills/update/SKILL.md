@@ -16,13 +16,15 @@ Regenerate README index tables with `docz update [type]`.
 1. **Determine scope** from the user's request — all types or a specific one:
    ```bash
    docz update              # regenerate all indexes
-   docz update <type>       # regenerate one type (rfc, adr, design, impl, plan, inv)
+   docz update <type>       # regenerate one type (rfc, adr, design, impl, inv, runbook)
    docz update --dry-run    # preview changes without writing
    ```
 
 2. **Report what changed** — list which README files were updated and summarize the changes (rows added, updated, or unchanged).
 
-3. **When to use `--dry-run`** — suggest this in CI contexts to detect drift between frontmatter and README tables.
+3. **Regenerates tables of contents too** — every document with a ToC region gets it refreshed.
+
+4. **For CI, prefer `docz validate --strict`** — it fails on README index drift and stale ToCs alongside the schema checks; `--dry-run` previews without writing.
 
 ## Common Triggers
 

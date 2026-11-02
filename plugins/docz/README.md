@@ -1,15 +1,24 @@
 # docz
 
-Documentation lifecycle management with the [docz CLI](https://github.com/donaldgifford/docz) — create, organize, and review RFCs, ADRs, design docs, implementation plans, investigations, and more.
+Documentation lifecycle management with the [docz CLI](https://github.com/donaldgifford/docz) — create, organize, and review RFCs, ADRs, design docs, implementation plans, investigations, runbooks, and custom types.
 
-## Requires the docz CLI ≥ v1.2.0
+## Requires the docz CLI ≥ v2.0.0
 
-The skills drive the `docz` binary rather than reimplementing it — templates, ID numbering, and index generation all come from the CLI. `status set` landed in v1.1.1 and the `api:` config block in v1.2.0.
+The skills drive the `docz` binary rather than reimplementing it — templates, ID numbering, index generation, and validation all come from the CLI. `docz inspect` and one-document `validate` need v2.2.0, `docz export html` v2.4.0.
 
 ```bash
 mise use github:donaldgifford/docz@latest
-docz version   # confirm >= 1.2.0
+docz version   # confirm >= 2.0.0
 ```
+
+## Install
+
+```text
+/plugin marketplace add donaldgifford/docz
+/plugin install docz@docz
+```
+
+The same marketplace carries **docz-html** (a document as one standalone HTML page) and **docz-review** (a browser review of the documents queued in a turn).
 
 ## Skills
 
@@ -94,10 +103,10 @@ Generate Rust API documentation with `cargo doc` and write it to `docs/api/rust/
 | ADR | Lightweight, permanent records of architectural decisions |
 | DESIGN | Implementation detail after a decision is made |
 | IMPL | Phase-based execution tracking with checkboxes |
-| PLAN | Mid-level planning between RFC scope and IMPL detail — **opt-in**, set `types.plan.enabled: true` |
 | INV | Time-boxed research and validation experiments |
+| RUNBOOK | Onboarding, operations, and troubleshooting procedures — **disabled by default**, set `types.runbook.enabled: true` |
 
-Custom types are supported too: give a type its own `id_prefix`, `aliases`, and `statuses` in `.docz.yaml`, and add a template at `<docs_dir>/templates/<name>.md`.
+Custom types are supported too: give a type its own `id_prefix`, `aliases`, and `statuses` in `.docz.yaml`, and docz creates its documents from its generic template until you add one at `<docs_dir>/templates/<name>.md`.
 
 ## Quick Start
 
@@ -111,7 +120,8 @@ docz create adr "Use PostgreSQL for primary storage"
 # List all documents
 docz list
 
-# Update README index tables
+# Check it, then update README index tables
+docz validate
 docz update
 
 # View resolved configuration

@@ -15,7 +15,7 @@ List documents with `docz list [type] [--status <status>]`.
 ## Process
 
 1. **Determine filters** from the user's request:
-   - Type filter: "RFCs", "ADRs", "investigations", "design docs", "plans", "impls"
+   - Type filter: "RFCs", "ADRs", "investigations", "design docs", "impls", "runbooks"
    - Status filter: "open", "draft", "accepted", "in progress", "proposed", etc.
 
 2. **Run the list command**:
@@ -45,5 +45,5 @@ List documents with `docz list [type] [--status <status>]`.
 | ADR | Proposed, Accepted, Deprecated, Superseded |
 | DESIGN | Draft, In Review, Approved, Implemented, Abandoned |
 | IMPL | Draft, In Progress, Completed, Paused, Cancelled |
-| PLAN | Draft, In Progress, Completed, Cancelled — *opt-in type; `docz list plan` returns an empty table when disabled, not an error* |
 | INV | Open, In Progress, Concluded, Inconclusive, Abandoned |
+| RUNBOOK | Draft, Active, Needs Review, Deprecated — *disabled by default; `docz list runbook` returns an empty table when disabled, not an error* |
