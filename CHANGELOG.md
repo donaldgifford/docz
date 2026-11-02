@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
+## [unreleased]
+
+### Miscellaneous Tasks
+
+- *(chart)* Bump docz to 1.4.0 for v2.6.1
+
 ## [2.6.0] - 2026-11-02
 
 ### Features
