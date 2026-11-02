@@ -3,11 +3,15 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
-## [2.6.0] - 2026-11-02
+## [unreleased]
 
 ### Documentation
 
 - DESIGN-0026 Implemented and IMPL-0032 Completed, merged as #218
+
+### Miscellaneous Tasks
+
+- Merge main into docs/impl-0032-completed
 
 ## [2.6.0] - 2026-11-02
 
