@@ -195,7 +195,7 @@ export function NavPagesSection({
 
   return (
     <>
-      <div className="mt-[1.15rem] mb-[0.45rem] border-b border-border-hairline pb-[0.4rem] text-[11px] tracking-[0.14em] text-fg-muted uppercase">
+      <div className="mt-[1.15rem] mb-[0.45rem] border-b border-border-hairline pb-[0.4rem] text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
         pages
       </div>
       <div className={NAV_GROUP_RAIL}>

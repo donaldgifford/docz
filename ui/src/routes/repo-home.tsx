@@ -9,6 +9,7 @@ import {
   SessionRequiredRedirect,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
+import { DocSurface } from "@/components/doc-surface";
 import { useRepoDocIndex } from "@/hooks/useRepoDocIndex";
 import { useRepoFacts } from "@/hooks/useRepoFacts";
 import { apiConfig } from "@/lib/apiConfig";
@@ -182,7 +183,11 @@ export function Component() {
     if (rendered.data === undefined) {
       return <HomeSkeleton />;
     }
-    return <article className="doc-prose">{rendered.data.content}</article>;
+    return (
+      <DocSurface>
+        <article className="doc-prose">{rendered.data.content}</article>
+      </DocSurface>
+    );
   })();
 
   return (
@@ -192,7 +197,7 @@ export function Component() {
       crumbs={[{ label: repoId }]}
       rail={
         <>
-          <div className="mb-3 border-b border-border-hairline pb-2 font-mono text-[11px] tracking-[0.14em] text-fg-muted uppercase">
+          <div className="mb-3 border-b border-border-hairline pb-2 text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
             On this page
           </div>
           <TocList toc={rendered.data?.toc ?? []} />

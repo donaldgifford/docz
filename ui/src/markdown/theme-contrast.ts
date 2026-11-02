@@ -10,9 +10,10 @@ import type { ThemeRegistrationRaw } from "shiki/core";
  * passing colors and every font style are untouched, so the theme
  * still reads as tokyo-night.
  *
- * CODE_BG mirrors tokens.css --color-code-bg (classic's); theme-contrast.test.ts
- * pins the two together and re-checks every lifted color, on classic's
- * surface and on every pkg/theme theme's --color-code-bg (IMPL-0030).
+ * CODE_BG is the lightest --color-code-bg the shell or any pkg/theme
+ * theme has (classic's), so a colour lifted against it clears every
+ * darker one; theme-contrast.test.ts pins that and re-checks every
+ * lifted color on each theme's surface (IMPL-0030).
  */
 export const CODE_BG = "#161b28";
 export const AA_NORMAL_TEXT = 4.5;

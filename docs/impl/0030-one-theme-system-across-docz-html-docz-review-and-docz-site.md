@@ -1,7 +1,7 @@
 ---
 id: IMPL-0030
 title: "One theme system across docz-html, docz-review, and docz-site, with the widgets in the reader"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-11-01
 ---

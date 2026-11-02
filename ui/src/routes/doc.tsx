@@ -1,10 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useParams } from "react-router";
 
-import { useGetDoc, useGetRepo } from "@/api/__generated__/docz-api";
+import {
+  useGetDoc,
+  useGetDocHtml,
+  useGetRepo,
+} from "@/api/__generated__/docz-api";
 import { NotFoundError, SessionRequiredError } from "@/api/fetcher";
 import { StatusPill } from "@/components/badges";
 import { DocMetaTable } from "@/components/doc-meta-table";
+import { DocPane } from "@/components/doc-pane";
 import { LifecycleRail, TocList, type DocFormat } from "@/components/doc-rail";
 import {
   ErrorPanel,
@@ -12,7 +17,9 @@ import {
   SessionRequiredRedirect,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
+import { DocSurface } from "@/components/doc-surface";
 import { useRepoDocIndex } from "@/hooks/useRepoDocIndex";
+import { typeColor } from "@/lib/colors";
 import { recordRecentDoc } from "@/lib/recentDocs";
 import { useRenderedMarkdown } from "@/markdown/useRenderedMarkdown";
 
@@ -178,7 +185,16 @@ export function Component() {
     return { xrefs: withoutSelf, paths: docIndex.byPath };
   }, [docIndex, doc]);
 
-  const rendered = useRenderedMarkdown(doc, links);
+  // The document as docz-api renders it (DESIGN-0026 §7). A failure of
+  // any kind, an older API without the route included, falls back to the
+  // site's own render below, so only then is that pipeline run.
+  const fragmentQuery = useGetDocHtml(owner, repo, type, docId, {
+    query: { retry: false },
+  });
+  const fragment =
+    fragmentQuery.data?.status === 200 ? fragmentQuery.data.data : undefined;
+  const fallback = fragmentQuery.isError;
+  const rendered = useRenderedMarkdown(fallback ? doc : undefined, links);
   const [format, setFormat] = useState<DocFormat>("html");
 
   // Successful loads feed the palette's empty-query "recent" group.
@@ -205,7 +221,7 @@ export function Component() {
     }
     return <NotFoundPanel />;
   }
-  if (docQuery.isError || rendered.isError) {
+  if (docQuery.isError || (fallback && rendered.isError)) {
     const error = docQuery.error ?? rendered.error;
     return (
       <ErrorPanel
@@ -221,7 +237,10 @@ export function Component() {
   // Reader inside the three-column portal (Phase 3): RepoNav left,
   // article center, ToC + doc info right. While the doc loads, crumbs
   // fall back to the (possibly aliased) route params.
-  if (doc === undefined || rendered.data === undefined) {
+  if (
+    doc === undefined ||
+    (fragment === undefined && rendered.data === undefined)
+  ) {
     return (
       <RepoFrame
         owner={owner}
@@ -237,7 +256,6 @@ export function Component() {
     );
   }
 
-  const { content, toc } = rendered.data;
   const fileName = doc.path.split("/").at(-1) ?? doc.path;
 
   return (
@@ -250,18 +268,32 @@ export function Component() {
         { label: fileName },
       ]}
       rail={
-        // ToC-first rail (IMPL-0002 Phase 5): metadata, formats, and
-        // lifecycle moved into the article header, so long documents
-        // keep their outline visible without burying anything.
-        <section className="mb-8">
-          <div className="mb-3 border-b border-border-hairline pb-2 font-mono text-[11px] tracking-[0.14em] text-fg-muted uppercase">
-            On this page
-          </div>
-          <TocList toc={toc} />
-        </section>
+        // ToC-first rail (IMPL-0002 Phase 5) for the site's own render.
+        // A fragment has its own tabs, so it takes no rail.
+        rendered.data === undefined ? undefined : (
+          <section className="mb-8">
+            <div className="mb-3 border-b border-border-hairline pb-2 text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
+              On this page
+            </div>
+            <TocList toc={rendered.data.toc} />
+          </section>
+        )
       }
     >
-      <DocHeader doc={doc} />
+      {/* The fragment carries its own title; the site's render needs one. */}
+      {fragment === undefined && <DocHeader doc={doc} />}
+      {fragment !== undefined && doc.confluence_url !== "" && (
+        <p className="mb-4 text-[13px]">
+          <a
+            href={doc.confluence_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent hover:underline"
+          >
+            View in Confluence
+          </a>
+        </p>
+      )}
 
       <DocMetaTable doc={doc} format={format} onFormatChange={setFormat} />
 
@@ -272,19 +304,36 @@ export function Component() {
         currentStatus={doc.status}
       />
 
-      {/* Narrow viewports: ToC as a disclosure above the article
-          (the right rail hides below the frame's 1181px breakpoint). */}
-      <details className="mb-6 border border-border-hairline px-4 py-3 min-[1181px]:hidden">
-        <summary className="cursor-pointer font-mono text-[11px] tracking-[0.14em] text-fg-muted uppercase">
-          On this page
-        </summary>
-        <div className="pt-3">
-          <TocList toc={toc} />
-        </div>
-      </details>
+      {rendered.data !== undefined && (
+        <>
+          <p
+            data-testid="doc-fallback-note"
+            className="mb-4 text-[12px] text-fg-muted"
+          >
+            Shown in the site&apos;s own rendering: the document&apos;s page did
+            not load.
+          </p>
+          {/* Narrow viewports: ToC as a disclosure above the article
+              (the right rail hides below the frame's 1181px breakpoint). */}
+          <details className="mb-6 rounded-sm border border-border-hairline px-4 py-3 min-[1181px]:hidden">
+            <summary className="cursor-pointer text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
+              On this page
+            </summary>
+            <div className="pt-3">
+              <TocList toc={rendered.data.toc} />
+            </div>
+          </details>
+        </>
+      )}
 
       {format === "html" ? (
-        <article className="doc-prose">{content}</article>
+        fragment !== undefined ? (
+          <DocPane html={fragment.html} accent={typeColor(doc.type)} />
+        ) : (
+          <DocSurface accent={typeColor(doc.type)}>
+            <article className="doc-prose">{rendered.data?.content}</article>
+          </DocSurface>
+        )
       ) : (
         /* eslint-disable jsx-a11y/no-noninteractive-tabindex --
            scrollable region must be keyboard-reachable (see MarkdownPre) */
@@ -292,7 +341,7 @@ export function Component() {
           role="region"
           aria-label="raw markdown"
           tabIndex={0}
-          className="overflow-x-auto border border-border-default bg-code-bg p-5 font-mono text-[13.5px] leading-[1.55] whitespace-pre-wrap text-fg-secondary"
+          className="overflow-x-auto border border-border-default bg-code-bg p-5 font-mono text-[13.5px] leading-[1.55] whitespace-pre-wrap text-fg-secondary rounded-sm"
         >
           {doc.raw_md ?? ""}
         </pre>

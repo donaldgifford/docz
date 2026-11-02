@@ -24,13 +24,13 @@ function RepoCard({ repo }: { repo: RepoSummary }) {
   return (
     <Link
       to={`/${repo.repo}`}
-      className="block border border-border-default bg-bg-raised px-[1.2rem] py-[1.1rem] transition-colors hover:border-border-strong"
+      className="block border border-border-default bg-bg-raised px-[1.2rem] py-[1.1rem] transition-colors hover:border-border-strong rounded-sm"
     >
       <div className="mb-3 flex items-center gap-3">
         <span className="font-mono text-[14px] font-semibold text-fg-primary">
           {repo.repo}
         </span>
-        <span className="mono-chip-y border border-border-default px-[7px] font-mono text-[11.5px] text-fg-muted">
+        <span className="mono-chip-y border border-border-default px-[7px] font-mono text-[11.5px] text-fg-muted rounded-sm">
           {repo.default_branch}
         </span>
       </div>
@@ -120,7 +120,7 @@ export function Component() {
       ) : repos === undefined ? (
         <CardSkeletons />
       ) : repos.length === 0 ? (
-        <div className="mx-auto my-16 w-max max-w-full border border-border-default bg-bg-raised px-8 py-6 text-center">
+        <div className="mx-auto my-16 w-max max-w-full border border-border-default bg-bg-raised px-8 py-6 text-center rounded-sm">
           <p className="font-mono text-[14px] text-fg-secondary">
             No repositories yet
           </p>

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { StatusPill } from "@/components/badges";
+import { DocSurface } from "@/components/doc-surface";
 import { renderMarkdown } from "@/markdown/processor";
 import { resolveAnchor } from "@/review/anchor";
 import {
@@ -75,6 +76,7 @@ export function DocumentReview({
   newSubmissionId,
   stale,
   onReload,
+  theme,
 }: {
   doc: ReviewDocument;
   draft: Draft;
@@ -84,6 +86,8 @@ export function DocumentReview({
   /** Set when the last submission found the file changed on disk. */
   stale: string | null;
   onReload: () => void;
+  /** The repository's html.theme, the document column's theme. */
+  theme: string;
 }) {
   const { inspect } = doc;
   const current = inspect.frontmatter?.status ?? "";
@@ -210,9 +214,11 @@ export function DocumentReview({
           />
         </div>
 
-        <article ref={docRef} className="doc-prose" aria-label="Document">
-          {rendered.data?.content}
-        </article>
+        <DocSurface theme={theme}>
+          <article ref={docRef} className="doc-prose" aria-label="Document">
+            {rendered.data?.content}
+          </article>
+        </DocSurface>
         {shown !== null && open && (
           <SelectionPopover
             pending={shown}

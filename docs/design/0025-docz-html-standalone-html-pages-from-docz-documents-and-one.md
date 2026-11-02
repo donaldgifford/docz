@@ -422,6 +422,21 @@ WCAG today; it runs over every theme and mode instead of one.
 > are held to `widgets.go` by a shared corpus (9a); and IMPL-0029 is
 > cancelled in its favour (10a).
 
+> **Amended 2026-11-01 (DESIGN-0026, IMPL-0032).** docz-site and the
+> review page no longer put a theme on `<html>`. Both wear a shell of
+> their own, repo-guardian's look in light and dark (`ui/src/theme/shell.css`),
+> and docz-site's theme selector is gone. A theme now applies to one
+> element: `ui/` generates `page.css`, `pkg/theme`'s base, tokens, and
+> components scoped to `.docz-page`, and a document sits in a
+> `<div class="docz-page" data-theme="…">` — in the reader, docz-api's
+> fragment of the exported page in the deployment's `DOCZ_THEME`; in the
+> review page, the document column in the repository's `html.theme`. The
+> table's docz-site row reads "none" for the selector. `tokens.css` no
+> longer imports the token files, its `@theme` values are the shell's,
+> and the test holding `classic` equal to them is removed. The
+> `data-mode` toggle and `docz:mode` are unchanged, and a document theme
+> follows the mode on `<html>`.
+
 ### 4. Layout by region kind
 
 A table maps each

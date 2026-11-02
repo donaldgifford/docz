@@ -5,7 +5,7 @@
 // tests use for node APIs, rather than widening the shared config.
 import { expect, test } from "@playwright/test";
 
-import { APPEARANCES, useAppearance } from "./appearances";
+import { SHELL_MODES, useShellMode } from "./appearances";
 
 /*
  * Rendering-pipeline journeys (IMPL-0002 Phases 2–4) against the MSW
@@ -28,11 +28,11 @@ import { APPEARANCES, useAppearance } from "./appearances";
 const ELK_CHUNK = /\belk\b/i;
 const DIAGRAM_CHUNK = /mermaid|\belk\b/i;
 
-for (const appearance of APPEARANCES) {
+for (const appearance of SHELL_MODES) {
   test(`${appearance.label}: alerts, code chrome, and mermaid render on one doc`, async ({
     page,
   }) => {
-    await useAppearance(page, appearance);
+    await useShellMode(page, appearance);
     await page.addInitScript(() => {
       sessionStorage.setItem("docz:e2e:rendering-doc", "1");
     });
@@ -107,8 +107,8 @@ test("the diagram chunks stay off diagram-free docs", async ({ page }) => {
 
   await page.goto("/donaldgifford/docz-site/design/DESIGN-0001");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  // The reader (and Shiki) are fully loaded; mermaid and ELK never were.
-  await expect(page.locator(".doc-prose pre").first()).toBeVisible();
+  // The document pane is mounted; mermaid and ELK never loaded.
+  await expect(page.locator(".docz-page.js")).toBeVisible();
   expect(diagramRequests).toHaveLength(0);
 });
 
@@ -158,11 +158,11 @@ test("the dagre override renders without fetching ELK", async ({ page }) => {
  * change can break that without breaking anything that throws, so it is
  * asserted on computed style rather than left to the eye.
  */
-for (const appearance of APPEARANCES) {
+for (const appearance of SHELL_MODES) {
   test(`${appearance.label}: the specimen's diagrams render with their own colors`, async ({
     page,
   }) => {
-    await useAppearance(page, appearance);
+    await useShellMode(page, appearance);
     await page.goto(
       "/donaldgifford/docz-site/pages/guides/markdown-specimen.md",
     );

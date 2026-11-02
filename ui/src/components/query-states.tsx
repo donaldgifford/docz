@@ -30,7 +30,7 @@ export function SessionRequiredRedirect() {
 /** Neutral 404 — deliberately ambiguous; 404 also hides private repos. */
 export function NotFoundPanel() {
   return (
-    <div className="mx-auto my-16 w-max max-w-full border border-border-default bg-bg-raised px-8 py-6 text-center">
+    <div className="mx-auto my-16 w-max max-w-full border border-border-default bg-bg-raised px-8 py-6 text-center rounded-sm">
       <p className="font-mono text-[14px] text-fg-secondary">
         Not found — or not visible to you
       </p>

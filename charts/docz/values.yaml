@@ -508,10 +508,11 @@ site:
     # to the two names so a typo fails at install rather than silently
     # rendering the default.
     mermaidLayout: "elk"
-    # -- The site's default theme (DOCZ_THEME), a theme pkg/theme has:
-    # `paper` (light and dark) or `classic` (dark). Empty sets no
-    # variable and the site defaults to `paper`. A reader may pick another
-    # in the topbar, kept in their browser. A repository's `.docz.yaml`
+    # -- The theme the site shows documents in (DOCZ_THEME), a theme
+    # pkg/theme has: `paper` (light and dark), `charcoal`, or `classic`
+    # (dark). Empty sets no variable and documents render in `paper`. The
+    # site's shell has its own look with a light/dark toggle and no theme
+    # selector (DESIGN-0026). A repository's `.docz.yaml`
     # `html.theme` sets `docz export html` and docz-review, never the
     # site, which shows many repositories (DESIGN-0025 §3).
     theme: ""

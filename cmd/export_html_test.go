@@ -80,6 +80,29 @@ func TestExportHTMLStdout(t *testing.T) {
 	}
 }
 
+func TestExportHTMLFragmentStdout(t *testing.T) {
+	r, out, _ := fixtureRunner(t, "design")
+
+	opts := htmlOpts()
+	opts.stdout = true
+	opts.fragment = true
+
+	if err := r.exportHTML(t.Context(), opts, []string{"DESIGN-0001"}); err != nil {
+		t.Fatalf("exportHTML --fragment --stdout DESIGN-0001 = %v", err)
+	}
+
+	got := out.String()
+	if !strings.HasPrefix(got, `<div class="docz-page" data-theme="paper" data-doc="DESIGN-0001">`) {
+		t.Errorf("--fragment printed:\n%.200s", got)
+	}
+
+	for _, banned := range []string{"<!doctype", "<style", "mode-toggle"} {
+		if strings.Contains(got, banned) {
+			t.Errorf("--fragment printed %q", banned)
+		}
+	}
+}
+
 func TestExportHTMLExitCodes(t *testing.T) {
 	tests := []struct {
 		name string

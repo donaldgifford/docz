@@ -48,6 +48,12 @@ jobs:
               - 'test/**'
               # cmd/review_fixture_test.go reads the review page's capture
               - 'ui/e2e/fixtures/review-**'
+              # internal/httpapi renders the MSW demo documents and the XSS
+              # payloads into these JSON files and fails when either is
+              # stale (IMPL-0032).
+              - 'ui/src/mocks/content/**'
+              - 'ui/src/mocks/__generated__/fragments.json'
+              - 'ui/src/mocks/__generated__/hostile-fragments.json'
               - 'justfile'
               - '*.just'
               - '.golangci.yml'
@@ -77,6 +83,8 @@ jobs:
               - 'api/cli/**'
               # tokens.css imports the themes from here (DESIGN-0025).
               - 'pkg/theme/**'
+              # runtime.test.ts mounts the runtime on this fragment golden.
+              - 'pkg/export/html/testdata/golden/fragment.html'
               - 'ui.just'
               - 'Dockerfile.ui'
             # The plugin's tests run its hooks against ui/review/ from source,

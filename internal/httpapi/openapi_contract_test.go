@@ -349,12 +349,20 @@ func contractAuthServer() *oauth.Server {
 // session middleware, and the public login routes are left unmounted.
 func contractHandler(authDisabled bool) http.Handler {
 	st := seededStore()
-	// A document the export never wrote, so getDoc covers confluence_url "".
-	st.docs[1] = append(st.docs[1], store.Document{
-		ID: 101, RepoID: 1, Type: "frameworks", DocID: "FW-0002", Title: "Unexported",
-		Status: validText("Draft"), Path: "docs/frameworks/0002-unexported.md",
-		GitSha: "def", ContentHash: "hash2", RawMd: "# Unexported\n",
-	})
+	st.docs[1] = append(st.docs[1],
+		// A document the export never wrote, so getDoc covers confluence_url "".
+		store.Document{
+			ID: 101, RepoID: 1, Type: "frameworks", DocID: "FW-0002", Title: "Unexported",
+			Status: validText("Draft"), Path: "docs/frameworks/0002-unexported.md",
+			GitSha: "def", ContentHash: "hash2", RawMd: "# Unexported\n",
+		},
+		// A document with frontmatter and markers, for getDocHtml.
+		store.Document{
+			ID: 102, RepoID: 1, Type: "frameworks", DocID: "FW-0004", Title: "Rendered",
+			Status: validText("Draft"), Path: "docs/frameworks/0004-rendered.md",
+			GitSha: "ghi", ContentHash: "hash4", RawMd: fragmentDoc,
+		},
+	)
 	sessions := fakeSessions{}
 
 	r := chi.NewRouter()
@@ -537,6 +545,8 @@ func TestOpenAPIContract(t *testing.T) {
 		{name: "listDocs", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/types/frameworks/docs"},
 		{name: "getDoc", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/types/FW/docs/FW-0001"},
 		{name: "getDocNoConfluence", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/types/FW/docs/FW-0002"},
+		{name: "getDocHtml", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/types/FW/docs/FW-0004/html"},
+		{name: "getDocHtmlMissing", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/types/FW/docs/FW-0099/html"},
 		{name: "getRepoConfluence", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/confluence"},
 		{name: "getRepoConfluenceNever", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/bare/confluence"},
 		{name: "searchDocs", method: http.MethodGet, target: "http://localhost/api/v1/search?q=intro"},

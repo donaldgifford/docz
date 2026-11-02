@@ -25,8 +25,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Underlined explicitly, not by the browser's default: a host page that
+   embeds a fragment may reset it (Tailwind's preflight does), and a link
+   in body text needs more than its colour (axe link-in-text-block). */
 a {
   color: var(--color-link);
+  text-decoration: underline;
 }
 
 a:hover {

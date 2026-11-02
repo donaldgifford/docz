@@ -272,7 +272,7 @@
               ]
             },
             "theme": {
-              "description": "The site's default theme (DOCZ_THEME), a pkg/theme name; empty renders no variable and the site defaults to paper. Constrained because the server falls back to paper on anything it does not recognize.",
+              "description": "The theme the site shows documents in (DOCZ_THEME), a pkg/theme name; empty renders no variable and documents render in paper. Constrained because the server falls back to paper on anything it does not recognize.",
               "type": "string",
               "enum": [
                 "",

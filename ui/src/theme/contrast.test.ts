@@ -26,8 +26,9 @@ const tokensCss = readFileSync(
  * theme with them one for light and one for dark. Paper's
  * prefers-color-scheme block repeats the dark values, which pkg/theme's
  * theme_test.go holds equal, so it is not checked twice here.
- * tokens.css's @theme values are classic's and stay checked as the
- * source Tailwind reads.
+ * The shell (DESIGN-0026 §2) is checked in both modes, and tokens.css's
+ * @theme values, its dark set (shell.test.ts), as the source Tailwind
+ * reads.
  */
 const themeDir = resolve(process.cwd(), "../pkg/theme/tokens");
 
@@ -41,8 +42,15 @@ function block(css: string, selector: string): string {
   return css.slice(start, end);
 }
 
+const shellCss = readFileSync(
+  resolve(process.cwd(), "src/theme/shell.css"),
+  "utf8",
+);
+
 const THEMES: [string, string][] = [
   ["tokens.css", tokensCss],
+  ["shell light", block(shellCss, ":root")],
+  ["shell dark", block(shellCss, ':root[data-mode="dark"]')],
   ...GENERATED_THEMES.flatMap((name): [string, string][] => {
     const css = readFileSync(resolve(themeDir, `${name}.css`), "utf8");
     const root = `:root[data-theme="${name}"]`;
@@ -208,4 +216,48 @@ describe.each(THEMES)("%s admonition tint contrast", (_, css) => {
       }
     },
   );
+});
+
+/*
+ * Type accents (DESIGN-0026 §8): on a type's routes the shell's accent is
+ * the type's colour, and the active sidebar item sets it on its own 10%
+ * tint, so each shell type and hash colour is held to AA on itself at
+ * 10% over the page and a raised panel. Inside a document the accent
+ * changes only text and links; the theme keeps its own tint, so the
+ * document themes' colours are held only by the checks above.
+ */
+function mix(hex: string, bg: string, alpha: number): string {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  return composite(
+    `rgba(${String(r)}, ${String(g)}, ${String(b)}, ${String(alpha)})`,
+    bg,
+  );
+}
+
+const SHELL_LOOKS = THEMES.filter(
+  ([name]) => name === "tokens.css" || name.startsWith("shell "),
+);
+
+describe.each(SHELL_LOOKS)("%s type accent tint contrast", (_, css) => {
+  const tokens = parseTokens(css);
+  const accents = [...tokens.keys()].filter((name) => /^(t|hash)-/.test(name));
+
+  it.each(accents)("--color-%s holds 4.5:1 on its own tint", (name) => {
+    const hex = tokens.get(name);
+    if (hex === undefined) {
+      throw new Error(`token ${name} vanished mid-test`);
+    }
+    for (const surface of TINT_SURFACES) {
+      const bg = tokens.get(surface);
+      if (bg === undefined) {
+        throw new Error(`surface ${surface} missing`);
+      }
+      const fill = mix(hex, bg, 0.1);
+      const ratio = contrastRatio(hex, fill);
+      expect(
+        ratio,
+        `--color-${name} (${hex}) on its tint over --color-${surface} (${fill}) is ${ratio.toFixed(2)}:1`,
+      ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+    }
+  });
 });

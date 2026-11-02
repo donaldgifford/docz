@@ -47,7 +47,7 @@ export function describeScope(scope: string): string {
 function ConsentCard({ children }: { children: React.ReactNode }) {
   return (
     <main className="mx-auto flex max-w-[480px] flex-col px-5 pt-[12vh]">
-      <div className="border border-border-default bg-bg-raised px-8 py-8">
+      <div className="border border-border-default bg-bg-raised px-8 py-8 rounded-sm">
         <div className="mb-1 font-mono text-[13.5px] tracking-[0.05em] text-accent">
           / docz <span className="text-fg-muted">/</span> authorize
         </div>

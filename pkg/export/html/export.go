@@ -58,6 +58,9 @@ type ExportOptions struct {
 	// DryRun renders every page and reports what a run would do, writing
 	// nothing.
 	DryRun bool
+	// Fragment writes each page as a fragment for a host page to embed
+	// (RenderOptions.Fragment), the index included.
+	Fragment bool
 }
 
 // PageResult is one page of a run.
@@ -286,6 +289,7 @@ func (x *exporter) page(ctx context.Context, e *repo.Entry) PageResult {
 	p, err := Render(content, RenderOptions{
 		Theme: x.opts.Theme, Mermaid: x.opts.Mermaid, Spec: x.spec(ctx, e.Type), Type: e.Type,
 		Source: src, Resolve: x.resolve, Site: x.opts.Site, Version: x.opts.Version,
+		Fragment: x.opts.Fragment,
 	})
 	if err != nil {
 		return failed(&res, err)

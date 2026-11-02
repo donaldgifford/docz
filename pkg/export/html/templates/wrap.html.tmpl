@@ -1,0 +1,46 @@
+{{define "wrap" -}}
+<div class="wrap">
+<header class="page-header">
+{{- if .Eyebrow}}
+<p class="eyebrow">{{.Eyebrow}}</p>
+{{- end}}
+<h1>{{.Title}}</h1>
+{{- if .Summary}}
+<p class="summary">{{.Summary}}</p>
+{{- end}}
+<div class="meta">
+{{- range .Pills}}
+<span class="{{.Class}}">{{.Text}}</span>
+{{- end}}
+{{- if not .Fragment}}
+<button type="button" class="mode-toggle">Dark</button>
+{{- end}}
+</div>
+{{- if .Inferred}}
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+{{- end}}
+</header>
+<nav class="tabs" aria-label="Sections">
+{{- range .Panels}}
+<button type="button" data-tab="{{.Key}}" aria-controls="p-{{.Key}}">{{.Label}}</button>
+{{- end}}
+</nav>
+{{- range .Panels}}
+<section class="panel" id="p-{{.Key}}">
+<h2 class="panel-title"{{if .Anchor}} id="{{.Anchor}}"{{end}}>{{.Label}}</h2>
+{{- if .Contents}}
+<ul class="heading-list">
+{{- range .Contents}}
+<li><a href="#{{.Slug}}">{{.Text}}</a></li>
+{{- end}}
+</ul>
+{{- end}}
+{{.Body}}
+</section>
+{{- end}}
+<footer class="page-footer">
+From <code>{{.Source}}</code>, sha256 <code>{{.SHA256}}</code>.
+{{- if .Version}} Rendered by docz {{.Version}}.{{end}}
+</footer>
+</div>
+{{- end}}

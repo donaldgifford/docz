@@ -6,32 +6,22 @@ import {
   useSyncExternalStore,
 } from "react";
 
-import { THEMES_WITH_MODES } from "@/theme/__generated__/themes";
-
 /*
  * The appearance shared by docz-site and the review page (DESIGN-0025 §3
- * as amended by IMPL-0030): data-theme and data-mode on <html>, the
- * attributes pkg/theme's token blocks select on. Who picks the theme
- * differs by surface and lives elsewhere: the review page takes the
- * repository's from its session, and the site reads src/lib/theme.ts.
- * The mode is always the reader's: data-mode, remembered under
- * docz:mode, the key every exported page's runtime uses too. With no
- * stored mode the page follows the system, and data-mode stays unset so
- * the theme's prefers-color-scheme block applies.
+ * as amended by IMPL-0030 and DESIGN-0026): data-mode on <html>, the
+ * attribute the shell's and the document themes' dark blocks select on.
+ * Neither page puts a theme on <html>: both wear the shell (shell.css),
+ * and a document's theme sits on its own .docz-page. The mode is the
+ * reader's: data-mode, remembered under docz:mode, the key every
+ * exported page's runtime uses too. With no stored mode the page follows
+ * the system, and data-mode stays unset so each prefers-color-scheme
+ * block applies.
  */
 
 export type Mode = "light" | "dark";
 
 const MODE_KEY = "docz:mode";
 const DARK_QUERY = "(prefers-color-scheme: dark)";
-
-/**
- * hasModes says whether the light/dark toggle means anything on theme:
- * a theme without a dark block has one look in every mode.
- */
-export function hasModes(theme: string): boolean {
-  return (THEMES_WITH_MODES as readonly string[]).includes(theme);
-}
 
 function isMode(value: string | null): value is Mode {
   return value === "light" || value === "dark";
@@ -64,11 +54,6 @@ function writeMode(mode: Mode | null): void {
   }
 }
 
-/** applyTheme sets <html>'s data-theme. */
-export function applyTheme(theme: string): void {
-  document.documentElement.setAttribute("data-theme", theme);
-}
-
 /**
  * applyStoredMode sets <html>'s data-mode from storage. main.tsx calls
  * it before the first render, so the page never paints in the wrong
@@ -97,40 +82,33 @@ function systemMode(): Mode {
 }
 
 export interface Appearance {
-  theme: string;
   /** The mode in effect: the stored one, else the system's. */
   mode: Mode;
   toggleMode: () => void;
 }
 
 /**
- * useAppearance holds the mode for the session's theme, writes both to
- * <html>, stores a toggled mode, and calls onChange after the attributes
- * move, so a caller that reads tokens (mermaid) reads the new ones; not
- * on mount, where main.tsx already applied them before anything
- * rendered. A change also dispatches docz:mode on the document, as an
- * exported page's runtime does.
+ * useAppearance holds the mode, writes it to <html>, stores a toggled
+ * mode, and calls onChange after the attribute moves, so a caller that
+ * reads tokens (mermaid) reads the new ones; not on mount, where
+ * main.tsx already applied it before anything rendered. A change also
+ * dispatches docz:mode on the document, as an exported page's runtime
+ * does.
  */
-export function useAppearance(
-  theme: string,
-  onChange?: () => void,
-): Appearance {
+export function useAppearance(onChange?: () => void): Appearance {
   const [stored, setStored] = useState<Mode | null>(storedMode);
   const system = useSyncExternalStore(subscribeSystem, systemMode);
   const mode = stored ?? system;
   const mounted = useRef(false);
 
   useEffect(() => {
-    applyTheme(theme);
     writeMode(stored);
-    document.dispatchEvent(
-      new CustomEvent("docz:mode", { detail: { mode, theme } }),
-    );
+    document.dispatchEvent(new CustomEvent("docz:mode", { detail: { mode } }));
     if (mounted.current) {
       onChange?.();
     }
     mounted.current = true;
-  }, [theme, stored, mode, onChange]);
+  }, [stored, mode, onChange]);
 
   const toggleMode = useCallback(() => {
     const next: Mode = mode === "dark" ? "light" : "dark";
@@ -138,5 +116,5 @@ export function useAppearance(
     setStored(next);
   }, [mode]);
 
-  return { theme, mode, toggleMode };
+  return { mode, toggleMode };
 }

@@ -27,17 +27,19 @@ var (
 	exportHTMLMermaid string
 	exportHTMLFormat  string
 	exportHTMLDryRun  bool
+	exportHTMLFrag    bool
 )
 
 // exportHTMLOpts is the per-invocation flag state.
 type exportHTMLOpts struct {
-	types   []string
-	out     string
-	stdout  bool
-	theme   string
-	mermaid string
-	format  string
-	dryRun  bool
+	types    []string
+	out      string
+	stdout   bool
+	theme    string
+	mermaid  string
+	format   string
+	dryRun   bool
+	fragment bool
 }
 
 // mermaidModes maps --mermaid to the package's modes.
@@ -73,6 +75,11 @@ leaves each diagram as its source.
 Pages render in the theme .docz.yaml names as html.theme (paper when it
 names none); --theme overrides it for one run.
 
+--fragment writes each page as a fragment for another page to embed: one
+div.docz-page holding the header, tabs, and panels, with no stylesheet,
+script, or mermaid loader. The host brings the theme's styles scoped to
+.docz-page and runs the theme's runtime on the element.
+
 Exit codes:
   0  every page rendered
   1  a page failed
@@ -92,6 +99,7 @@ func init() {
 	f.StringVar(&exportHTMLMermaid, "mermaid", "embed", "mermaid diagrams: embed, cdn, or source")
 	f.StringVar(&exportHTMLFormat, "format", formatText, "report format: text or json")
 	f.BoolVar(&exportHTMLDryRun, "dry-run", false, "report what would be written; write nothing")
+	f.BoolVar(&exportHTMLFrag, "fragment", false, "write fragments for a host page to embed, not standalone pages")
 	exportCmd.AddCommand(exportHTMLCmd)
 }
 
@@ -99,6 +107,7 @@ func runExportHTML(cmd *cobra.Command, args []string) error {
 	opts := exportHTMLOpts{
 		types: exportHTMLTypes, out: exportHTMLOut, stdout: exportHTMLStdout, theme: exportHTMLTheme,
 		mermaid: exportHTMLMermaid, format: exportHTMLFormat, dryRun: exportHTMLDryRun,
+		fragment: exportHTMLFrag,
 	}
 
 	r := getRunner()
@@ -136,6 +145,7 @@ func (r *Runner) exportHTML(ctx context.Context, opts *exportHTMLOpts, args []st
 	report, runErr := html.Export(ctx, r.repoOrOpen(), html.ExportOptions{
 		Types: opts.types, IDs: ids, Out: opts.out, Theme: opts.theme, Mermaid: mode,
 		Site: siteName(remote, r.RepoRoot), Version: Version, DryRun: opts.dryRun || opts.stdout,
+		Fragment: opts.fragment,
 		Resolve: func(from, href string) string {
 			if blob == nil {
 				return ""

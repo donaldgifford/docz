@@ -3,6 +3,31 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
+## [unreleased]
+
+### Features
+
+- *(export/html)* Render a fragment for a host page to embed, and docz export html --fragment
+- *(theme)* Docz.mount runs the runtime inside one element, for a host page that embeds a fragment
+- *(api)* Serve each document as a docz-html fragment for the reader (spec 1.8.0)
+- *(site)* Generate page.css, pkg/theme scoped to .docz-page, beside the theme list
+- *(site)* The shell in repo-guardian's look, light and dark, with no theme selector
+- *(site)* Restyle the shell's chrome to repo-guardian's density
+- *(site)* The reader shows a document as its docz-html fragment
+- *(site)* Pages in a .docz-page, and each type's colour as the accent
+- *(review)* The review page wears the shell, its document in the repository's theme
+
+### Documentation
+
+- *(impl)* IMPL-0030 is Completed, merged as #217
+- *(design)* DESIGN-0026 and IMPL-0032, the shell in repo-guardian's look and the reader's documents as docz-html pages
+- The shell, the document pane, and the review page's column (IMPL-0032)
+
+### Testing
+
+- *(site)* MSW serves each demo document's fragment, rendered by docz-api's own renderer
+- *(site)* E2e over the reader's document pane in both shell modes
+
 ## [2.5.0] - 2026-11-01
 
 ### Features

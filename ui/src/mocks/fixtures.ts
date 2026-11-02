@@ -31,9 +31,15 @@ import doczSiteGuideLocalDev from "./content/docz-site-guides-local-dev.md?raw";
 
 import { resolveDocType } from "@/lib/docTypes";
 
+// Each demo document rendered by docz-api's own fragment renderer
+// (internal/httpapi TestUIFragmentFixtures, regenerated with -update), so
+// the reader embeds exactly what the server would send (IMPL-0032).
+import fragments from "./__generated__/fragments.json";
+
 import type {
   DocType,
   Document,
+  DocumentHtml,
   Page,
   RepoDetail,
   RepoSummary,
@@ -157,6 +163,11 @@ const DEMO_TYPES: Record<string, DocType[]> = {
     },
   ],
 };
+
+/** The demo documents' fragments, keyed `owner/name/DOC-ID`. */
+export const DEMO_FRAGMENTS: Readonly<
+  Record<string, DocumentHtml | undefined>
+> = fragments;
 
 export const DEMO_DOCS: Document[] = [
   makeDoc({
@@ -531,6 +542,29 @@ export const demoOrgHandlers = [
     return HttpResponse.json({ docs });
   }),
 
+  http.get(
+    "*/api/v1/repos/:owner/:name/types/:type/docs/:docId/html",
+    ({ params }) => {
+      const key = repoKey(str(params.owner), str(params.name));
+      const types = DEMO_TYPES[key];
+      if (types === undefined) {
+        return undefined;
+      }
+      const docType = resolveDocType(types, str(params.type));
+      const doc = DEMO_DOCS.find(
+        (candidate) =>
+          candidate.repo === key &&
+          candidate.type === docType?.name &&
+          candidate.doc_id.toLowerCase() === str(params.docId).toLowerCase(),
+      );
+      const fragment =
+        doc === undefined ? undefined : DEMO_FRAGMENTS[`${key}/${doc.doc_id}`];
+      if (fragment === undefined) {
+        return HttpResponse.json({ error: "doc not found" }, { status: 404 });
+      }
+      return HttpResponse.json(fragment);
+    },
+  ),
   http.get(
     "*/api/v1/repos/:owner/:name/types/:type/docs/:docId",
     ({ params }) => {

@@ -1,9 +1,10 @@
 /*
- * classic: docz-site's dark look (DESIGN-0025 §3), every value moved
- * unchanged from the @theme block in ui/src/theme/tokens.css, which
- * theme_test.go checks. It is dark only: the one block below matches
- * whatever data-mode a page sets, so a forced data-mode="light" is the
- * same readable dark page rather than a half-themed one.
+ * classic: docz-site's dark look (DESIGN-0025 §3), every value taken
+ * from the @theme block docz-site had before its shell moved to
+ * repo-guardian's look (DESIGN-0026). It is dark only: the one block
+ * below matches whatever data-mode a page sets, so a forced
+ * data-mode="light" is the same readable dark page rather than a
+ * half-themed one.
  *
  * The tokens docz-site never had (--color-ok, --color-link,
  * --color-warn, --color-bad, --color-on-accent, --color-code-fg, and the

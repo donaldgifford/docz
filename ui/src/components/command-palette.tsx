@@ -338,7 +338,7 @@ export function CommandPalette({
     <div
       data-testid="command-palette"
       role="presentation"
-      className="fixed inset-x-0 top-[52px] bottom-0 z-[120] flex items-start justify-center bg-bg-base/65 backdrop-blur-[2px] sm:px-4 sm:pt-[7vh]"
+      className="fixed inset-x-0 top-10 bottom-0 z-[120] flex items-start justify-center bg-bg-base/65 backdrop-blur-[2px] sm:px-4 sm:pt-[7vh]"
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           onOpenChange(false);
@@ -393,7 +393,9 @@ export function CommandPalette({
           />
           {/* eslint-enable jsx-a11y/no-autofocus */}
           <span className="flex items-center gap-[0.4rem] font-mono text-[12px] text-fg-muted">
-            <kbd className="border border-border-default px-1">esc</kbd>
+            <kbd className="border border-border-default px-1 rounded-sm">
+              esc
+            </kbd>
             to close
           </span>
         </div>
@@ -514,16 +516,24 @@ export function CommandPalette({
 
         <div className="flex items-center gap-[1.1rem] border-t border-border-default px-4 py-[0.55rem] font-mono text-[12px] text-fg-muted">
           <span className="flex items-center gap-[0.3rem]">
-            <kbd className="border border-border-default px-1">↑</kbd>
-            <kbd className="border border-border-default px-1">↓</kbd>
+            <kbd className="border border-border-default px-1 rounded-sm">
+              ↑
+            </kbd>
+            <kbd className="border border-border-default px-1 rounded-sm">
+              ↓
+            </kbd>
             navigate
           </span>
           <span className="flex items-center gap-[0.3rem]">
-            <kbd className="border border-border-default px-1">↵</kbd>
+            <kbd className="border border-border-default px-1 rounded-sm">
+              ↵
+            </kbd>
             open
           </span>
           <span className="flex items-center gap-[0.3rem]">
-            <kbd className="border border-border-default px-1">tab</kbd>
+            <kbd className="border border-border-default px-1 rounded-sm">
+              tab
+            </kbd>
             preview
           </span>
           <span className="ml-auto">docz-index</span>

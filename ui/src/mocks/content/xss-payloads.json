@@ -1,0 +1,69 @@
+[
+  ["inline script", "<script>alert(1)</script>"],
+  ["remote script", "<script src=\"https://evil.example/x.js\"></script>"],
+  ["img onerror", "<img src=\"x\" onerror=\"alert(1)\">"],
+  ["javascript: markdown link", "[click me](javascript:alert(1))"],
+  [
+    "javascript: markdown link, entity-encoded",
+    "[click me](javascript&#58;alert(1))"
+  ],
+  ["javascript: raw anchor", "<a href=\"javascript:alert(1)\">x</a>"],
+  ["javascript: mixed case", "<a href=\"JaVaScRiPt:alert(1)\">x</a>"],
+  ["javascript: with whitespace", "<a href=\" \tjavascript:alert(1)\">x</a>"],
+  ["protocol-relative link", "[away](//evil.example/x)"],
+  ["onclick handler", "<div onclick=\"alert(1)\">content</div>"],
+  [
+    "onmouseover on a benign link",
+    "<a href=\"https://ok.example\" onmouseover=\"alert(1)\">x</a>"
+  ],
+  ["iframe", "<iframe src=\"https://evil.example\"></iframe>"],
+  ["object", "<object data=\"https://evil.example/x.swf\"></object>"],
+  ["embed", "<embed src=\"https://evil.example/x.swf\">"],
+  ["svg onload", "<svg onload=alert(1)><circle r=1 /></svg>"],
+  [
+    "svg foreignObject smuggling",
+    "<svg><foreignObject><script>alert(1)</script></foreignObject></svg>"
+  ],
+  [
+    "mathml xlink",
+    "<math><mi xlink:href=\"javascript:alert(1)\">x</mi></math>"
+  ],
+  ["data: markdown link", "[x](data:text/html,<script>alert(1)</script>)"],
+  [
+    "data: svg image",
+    "<img src=\"data:image/svg+xml;base64,PHN2Zy9vbmxvYWQ9YWxlcnQoMSk+\">"
+  ],
+  ["vbscript: anchor", "<a href=\"vbscript:msgbox(1)\">x</a>"],
+  [
+    "style attribute payload",
+    "<div style=\"background:url('javascript:alert(1)')\">x</div>"
+  ],
+  [
+    "form with formaction",
+    "<form action=\"https://evil.example\"><button formaction=\"javascript:alert(1)\">go</button></form>"
+  ],
+  [
+    "allowed tag with a handler",
+    "<details open ontoggle=\"alert(1)\"><summary onclick=\"alert(1)\">s</summary>x</details>"
+  ],
+  [
+    "span with a style",
+    "<span style=\"position:fixed;inset:0\" class=\"x\">cover</span>"
+  ],
+  [
+    "payload in an alert",
+    "> [!WARNING]\n> <img src=x onerror=alert(1)> and <a href=\"javascript:alert(1)\">x</a>"
+  ],
+  [
+    "hostile mermaid",
+    "```mermaid\nflowchart TD\n  A[\"<img src=x onerror=alert(1)>\"] --> B\n```"
+  ],
+  [
+    "hostile widget",
+    "```docz-scorecard\ntitle: \"</script><script>alert(1)</script>\"\n```"
+  ],
+  [
+    "payload nested in benign markdown",
+    "## Title\n\nSome text.\n\n<img src=x onerror=alert(1)>\n\n- list\n- items\n\n<a href=\"javascript:alert(1)\">deep link</a>\n"
+  ]
+]

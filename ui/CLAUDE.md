@@ -31,11 +31,14 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   place and no longer vendored (generated dir is gitignored)
 - `bun run gen-themes` — writes `src/theme/__generated__/themes.ts`
   (`THEMES`, `ThemeName`, `DEFAULT_THEME`, `THEMES_WITH_MODES`) from
-  `../pkg/theme/tokens/*.css`; gitignored like the client, run by
+  `../pkg/theme/tokens/*.css`, and `page.css` beside it: pkg/theme's
+  base, tokens, and components scoped to `.docz-page` by
+  `src/theme/scope-css.ts` (DESIGN-0026 §5), which refuses any CSS shape
+  it does not know; gitignored like the client, run by
   `just ui ci`, the image build, and CI, with `gen-themes-check` as the
   drift gate. A theme added to `pkg/theme` reaches every list in the UI
-  (the selector, `hasModes`, the server's `DOCZ_THEME` check, the e2e
-  matrix) through this file alone
+  (the server's `DOCZ_THEME` check, `defaultTheme()`, the review e2e
+  matrix) and the document stylesheet through these files alone
 - `just local-up` / `just local-down` — build + run the site container
   (`deploy/compose.local.yaml`, :8090) joined to the docz-api local
   stack's network; re-run `local-up` after changes to rebuild/recreate
@@ -56,14 +59,13 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   each stays its own chunk.
 - Fonts are self-hosted `@fontsource` imports in `src/main.tsx` —
   never add a third-party font URL (mockup.html may use CDN links; it
-  ships nowhere). DESIGN-0005 as amended: **Source Serif 4 Variable**
-  (`--font-serif`) sets the article — reader prose, the headings inside
-  it, pull quotes, and article titles; **Mona Sans Variable**
-  (`--font-sans`) sets UI chrome and the heroes outside the article;
-  **Monaspace Neon** (`--font-mono`) sets every mono surface, and its
-  true italic is required for Shiki's italic scopes. Monaspace Xenon
-  was removed with the seventh amendment — a mono can't set body text.
-  Both variable families need the wght AND wght-italic imports.
+  ships nowhere). **IBM Plex Sans Variable** (`--font-sans`) sets the
+  shell's chrome and **JetBrains Mono Variable** (`--font-mono`) every
+  mono surface (DESIGN-0026 §2; the mono's true italic is what Shiki's
+  italic scopes use); **Source Serif 4 Variable** (`--font-serif`) sets
+  markdown the site renders itself. A document's fragment brings
+  pkg/theme's own stacks. Every variable family needs the wght AND
+  wght-italic imports.
   Prose sizing is dialed in on the specimen page, not in the abstract:
   body 19px/1.78 on a 66ch measure, headings in em so the hierarchy
   scales with the body, chrome one step above the mockup's original
@@ -71,34 +73,70 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - Bordered mono chips MUST use `.mono-chip-y` (tokens.css) for their
   vertical padding and MUST NOT carry a `py-*` utility beside it —
   Tailwind's utilities layer would win. An inline box is as tall as the
-  font's ascent+descent, and Monaspace Neon leaves 0.032em above its
-  capitals against 0.19em below the baseline, so symmetric padding
-  renders every chip visibly high. The class holds the compensating
+  font's ascent+descent, and a mono's capitals sit high in it (the
+  values were measured on Monaspace Neon, the mono before DESIGN-0026),
+  so symmetric padding renders every chip visibly high. The class holds the compensating
   difference; `.doc-prose code` carries its own copy with descender
   clearance. Verify by measuring, not by eye.
 - `src/theme/tokens.css` — the single global stylesheet: Tailwind v4
   import + `@theme static` tokens ported from `mockup.html` `:root`.
   Token names keep mockup prefixes, so utilities read `bg-bg-raised`,
-  `text-fg-tertiary`, `text-t-rfc`. Radius scale is wiped (sharp
-  corners); only `rounded-pill` exists. Don't add other CSS entrypoints.
-- **Themes** (IMPL-0030 Phase 3, DESIGN-0025 §3). The site renders in
-  any `pkg/theme` theme, `paper` by default. `src/lib/theme.ts`
-  resolves the theme as the reader's pick (`docz:theme` in
-  localStorage) → runtime `__DOCZ_CONFIG__.theme` (from `DOCZ_THEME`) →
-  build-time `VITE_THEME` → `paper`, each validated against the
-  generated `THEMES`, so an unknown name falls through like an invalid
-  mermaid layout. `server/serve.ts`'s `resolveTheme` checks
-  `DOCZ_THEME` at startup and an unknown value is a config error that
-  fails `/readyz`, beside the other runtime variables. `index.html` paints
-  `data-theme="paper"` and `src/main.tsx` applies the stored theme and
-  mode before the first render. The topbar's `AppearanceControls` is a
-  theme select plus the light/dark toggle (shown only when `hasModes`,
-  `src/lib/appearance.ts`, shared with docz-review); a change calls
-  `refreshMermaidTheme`, whose signal lives in
-  `src/lib/mermaid-theme.ts` so the eager bundle never imports
-  `mermaid-block`. No component may carry a literal colour: the header
-  is `bg-bg-base/90`, the logo `text-(--color-on-accent)`, the palette
-  scrim `bg-bg-base/65`.
+  `text-fg-tertiary`, `text-t-rfc`. Radius scale is wiped except
+  `rounded-sm` (3px, the shell's bordered controls) and `rounded-pill`. Don't add other CSS entrypoints.
+- **The shell and the document theme** (DESIGN-0026). The site's
+  chrome is `src/theme/shell.css`: repo-guardian's tokens, copied in and
+  mapped onto docz's `--color-*` names, light at `:root`, dark under
+  `data-mode="dark"` and again for the system's dark preference with no
+  `data-mode`, with IBM Plex Sans and JetBrains Mono (`@fontsource-variable`).
+  `<html>` carries no `data-theme`; `tokens.css`'s `@theme` values are the
+  shell's dark set (`shell.test.ts` pins it), and the type, status, and
+  hash colours keep the filter chips' hues, fitted per mode to 4.5:1
+  (`contrast.test.ts` checks both modes). Code stays dark in both modes.
+  There is no theme selector and no `docz:theme`: the topbar's
+  `AppearanceControls` is the light/dark toggle alone
+  (`useAppearance(refreshMermaidTheme)`, the mode and nothing else; the
+  review page wears the same shell and toggle). A document's theme is on
+  its own `.docz-page` (`DocSurface`, `DocPane`), never on `<html>`.
+  `src/lib/theme.ts`'s `defaultTheme()` is the theme documents render in:
+  runtime `__DOCZ_CONFIG__.theme` (from `DOCZ_THEME`) → build-time
+  `VITE_THEME` → `paper`, each validated against the generated `THEMES`.
+  `server/serve.ts`'s `resolveTheme` checks `DOCZ_THEME` at startup and an
+  unknown value is a config error that fails `/readyz`. `refreshMermaidTheme`'s
+  signal lives in `src/lib/mermaid-theme.ts` so the eager bundle never
+  imports `mermaid-block`. No component may carry a literal colour: the
+  header is `bg-bg-raised`, the logo `text-(--color-on-accent)`, the
+  palette scrim `bg-bg-base/65`. A type's routes set `--type-accent` from
+  `typeColor()` on AppShell's `display: contents` wrapper, and the logo
+  mark, repository badge, breadcrumb leaf, and active sidebar item read
+  it through `--color-accent`; inside a document `accentProperties`
+  sets the `.docz-page`'s `--color-accent` alone, so it resolves against
+  the document theme's own `--color-t-*`. The site's e2e specs loop over
+  `SHELL_MODES`; the review spec crosses them with every theme
+  (`e2e/appearances.ts`).
+- **The document pane** (`src/components/doc-pane.tsx`, DESIGN-0026 §7).
+  The reader's html view is `useGetDocHtml`'s fragment, injected with
+  `dangerouslySetInnerHTML` — the one place outside MermaidBlock that
+  sets HTML, and only docz-api's renderer's output, which escapes raw
+  HTML and drops unsafe URLs. Its gate is `doc-pane.xss.test.tsx`, which
+  mounts every payload in `mocks/content/xss-payloads.json` as docz-api
+  really renders it (`mocks/__generated__/hostile-fragments.json`, from
+  `TestUIHostileFragments`; `fragments.json` is the demo documents', from
+  `TestUIFragmentFixtures`, both `go test ./internal/httpapi -update`).
+  Three React 19 traps: the `{__html}` object must be memoised (React
+  compares it by identity and rewrites innerHTML on a new one, wiping
+  what the runtime and mermaid did); `setSearchParams` changes identity
+  on every navigation, so the pane reads it through `useEffectEvent` and
+  remounts only on `[html, accent]`; and the runtime announces the tab
+  it opens while mounting, which the pane ignores so a plain URL stays
+  plain. The runtime is `pkg/theme/runtime.js`'s `docz.mount` with
+  `hash: false` (the tab lives in `?tab=`); each `pre.mermaid` becomes a
+  `MermaidBlock` root; a click on a `/`-path with no `target` routes
+  in-app. A fragment that fails renders the site's own markdown in a
+  `DocSurface` with `doc-fallback-note`; tests that exercise that render
+  call `failDocFragments()` (`src/test/server.ts`). Pages, the repo home,
+  the changelog, and a type's index render in a `DocSurface` too.
+  Tailwind's preflight strips link underlines, so pkg/theme underlines
+  links itself (axe link-in-text-block).
 - `tsconfig.json` is solution-style → `tsconfig.app.json` (browser code,
   strict + `noUncheckedIndexedAccess`) + `tsconfig.node.json` (config
   files). New config files at the repo root go in `tsconfig.node.json`'s
@@ -151,8 +189,8 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   moves source onto `data-mermaid-source`), and MarkdownPre routes
   marked pres to `MermaidBlock` (`src/markdown/mermaid-block.tsx`),
   which lazy-imports mermaid (~700 KB, own chunk — e2e asserts it
-  never loads on diagram-free docs) and holds the ONE sanctioned
-  innerHTML in the codebase: mermaid.render() output under
+  never loads on diagram-free docs) and holds the one sanctioned
+  innerHTML for document-derived SVG: mermaid.render() output under
   `securityLevel: "strict"` AND `htmlLabels: false` — BOTH required
   (strict alone still materializes purified `<img src>` elements in
   foreignObject labels) — AND `secure: MERMAID_SECURE_KEYS`, because
@@ -214,7 +252,8 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   h2–h4 map to `markdown-heading.tsx`, which appends the
   hover/focus-revealed copy-link button (a labeled BUTTON, not a
   link — the underline rule for prose links stays untouched).
-  No `dangerouslySetInnerHTML` anywhere. Never widen
+  No `dangerouslySetInnerHTML` in the markdown pipeline (the document
+  pane's fragment is the one use, below). Never widen
   `schema.ts` without extending the XSS suite — its only non-default
   allowances are `language-*` classes + the charset-validated
   `metastring` on `code`, and value-RESTRICTED admonition classNames
@@ -621,25 +660,27 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
   badges; nothing is inserted into the sanitized markdown. Lightning CSS
   warns that it does not know `::highlight` while minifying; the rule
   survives, so the warning is noise.
-- **Appearance** (`appearance.ts`, IMPL-0030 Phase 2). The theme is the
-  repository's: `docz inspect` reports `.docz.yaml`'s `html.theme` as
-  `theme`, the server passes it in the session (`sessionTheme`, the first
-  document's, `paper` for a docz too old to say), and `main.tsx` fetches
-  the session BEFORE the first render, sets `data-theme` from it, and
-  seeds the query cache, so the page never paints in `review.html`'s
-  `paper` first. There is no theme selector and no `docz:theme` key.
+- **Appearance** (IMPL-0030 Phase 2, DESIGN-0026 §9). The page wears the
+  site's shell: a topbar with the docz mark, the light/dark toggle, and
+  Done. The document column is a `DocSurface` in the repository's theme:
+  `docz inspect` reports `.docz.yaml`'s `html.theme` as `theme`, the
+  server passes it in the session (`sessionTheme`, the first document's,
+  `paper` for a docz too old to say), and `main.tsx` fetches the session
+  BEFORE the first render and seeds the query cache, so the column never
+  paints in `paper` first. `<html>` carries no `data-theme`. There is no
+  theme selector and no `docz:theme` key.
   The mode is the reader's: `applyStoredMode()` sets `data-mode` from
   `docz:mode` (the key exported pages use too) before the first render;
   with nothing stored `data-mode` stays unset and the theme's
-  `prefers-color-scheme` block applies. `useAppearance(theme, onChange)`
+  `prefers-color-scheme` block applies. `useAppearance(onChange)`
   dispatches `docz:mode` and calls `refreshMermaidTheme` after a change
   (never on mount), which re-initializes mermaid from the new tokens and
-  redraws every mounted diagram; docz-site never calls it. The toggle
-  shows only on a theme with modes (`hasModes`, `paper` today). The page
+  redraws every mounted diagram. The toggle always shows: the shell has
+  both modes, and a document theme without them keeps its one look. The page
   drops its token from the URL, so a reload shows the "open the link"
   message: an e2e that reloads must `goto` the link again.
-  `e2e/review.spec.ts` runs every spec and full-rule axe under paper
-  light, paper dark, and classic, picking the theme through
+  `e2e/review.spec.ts` runs every spec and full-rule axe under every
+  theme in both shell modes, picking the theme through
   `POST /__fake/reset?theme=<name>`, which gives the fixture repository
   that `html.theme`. `fake-server.ts` imports `sessionTheme` by a
   RELATIVE path: `vite.config.ts` loads it through
@@ -767,9 +808,9 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
   holds accent on its translucent `accent-bg` tint composited over
   `bg-base` and `bg-raised` (a selected nav item, a pressed toggle),
   which real-browser axe caught 0.05 short on paper light. The a11y and
-  rendering specs run once per look in `e2e/appearances.ts`'s
-  `APPEARANCES` (every theme, both modes where it has them), stored
-  through `useAppearance(page, appearance)` before the first script;
+  rendering specs run once per shell mode in `e2e/appearances.ts`'s
+  `SHELL_MODES`, stored through `useShellMode(page, mode)` before the
+  first script;
   a check on a themed colour reads the token from the page rather
   than naming one theme's value. Every
   top-level route needs exactly one `<main>` (RepoFrame provides it

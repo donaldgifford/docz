@@ -105,7 +105,7 @@ function SearchBox({
       onChange={(event) => {
         setDraft(event.target.value);
       }}
-      className="mt-5 w-full border border-border-default bg-bg-raised px-3 py-2 font-mono text-[14px] text-fg-primary placeholder:text-fg-muted focus:border-border-strong focus:outline-none"
+      className="mt-5 w-full border border-border-default bg-bg-raised px-3 py-2 font-mono text-[14px] text-fg-primary placeholder:text-fg-muted focus:border-border-strong focus:outline-none rounded-sm"
     />
   );
 }
@@ -356,7 +356,7 @@ export function Component() {
         <SkeletonRows />
       ) : result.hits.length === 0 ? (
         hasActiveFilters(state) ? (
-          <div className="mx-auto my-16 w-max max-w-full border border-border-default bg-bg-raised px-8 py-6 text-center">
+          <div className="mx-auto my-16 w-max max-w-full border border-border-default bg-bg-raised px-8 py-6 text-center rounded-sm">
             <p className="font-mono text-[14px] text-fg-secondary">
               No matches
             </p>
@@ -371,7 +371,7 @@ export function Component() {
             </button>
           </div>
         ) : (
-          <div className="mx-auto my-16 w-max max-w-full border border-border-default bg-bg-raised px-8 py-6 text-center">
+          <div className="mx-auto my-16 w-max max-w-full border border-border-default bg-bg-raised px-8 py-6 text-center rounded-sm">
             <p className="font-mono text-[14px] text-fg-secondary">
               No documents yet
             </p>
@@ -400,7 +400,7 @@ export function Component() {
                   }),
                 );
               }}
-              className="mx-auto mt-6 block border border-border-default px-5 py-[0.45rem] font-mono text-[13px] text-fg-secondary hover:border-border-strong hover:text-fg-primary disabled:opacity-50"
+              className="mx-auto mt-6 block border border-border-default px-5 py-[0.45rem] font-mono text-[13px] text-fg-secondary hover:border-border-strong hover:text-fg-primary disabled:opacity-50 rounded-sm"
             >
               {searchQuery.isFetching
                 ? "loading…"

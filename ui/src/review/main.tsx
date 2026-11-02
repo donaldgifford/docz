@@ -4,14 +4,12 @@ import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router";
 
 // The site's self-hosted fonts and its one stylesheet (src/main.tsx).
-import "@fontsource-variable/mona-sans/wght.css";
-import "@fontsource-variable/mona-sans/wght-italic.css";
+import "@fontsource-variable/ibm-plex-sans/wght.css";
+import "@fontsource-variable/ibm-plex-sans/wght-italic.css";
+import "@fontsource-variable/jetbrains-mono/wght.css";
+import "@fontsource-variable/jetbrains-mono/wght-italic.css";
 import "@fontsource-variable/source-serif-4/wght.css";
 import "@fontsource-variable/source-serif-4/wght-italic.css";
-import "@fontsource/monaspace-neon/400.css";
-import "@fontsource/monaspace-neon/400-italic.css";
-import "@fontsource/monaspace-neon/600.css";
-import "@fontsource/monaspace-neon/700.css";
 
 import "@/theme/tokens.css";
 
@@ -21,16 +19,16 @@ import {
   type ReviewSession,
   takeToken,
 } from "@/review/api";
-import { applyStoredMode, applyTheme } from "@/lib/appearance";
+import { applyStoredMode } from "@/lib/appearance";
 import { ReviewApp, SESSION_KEY } from "@/review/app";
 
 /*
  * docz-review's page entry (review.html). The token is taken from the
  * URL before anything renders and lives only in the client's closure.
- * The session is fetched before the first render too, so the page paints
- * in the repository's theme (DESIGN-0025 §3) rather than flashing
- * review.html's paper first; it seeds the query cache, so the app does
- * not ask again. A failed fetch renders anyway and the app reports it.
+ * The session is fetched before the first render too, so the document
+ * column paints in the repository's theme (DESIGN-0025 §3) rather than
+ * flashing paper first; it seeds the query cache, so the app does not
+ * ask again. A failed fetch renders anyway and the app reports it.
  * The rendered markdown's links expect a router, so a MemoryRouter
  * stands in: the page has no routes of its own.
  */
@@ -61,7 +59,6 @@ async function start(mount: HTMLElement): Promise<void> {
   if (client !== null) {
     const session = await firstSession(client);
     if (session !== null) {
-      applyTheme(session.theme);
       queryClient.setQueryData(SESSION_KEY, session);
     }
   }
