@@ -19,7 +19,7 @@ created: 2026-11-02
 - [Approach](#approach)
 - [Environment](#environment)
 - [Findings](#findings)
-  - [Observation 1: the round-two diff is raw source in a box below the document](#observation-1-the-round-two-diff-is-raw-source-in-a-box-below-the-document)
+  - [Observation 1: the round-two diff is raw source in a box apart from the document](#observation-1-the-round-two-diff-is-raw-source-in-a-box-apart-from-the-document)
   - [Observation 2: Plannotator's page is three columns, a toolstrip, and labels](#observation-2-plannotators-page-is-three-columns-a-toolstrip-and-labels)
   - [Observation 3: Plannotator is fifty times docz-review's size and ships daily](#observation-3-plannotator-is-fifty-times-docz-reviews-size-and-ships-daily)
   - [Observation 4: what docz-review knows that Plannotator does not](#observation-4-what-docz-review-knows-that-plannotator-does-not)
@@ -34,6 +34,17 @@ created: 2026-11-02
   - [4. What is the page's layout?](#4-what-is-the-pages-layout)
   - [5. Does the future share page change this work?](#5-does-the-future-share-page-change-this-work)
   - [6. How are a document's open questions answered?](#6-how-are-a-documents-open-questions-answered)
+- [Adversarial Review](#adversarial-review)
+  - [AR1 — Medium: the cost comparison omits package reuse](#ar1--medium-the-cost-comparison-omits-package-reuse)
+  - [AR2 — High: a rendered diff is not supplied by the existing diff dependency](#ar2--high-a-rendered-diff-is-not-supplied-by-the-existing-diff-dependency)
+  - [AR3 — High: historical text needs a different annotation contract](#ar3--high-historical-text-needs-a-different-annotation-contract)
+  - [AR4 — High: stored snapshots are not yet a history API or change provenance](#ar4--high-stored-snapshots-are-not-yet-a-history-api-or-change-provenance)
+  - [AR5 — High: quick labels cross the contract and outcome boundaries](#ar5--high-quick-labels-cross-the-contract-and-outcome-boundaries)
+  - [AR6 — Medium: the usability conclusion precedes its experiment](#ar6--medium-the-usability-conclusion-precedes-its-experiment)
+  - [AR7 — Medium: visual parity does not establish accessible interaction](#ar7--medium-visual-parity-does-not-establish-accessible-interaction)
+  - [AR8 — Medium: some claimed new work already exists, and some claimed existing work does not](#ar8--medium-some-claimed-new-work-already-exists-and-some-claimed-existing-work-does-not)
+  - [AR9 — Medium: copying code needs an explicit licence and distribution check](#ar9--medium-copying-code-needs-an-explicit-licence-and-distribution-check)
+  - [Review disposition and design gates](#review-disposition-and-design-gates)
 - [References](#references)
 <!-- markdownlint-restore -->
 <!--toc:end-->
@@ -81,8 +92,8 @@ decides). DESIGN-0024 then left out much of what Plannotator has:
 
 Those were decided before either tool had been used on real documents.
 This investigation revisits the page, not the mechanics: the hooks,
-the local server, the credential, and the JSON contract are not in
-question.
+the local server, and the credential are not in question, and the JSON
+contract changes only additively (question 3).
 
 **Triggered by:** DESIGN-0024, IMPL-0027, INV-0027, INV-0030 question 2,
 and a review of INV-0006 on 2026-11-02
@@ -125,20 +136,23 @@ and a review of INV-0006 on 2026-11-02
 <!--docz:findings:start-->
 ## Findings
 
-### Observation 1: the round-two diff is raw source in a box below the document
+### Observation 1: the round-two diff is raw source in a box apart from the document
 
-The page reported "4 regions changed since the previous round" and
-showed:
+The page (docz-review v2.6.1) reported "4 regions changed since the
+previous round" and showed, above the document:
 
 - a summary line for the status change, then a whole-source line diff
   in a scrolling box that starts at the frontmatter;
 - the markdownlint comments and the regenerated ToC lines that `docz
   update` writes, counted among the changes;
-- every unchanged line of the document between hunks.
+- runs of unchanged lines around each hunk. The code keeps three a
+  side (`CONTEXT_LINES` in `diff.tsx`), but with the ToC and
+  markdownlint lines counted as changes the hunks run into one another
+  and most of the document is shown.
 
 Reading it means reading markdown source, finding each `+` and `-` in
-a long box, and then scrolling back up to the rendered document to
-comment, because diff text cannot be annotated. Two fixes are already
+a long box, and then scrolling to the rendered document to comment,
+because diff text cannot be annotated. Two fixes are already
 named elsewhere: INV-0030 question 2 adds a word diff toggle, and
 DESIGN-0024 question 9 collapses unchanged regions. Neither puts the
 change where the reader is already reading.
@@ -179,7 +193,8 @@ it stands. The shape is.
 
 ### Observation 3: Plannotator is fifty times docz-review's size and ships daily
 
-TypeScript lines, excluding `node_modules`:
+TypeScript lines (`*.ts` and `*.tsx` under each directory, `node_modules`
+excluded, tests and generated files included):
 
 | Package | Files | Lines |
 | ------- | ----: | ----: |
@@ -208,8 +223,9 @@ settings toggle), and the binary can update itself when
 `@pierre/diffs`, `@base-ui/react`, KaTeX, `@viz-js/viz`, `motion`, and
 three of Plannotator's own published packages.
 
-The repository was pushed the day this was read, and its version is
-0.28.45. A fork stripped to document review would diverge on its
+The repository was pushed the day this was read, its version is
+0.28.45, and it made twenty releases in the fourteen days to that day
+(v0.28.24 on 2026-10-20 to v0.28.45 on 2026-11-02). A fork stripped to document review would diverge on its
 first day, and every upstream fix after that is a merge into code we
 had cut down.
 
@@ -247,14 +263,21 @@ plain markdown today, but it does so without any of the above.
 | Quick labels with an agent tip and Alt-digit keys | `annotations.tsx`, `feedback.ts`, `review.schema.json` (additive) | none |
 | The diff shown in the rendered document, raw on request | `diff.tsx` | none (`diff` is already used) |
 | Toolstrip modes and a global comment | `controls.tsx` | none |
+| Questions panel and walk-through mode | `questions.tsx`, `draft.ts` | none |
+| Label semantics in the record and the feedback | `review.schema.json` (`$version`), `draft.ts`, `feedback.ts` | none |
+| Every kept snapshot served to the page, not only the previous one (AR4) | `ui/review/round.ts`, `ui/review/state.ts`, `api.ts` | none |
 
 Plannotator's tinted highlight is achievable with the Custom Highlight
 API that DESIGN-0024 already chose, so taking the look does not
-reopen question 8. The seven files above total about 1,900 lines
-today, of which `document-review.tsx`, `annotations.tsx`, `diff.tsx`,
-and `feedback.ts`, where most of the work lands, are about 1,250.
-If any code is copied rather than rewritten, the licence permits it
-with the copyright and licence notice kept beside it.
+reopen question 8. The page files above total about 2,600 lines today,
+of which `document-review.tsx`, `annotations.tsx`, `diff.tsx`, and
+`feedback.ts`, where most of the work lands, are about 1,250; the two
+server files are the history's side. The intent is to write each piece
+over docz-review's own model, not to copy. `packages/ui`'s manifest
+says Apache-2.0 alone (the dual licence is the repository root's), so a
+copied file is recorded with its commit and licence, and Apache-2.0's
+licence text, attribution, notice of modification, and any NOTICE ship
+with the compiled binary and the page bundle, not only beside the source.
 
 ### Observation 6: the share page is a future docz-site surface
 
@@ -279,9 +302,11 @@ agent. That is out of scope here, but two things follow from it:
 
 **Answer:** Yes: port the pieces rather than fork (question 1).
 Observations 3 to 5 support the hypothesis: the wanted pieces are
-small, they need no new dependency, and they land in seven existing
-files. A fork's cost is in what it carries and how fast upstream
-moves. The questions below fix the shape:
+small, they need no new dependency, and they land in existing files on
+both halves of docz-review, with one server change for the per-round
+history. A fork's cost is in what it carries and how fast upstream
+moves. The questions below fix the shape, provisionally until step 4
+and the Adversarial Review's gates are met:
 
 - a rendered diff with a rail section per round;
 - Plannotator's ten labels, two reworded for docz;
@@ -297,9 +322,10 @@ second round.
 <!--docz:recommendation:start-->
 ## Recommendation
 
-Do step 4 of the Approach, then answer the questions below. Record the
-answers as an amendment to DESIGN-0024's §5, or in a new design if the
-layout change is large enough to need its own phases. Fold INV-0030
+The questions below are answered provisionally. Do step 4 of the
+Approach and meet the five gates in the Adversarial Review, then record
+the answers that survive as an amendment to DESIGN-0024's §5, or in a
+new design if the layout change is large enough to need its own phases. Fold INV-0030
 question 2 (the word diff) into question 2 here rather than building
 it separately.
 
@@ -422,14 +448,320 @@ document. The question here is what the panel does.
 > preselected, and `questions.tsx` holds to that; this keeps it, so an
 > answer is always a choice the reviewer made. "Accept all
 > recommendations" already exists on the question cards and moves to the
-> panel rather than being added. §5 also already places the cards in a
-> sidebar and inline at each question, so the panel is where the
-> sidebar's cards go, not a third copy. The walk-through mode is the new
-> piece.
+> panel rather than being added. §5 places the cards in a sidebar and
+> inline at each question, but the page mounts them in its aside only
+> (AR8), so the panel is where the aside's cards go, and the inline
+> cards stay §5's unbuilt promise, linked from the panel. The
+> walk-through mode is the new piece.
 
 <!--docz:open-questions:end-->
 
 <!--docz:recommendation:end-->
+
+<!--docz:adversarial-review:start-->
+## Adversarial Review
+
+Reviewed 2026-11-02 against the current working-tree implementation,
+DESIGN-0024, the review schema, and Plannotator's pinned `9d9e701`
+quick-label source and UI package manifest. This was a source and
+design review, **not** Approach step 4's interactive comparison. The
+findings below challenge the rationale and implementation assumptions;
+they do not silently replace the six recorded resolutions.
+
+**Verdict:** keeping docz-review's model and porting selected interactions
+is defensible. The stronger claims—less work, seven files, no new
+dependency, and a settled page shape—are not yet demonstrated. The
+rendered diff and historical annotations are design work, not merely
+layout work.
+
+### AR1 — Medium: the cost comparison omits package reuse
+
+Question 1 compares a rewrite with a full fork or replacing the page.
+At the pinned commit, however, [`@plannotator/ui`'s manifest][ar-ui]
+exports individual components, `components/plan-diff/*`, hooks, utilities,
+and contents-rail styles. Evaluating a narrow package import is a fourth
+option; it does not require adopting Plannotator's server or record.
+The dependency list is substantial, so this is not a recommendation to
+import it without measurement.
+
+The whole-repository line count does not measure the dependency closure
+of the document-review surface, and the document gives no counting
+command or exclusions for tests, declarations, or generated code.
+Likewise, a push on one day and version `0.28.45` do not establish a
+daily release cadence. A fork may pin a baseline and selectively take
+fixes; it need not merge every release. Ported code also needs fixes.
+
+**Needed:** compare a docz-native implementation, narrow package reuse,
+and a pinned stripped fork by integration effort, required dependencies,
+shipped bundle, test coverage, and ownership of future fixes. Keep the
+port decision if it wins that comparison, not solely the line-count ratio.
+
+**Response (2026-11-02):** Measured. `@plannotator/ui` 0.58.0 is on
+npm under Apache-2.0 with 37 dependencies and `react`, `react-dom`,
+and `tailwindcss` as peers, and its exports are component globs, so a
+narrow import is possible in principle. What step 4 measures is whether
+a rail or toolbar can be used without its `Annotation` type and
+contexts, since adopting those is the cost Observation 4 names. The
+counting method is now in Observation 3 (tests and generated files
+included), and the cadence is data there: twenty releases in fourteen
+days. A pinned fork avoids the merges by forgoing the fixes, which is
+the trade question 1 weighed. Adopted: the comparison in step 4 covers
+the port, a narrow import, and a pinned fork by integration effort,
+dependency closure, bundle size, and who owns later fixes.
+
+### AR2 — High: a rendered diff is not supplied by the existing diff dependency
+
+`ui/src/review/diff.tsx` uses `diffLines` to compare source strings and
+marks regions by kind and heading. It does not align Markdown trees or
+map word edits into rendered nodes. Having `diff` installed establishes
+neither a rendered-diff algorithm nor its implementation cost.
+
+Text can move between headings, lists, tables, links, code blocks, and
+raw HTML. A changed link destination or code language may leave the
+visible words unchanged. Combining removed and current source before
+parsing can also change Markdown structure rather than merely decorate
+it. Heading renames currently pair as deletion plus addition, not moves.
+
+**Needed:** prototype a block-alignment and rendering strategy, with
+fixtures for those cases and generated-only changes. Preserve
+`ui/src/markdown/processor.ts`'s raw-HTML-before-sanitize invariant and
+trusted post-sanitize line stamps. Retain raw inspection and explicit
+size/time fallbacks; the current diff already has character and edit
+bounds. Treat “no new dependency” as a target until this spike succeeds.
+
+**Response (2026-11-02):** Agreed that `diff` gives line hunks and
+nothing else. What the page already has is `data-line` on every
+rendered block, so hunks map to blocks by line range without aligning
+trees: a block whose lines a hunk touches is changed, a block only in
+the previous source is removed. The first slice is at block level:
+changed blocks marked in the margin, removed blocks rendered from the
+previous source and struck through, and inline word tinting only inside
+a block whose change is text-only (same block type on both sides), with
+the source shown otherwise. A link destination or code language changes
+the block's source, so the block is marked even when its words are not.
+The bounds stay (`DIFF_CHAR_LIMIT`, `DIFF_EDIT_LIMIT`); past them the
+page shows badges only, as today. The spike with those fixtures is the
+gate before the design, and "no new dependency" is its target.
+
+### AR3 — High: historical text needs a different annotation contract
+
+Question 2 puts struck-through removed text into the reading surface,
+but does not say whether it is selectable. Today `anchorFromRange` and
+`resolveAnchor` in `ui/src/review/anchor.ts` assume one document's text
+and line coordinates. `DocumentReview` resolves submissions against the
+current `inspect.content`; `review.schema.json` has no source-version or
+diff-side field on an annotation.
+
+A comment on deleted text will be lost, or could match identical text
+elsewhere in the current document. A selection crossing removed and
+current text has no single-source meaning. Merely recording `lost` does
+not tell the agent that the reviewer intentionally selected old text.
+
+**Needed:** either make historical/deleted text explicitly non-annotatable
+in the first version, or design version-qualified anchors containing the
+source round/digest and side, with matching feedback. Mixed-version
+replace/delete actions must be refused. Viewing an old round must never
+allow approval of those bytes as if they were the current snapshot.
+
+**Response (2026-11-02):** Adopted. Removed text is not annotatable
+in the first version: it renders with `data-no-annotate`, as diff text
+does today, and the popover refuses a selection that touches it, so no
+anchor carries a version and the record is unchanged by the diff.
+Version-qualified anchors wait until step 4 shows a need. Viewing an
+earlier round is reading only; the draft, Submit, and Approve stay
+bound to the current round's bytes (`round.ts`'s 409).
+
+### AR4 — High: stored snapshots are not yet a history API or change provenance
+
+`ui/review/state.ts` persists per-round snapshots, but `Review.open()` in
+`ui/review/round.ts` reads only round N−1. `Review.view()` and
+`ui/src/review/api.ts` expose a single `previous: string | null`, not a
+round list. The resolved right-rail history therefore needs server and
+API changes outside Observation 5's component list.
+
+Snapshots can show that text differed between two round openings. They
+cannot prove the agent authored an edit, or assign one durable origin to
+text edited in round 2, moved in round 3, and reverted in round 4. The
+phrase “brings that round's changes forward” could mean viewing N−1 → N
+or projecting old edits onto today's document; those are different jobs.
+
+**Needed:** define pairwise history versus current-document provenance,
+round numbering, missing snapshots, retention, and bounded/lazy loading.
+Call edits “observed between rounds,” not agent-authored, unless there is
+additional evidence. A first slice showing only previous → current
+avoids promising a provenance system accidentally.
+
+**Response (2026-11-02):** Correct, and Observation 5's table now
+carries it: the page gets `previous` only, so the per-round rail needs
+`round.ts` to serve every kept snapshot, or each pair's hunks, and
+`api.ts` to carry them. The words are "changes observed between
+rounds", never "the agent's edits". "Brings forward" means showing that
+round's N−1 → N hunks over today's document where their blocks still
+exist, with the rest listed as no longer present; it is not provenance.
+The first slice is previous → current only; the round list follows
+step 4, with retention and lazy loading as design items.
+
+### AR5 — High: quick labels cross the contract and outcome boundaries
+
+Context says the JSON contract is not in question, but Observation 5 and
+question 3 explicitly extend it. The current annotation schema rejects
+unknown properties and has a closed `kind` enum. Adding optional label
+metadata may follow DESIGN-0024's minor `$version` policy, but an old
+strict validator still rejects records containing it; adding a new kind
+is not equivalent to adding an optional field.
+
+There is also a behavioral decision hidden inside the ten-label set.
+Plannotator's tenth default is **Nice approach**, while **Looks good**
+is a separate positive action in its [quick-label source][ar-labels].
+docz's `draft.ts` treats `looks-good` as non-actionable and `feedback.ts`
+omits it from change instructions. Encoding every label as a comment
+would make praise request another agent turn.
+
+**Needed:** specify label IDs, saved display text/tips, actionable versus
+positive semantics, and whether any label is destructive. Carry reviewer-
+selected tips as review instructions, not elevated system authority.
+Test the full draft → record → schema validation → feedback path,
+including regeneration of CLI types, schema fixtures, and Go contract
+tests. Define how mixed-version readers handle the optional metadata.
+
+**Response (2026-11-02):** Adopted. A label is an optional `label`
+object on an annotation (`id`, `text`, `tip`), an additive field under
+the schema's `$version` policy; no new `kind`. The kind carries the
+semantics: "Nice approach" and "Looks good" are `looks-good`
+(non-actionable, no turn), and the other eight are `comment` with the
+tip appended to the text the agent reads, so `draft.ts` and
+`feedback.ts` need no new branch and a tip travels as reviewer text,
+not as an instruction above the reviewer's. The hand-written review
+record fixture gains a labelled annotation, the CLI types regenerate,
+and the Go contract test revalidates. Context now says the contract
+changes only additively.
+
+### AR6 — Medium: the usability conclusion precedes its experiment
+
+The document says the comparison has not run, yet all six questions are
+resolved and the conclusion fixes the layout. A real complaint about
+round-two source diffs supports improving that experience; it does not
+establish that a toolstrip, ten labels, three columns, historical rails,
+and a question walk-through together improve it.
+
+**Needed:** run the same review tasks on the same two-round fixture in
+both tools: find a substantive change, comment on it, answer a question,
+and submit without losing a draft. Record task time, scrolling/navigation,
+missed changes, and mistakes at wide and narrow widths. Compare against
+a smaller docz change, such as its existing collapsed diff plus generated-
+line filtering. If keeping the resolutions, mark their usability claims
+as awaiting validation rather than treating the experiment as a formality.
+
+**Response (2026-11-02):** Agreed; this is why the INV is Open and
+why the Recommendation now calls the resolutions provisional. Step 4
+runs the tasks this finding names on the same two-round fixture in both
+tools, with the smaller docz change (the collapsed diff plus
+generated-line filtering) as the control, and records time, scrolling,
+missed changes, and mistakes at wide and narrow widths.
+
+### AR7 — Medium: visual parity does not establish accessible interaction
+
+`paintAnnotations` currently paints every annotation under one highlight
+name and paints nothing without the Custom Highlight API. This supports
+tinting, not label-specific colors, overlap rules, card selection, or
+keyboard navigation. Color alone cannot communicate change kind or label.
+
+Alt-digit shortcuts can conflict with browser/OS behavior and keyboard
+layouts. The question walk-through adds another key map, and moving
+questions above the document can itself increase scrolling. “Below a set
+width” leaves the navigation, focus order, and access to actions undefined.
+
+**Needed:** test keyboard-only selection and card navigation, focus return,
+text-input shortcut suppression, zoom/reflow, supported browsers without
+highlight painting, and narrow-screen rail access. Supply text indicators
+and ordinary buttons for every shortcut action, and define highlight
+priority when annotations and diff marks overlap.
+
+**Response (2026-11-02):** Adopted as acceptance tests for the
+design. Plannotator reads `e.code` (`Digit1` to `Digit0`) with Alt, so
+the shortcut works on a macOS layout where Option and a digit type a
+symbol; docz does the same, suppresses it inside text inputs, and gives
+every shortcut a button. Highlights: one `Highlight` per label colour
+and one for diff marks, with a defined priority where they overlap, and
+the change kind and label always also in text (the margin mark and the
+rail), so a browser without the API loses only the tint. Below the
+width threshold the rails become a tabbed drawer with the same actions.
+
+### AR8 — Medium: some claimed new work already exists, and some claimed existing work does not
+
+Observation 1's “every unchanged line” describes the reported session,
+not necessarily today's code: `diff.tsx` already collapses long unchanged
+runs with three context lines. `document-review.tsx` currently renders
+that diff **above**, not below, the document. `annotations.tsx` already
+provides an annotation list, selection painting, and a document comment;
+`processor.ts` already returns a rendered ToC.
+
+Conversely, DESIGN-0024 specifies inline question cards, but the current
+`DocumentReview` mounts `QuestionCards` only in its aside; the review
+renderer does not insert those cards into the text. Question 6's
+resolution must not count the design promise as implemented behavior.
+
+**Needed:** record the binary/build used in Observation 1 and separate
+observed behavior, implemented features, and design-only features. Replace
+the seven-file estimate with a delta that includes `questions.tsx`,
+`draft.ts`, the renderer, styling, generated types, server/API work, and
+tests where required. Update Recommendation's “answer the questions”
+wording now that the decisions are recorded.
+
+**Response (2026-11-02):** Corrected in Observation 1 (the diff is
+above the document, unchanged runs collapse to three lines a side, the
+build was v2.6.1), in Observation 5 (the table now carries the
+questions, draft, schema, server, and API work), in question 6 (inline
+cards are §5's promise, not the page's behaviour), and in the
+Recommendation's wording.
+
+### AR9 — Medium: copying code needs an explicit licence and distribution check
+
+The environment records dual licensing at repository level, while the
+pinned UI package declares `Apache-2.0`. That discrepancy needs checking
+for the exact files copied; “keep a notice beside it” is not a complete
+distribution plan. Under Apache-2.0, relevant obligations include a copy
+of the licence, retained attribution, notices of modifications, and any
+applicable upstream NOTICE attribution.
+
+**Needed:** record each copied file's commit and applicable licence,
+including third-party portions. Check that required notices ship with the
+compiled review binary and browser assets, not just beside source files.
+A layout independently implemented over docz's model need not involve
+copying upstream code at all.
+
+**Response (2026-11-02):** Confirmed: `@plannotator/ui`'s manifest
+and its npm record say Apache-2.0 alone; the dual licence is the
+repository root's. Observation 5 now says the intent is independent
+implementation over docz's model, and what a copied file would require.
+
+### Review disposition and design gates
+
+Keep **port, not fork** as the working direction, but do not use this
+investigation as evidence that the full resolved scope is a small UI-only
+change. Before design approval:
+
+1. Complete the interactive comparison and narrow-package evaluation.
+2. Prove a bounded rendered-diff approach through the existing sanitizer.
+3. Decide historical annotation semantics and history/API scope.
+4. Specify label compatibility and no-action semantics end to end.
+5. Define keyboard, narrow-screen, and non-highlight acceptance tests.
+
+Prefer a first slice of contents/annotation navigation and latest-round
+changes. Historical projection and question walk-through can follow if
+the experiment demonstrates their value. The local credential and hook
+security model can remain unchanged; server payloads and the record
+contract cannot both be declared untouched under the current resolutions.
+
+**Response (2026-11-02):** The five gates are adopted as the entry
+conditions for the design, and the first slice is as proposed: the
+contents and annotation rails and the latest round's changes, with the
+round history and the walk-through after step 4.
+
+[ar-ui]: https://github.com/backnotprop/plannotator/blob/9d9e701/packages/ui/package.json
+[ar-labels]: https://github.com/backnotprop/plannotator/blob/9d9e701/packages/ui/utils/quickLabels.ts
+
+<!--docz:adversarial-review:end-->
 
 <!--docz:references:start-->
 ## References
