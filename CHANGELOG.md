@@ -5,13 +5,20 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(plugin)* Bring the docz plugin home from claude-skills
+- *(plugin)* List docz in this repository's marketplace
+- *(plugin)* Docz 2.1.0, the docz plugin caught up with docz v2
+
 ### Documentation
 
-- DESIGN-0026 Implemented and IMPL-0032 Completed, merged as #218
-
-### Miscellaneous Tasks
-
-- Merge main into docs/impl-0032-completed
+- Every docz plugin is written here and copied to claude-skills
+- *(plugin)* The docz plugin's README names both marketplaces
+- *(plugin)* The core docz skill under 150 lines, as claude-skills' harness requires
+- *(inv)* INV-0032, docz-review's page after Plannotator
+- *(inv)* INV-0032 review fixes, INV-0030 question 2 folded in
+- *(inv)* INV-0032 adversarial review and responses
 
 ## [2.6.1] - 2026-11-02
 
