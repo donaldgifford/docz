@@ -9,6 +9,12 @@
   },
   "plugins": [
     {
+      "name": "docz",
+      "source": "./plugins/docz",
+      "description": "Documentation lifecycle management with the docz CLI: creating, validating, and publishing RFCs, ADRs, design docs, implementation plans, investigations, and runbooks.",
+      "category": "documentation"
+    },
+    {
       "name": "docz-review",
       "source": "./plugins/docz-review",
       "description": "Blocks the end of a turn on a browser review of every docz document the agent created, and feeds the reviewer's answers back as the next instruction.",

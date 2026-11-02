@@ -3,6 +3,20 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
+## [unreleased]
+
+### Features
+
+- *(plugin)* Bring the docz plugin home from claude-skills
+- *(plugin)* List docz in this repository's marketplace
+- *(plugin)* Docz 2.1.0, the docz plugin caught up with docz v2
+
+### Documentation
+
+- Every docz plugin is written here and copied to claude-skills
+- *(plugin)* The docz plugin's README names both marketplaces
+- *(plugin)* The core docz skill under 150 lines, as claude-skills' harness requires
+
 ## [2.6.1] - 2026-11-02
 
 ### Miscellaneous Tasks

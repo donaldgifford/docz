@@ -1,0 +1,22 @@
+{
+  "name": "docz",
+  "version": "2.1.0",
+  "description": "Documentation lifecycle management with the docz CLI. Covers RFC, ADR, DESIGN, IMPL, INV, and RUNBOOK doc types with creation, validation, organization, export, and review workflows.",
+  "homepage": "https://github.com/donaldgifford/docz/tree/main/plugins/docz",
+  "repository": "https://github.com/donaldgifford/docz",
+  "author": {
+    "name": "donaldgifford",
+    "email": "dgifford@pm.me"
+  },
+  "license": "MIT",
+  "keywords": [
+    "docz",
+    "documentation",
+    "adr",
+    "rfc",
+    "design",
+    "architecture",
+    "decision-records",
+    "runbook"
+  ]
+}
