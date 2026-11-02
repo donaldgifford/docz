@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0026
 title: "docz-site's shell in repo-guardian's look, and the reader's documents as docz-html pages"
-status: Draft
+status: Implemented
 author: Donald Gifford
 created: 2026-11-01
 ---

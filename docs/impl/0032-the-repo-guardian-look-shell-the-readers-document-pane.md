@@ -1,7 +1,7 @@
 ---
 id: IMPL-0032
 title: "The repo-guardian-look shell, the reader's document pane from pkg/export/html, and per-type accents"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-11-01
 ---
