@@ -288,6 +288,10 @@ installs from `main`.
   updates the skill in the same PR. `plugins/docz/example.docz.yaml` is
   `docz init`'s output verbatim; regenerate it when the generated
   `.docz.yaml` changes.
+- **claude-skills' harness is stricter than this repository's CI**: its
+  `tests/test.sh` for docz holds the core `SKILL.md` under 150 lines and
+  checks `config.md` and `example.docz.yaml` against the CLI's defaults.
+  Keep the source within those limits so the copy needs no edits.
 - **CI** (the `plugin` job) checks every `plugin.json` has a name, version,
   and description, and that every marketplace source exists. markdownlint
   does not run over `plugins/`.

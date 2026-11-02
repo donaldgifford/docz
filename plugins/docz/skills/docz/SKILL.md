@@ -44,9 +44,8 @@ There is no PLAN type in docz v2. A repository whose `.docz.yaml` still carries 
 
 - **`docz create <type> <title>`** — type is lowercase (`rfc`, `adr`, `design`, `impl`, `inv`, `runbook`/`rb`) or a custom type's name, alias, or id prefix
 - **Title becomes the slug** — spaces become hyphens, lowercase; keep titles descriptive but concise
-- **`--author`** / **`--status`** — override the resolved author or the initial status (default: the type's first status)
-- **`--no-update`** — skip README regeneration; useful in scripts that batch-create docs
-- **`--format json`** — one JSON object with the new document's `id`, `type`, and `path`; read the path from it rather than guessing
+- **`--author`**, **`--status`**, **`--no-update`** (skip README regeneration in batch scripts)
+- **`--format json`** — one JSON object with the new document's `id`, `type`, and `path`; read the path from it
 - **Custom type without a template** — `docz create` renders the generic template and says so on stderr; `docz template override <type>` writes one to customise
 
 ### Validating
@@ -54,8 +53,7 @@ There is no PLAN type in docz v2. A repository whose `.docz.yaml` still carries 
 - **`docz validate`** — every enabled type: regions each schema requires, per-region content rules, frontmatter, a stale ToC, and README index drift
 - **`docz validate <id|path>`** — one document, read once; the fast check after editing
 - **`--fix`** — marks the regions docz inferred from headings and canonicalises marker spellings, then reports what is left. It never invents a section
-- **`--strict`** — warnings and index drift fail too (exit 1); use it in CI. **`--format json`** for scripts
-- Findings print as `path:line code detail`; the **code** is stable, the wording is not
+- **`--strict`** — warnings and index drift fail too; use it in CI. Findings print as `path:line code detail`; the **code** is stable
 
 ### Inspecting
 
@@ -78,14 +76,11 @@ There is no PLAN type in docz v2. A repository whose `.docz.yaml` still carries 
 
 ### Updating indexes
 
-- **`docz update`** — regenerates every README table and ToC; safe to run repeatedly
-- **`docz update <type>`** — one type's index
-- **`--dry-run`** — preview without writing; `docz validate --strict` is the CI check for drift
+- **`docz update [type]`** — regenerates README tables and ToCs; safe to repeat. `--dry-run` previews; `docz validate --strict` is the CI drift check
 
 ### Templates
 
-- **`docz template show <type>`** — prints the resolved template (repo override, else embedded). Works for disabled types
-- **`docz template override <type>`** — copies the template into `docs/templates/` for customisation; for a custom type with none it scaffolds the generic template and its schema
+- **`docz template show <type>`** — the resolved template (repo override, else embedded); works for disabled types. **`docz template override <type>`** copies it into `docs/templates/` to customise
 - Template variables: `{{ .Number }}`, `{{ .Title }}`, `{{ .Slug }}`, `{{ .Filename }}`, `{{ .Date }}`, `{{ .Author }}`, `{{ .Status }}`, `{{ .Type }}`, `{{ .Prefix }}`
 
 ### Exporting
@@ -121,10 +116,7 @@ Read `references/<file>.md` when you encounter the specific topic.
 ## Quick Reference
 
 ```bash
-# Initialize docz in a repo
 docz init
-
-# Create docs (type is lowercase)
 docz create rfc "Switch to gRPC for internal services"
 docz create adr "Use PostgreSQL for primary storage"
 docz create design "Auth token refresh flow"
@@ -132,25 +124,10 @@ docz create impl "Database migration"
 docz create inv "Evaluate message queue options"
 docz create runbook "Rotate the signing key"   # requires types.runbook.enabled: true
 
-# Check what you wrote
-docz validate ADR-0004
-docz validate --fix          # mark inferred regions, report the rest
-docz inspect ADR-0004 --format json
-
-# List
-docz list                    # all docs
+docz validate ADR-0004 && docz inspect ADR-0004 --format json
 docz list adr --status Accepted --format json
-
-# Change a status (always pair with update)
 docz status set adr ADR-0003 Accepted && docz update adr
-
-# Config and templates
-docz config
-docz template show adr
-
-# Export
 docz export html ADR-0004 --stdout
-docz export confluence --dry-run
 ```
 
 ## Agents
@@ -168,9 +145,4 @@ docz export confluence --dry-run
 - `docz:wiki` — manage MkDocs/Backstage TechDocs integration ("set up mkdocs", "update wiki nav")
 - `docz:website`, `docz:go-docz`, `docz:rust-docz` — documentation sites and API docs
 
-## Companion plugins
-
-From the same marketplace (`/plugin install <name>@docz`):
-
-- **docz-html** — turn a document into one standalone HTML page in the repository's theme
-- **docz-review** — hold the end of a turn for a browser review of the documents queued in it
+Companion plugins: **docz-html** (a document as one standalone HTML page) and **docz-review** (a browser review of the documents queued in a turn).
