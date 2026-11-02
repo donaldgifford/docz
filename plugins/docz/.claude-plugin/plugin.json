@@ -2,8 +2,8 @@
   "name": "docz",
   "version": "2.0.2",
   "description": "Documentation lifecycle management with the docz CLI. Covers RFC, ADR, DESIGN, IMPL, PLAN, and INV doc types with creation, organization, and review workflows.",
-  "homepage": "https://github.com/donaldgifford/claude-skills/tree/main/plugins/docz",
-  "repository": "https://github.com/donaldgifford/claude-skills",
+  "homepage": "https://github.com/donaldgifford/docz/tree/main/plugins/docz",
+  "repository": "https://github.com/donaldgifford/docz",
   "author": {
     "name": "donaldgifford",
     "email": "dgifford@pm.me"
