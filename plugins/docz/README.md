@@ -13,12 +13,21 @@ docz version   # confirm >= 2.0.0
 
 ## Install
 
+From docz's own marketplace, where the plugin is written:
+
 ```text
 /plugin marketplace add donaldgifford/docz
 /plugin install docz@docz
 ```
 
-The same marketplace carries **docz-html** (a document as one standalone HTML page) and **docz-review** (a browser review of the documents queued in a turn).
+or from [claude-skills](https://github.com/donaldgifford/claude-skills), which carries a copy:
+
+```text
+/plugin marketplace add donaldgifford/claude-skills
+/plugin install docz@donaldgifford-claude-skills
+```
+
+docz's marketplace also carries **docz-html** (a document as one standalone HTML page) and **docz-review** (a browser review of the documents queued in a turn).
 
 ## Skills
 
