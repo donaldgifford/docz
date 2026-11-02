@@ -1,6 +1,6 @@
 # docz
 
-![Version: 1.3.0](https://img.shields.io/badge/Version-1.3.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.3.0](https://img.shields.io/badge/AppVersion-2.3.0-informational?style=flat-square)
+![Version: 1.4.0](https://img.shields.io/badge/Version-1.4.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.6.1](https://img.shields.io/badge/AppVersion-2.6.1-informational?style=flat-square)
 
 Helm chart for docz — docz-api, docz-site, and their backends in one release
 
@@ -47,7 +47,7 @@ attestations, Build L2).
 
 ```bash
 helm install docz oci://ghcr.io/donaldgifford/charts/docz \
-  --version 1.3.0 \
+  --version 1.4.0 \
   --namespace docz \
   --create-namespace \
   -f values.yaml
@@ -327,10 +327,10 @@ The backing services are renamed from `<release>-docz-api-<service>` to
 cosign verify \
   --certificate-identity-regexp '^https://github.com/donaldgifford/docz/.+' \
   --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz:1.3.0
+  ghcr.io/donaldgifford/charts/docz:1.4.0
 
 gh attestation verify \
-  oci://ghcr.io/donaldgifford/charts/docz:1.3.0 \
+  oci://ghcr.io/donaldgifford/charts/docz:1.4.0 \
   --owner donaldgifford
 ```
 
