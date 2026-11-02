@@ -13,12 +13,17 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Documentation
 
+- DESIGN-0026 Implemented and IMPL-0032 Completed, merged as #218
 - Every docz plugin is written here and copied to claude-skills
 - *(plugin)* The docz plugin's README names both marketplaces
 - *(plugin)* The core docz skill under 150 lines, as claude-skills' harness requires
 - *(inv)* INV-0032, docz-review's page after Plannotator
 - *(inv)* INV-0032 review fixes, INV-0030 question 2 folded in
 - *(inv)* INV-0032 adversarial review and responses
+
+### Miscellaneous Tasks
+
+- Merge main into docs/impl-0032-completed
 
 ## [2.6.1] - 2026-11-02
 
