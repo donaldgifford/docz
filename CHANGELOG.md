@@ -14,6 +14,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Documentation
 
 - Every docz plugin is written here and copied to claude-skills
+- *(plugin)* The docz plugin's README names both marketplaces
 
 ## [2.6.1] - 2026-11-02
 
