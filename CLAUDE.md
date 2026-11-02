@@ -263,6 +263,35 @@ the move changed about the repository.
   verifies the signature on the GoReleaser it downloads; the release itself
   is still GPG-signed.
 
+## Plugins (`plugins/`, `.claude-plugin/marketplace.json`)
+
+**Every docz plugin is written here and copied out.** The repository root's
+`.claude-plugin/marketplace.json` is the `docz` marketplace, listing
+**docz** (the general skills and agents, brought home from claude-skills at
+2.0.2), **docz-review**, and **docz-html**, each with its own version in its
+`plugin.json`, independent of docz's. `/plugin install <name>@docz`
+installs from `main`.
+
+- **Change a plugin here, never in claude-skills.** A plugin change is a
+  PR in this repository with a bump of that plugin's `plugin.json`
+  version; the copy follows it.
+- **The copy** into `donaldgifford/claude-skills` is a PR there that
+  replaces `plugins/<name>/` with this repository's directory, keeping
+  that repository's departures: `plugin.json`'s `homepage` and
+  `repository` point at claude-skills, `CARD.md` and the README's card
+  link block are generated there, and `tests/test.sh` is its harness (in
+  place of docz-review's Bun suite, which reads `ui/review/`). Its
+  marketplace metadata version is bumped and its cards regenerated in the
+  same PR.
+- **The skills drive the CLI** and ship no template copies: a skill names
+  a command and its flags, so a CLI change that renames or removes either
+  updates the skill in the same PR. `plugins/docz/example.docz.yaml` is
+  `docz init`'s output verbatim; regenerate it when the generated
+  `.docz.yaml` changes.
+- **CI** (the `plugin` job) checks every `plugin.json` has a name, version,
+  and description, and that every marketplace source exists. markdownlint
+  does not run over `plugins/`.
+
 ## docz-review (`ui/review/`, `plugins/docz-review/`)
 
 docz-review (DESIGN-0024, IMPL-0027) holds the end of a Claude Code turn
