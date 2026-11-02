@@ -59,6 +59,6 @@ docz create design "Your Design Title"
 | DESIGN-0023 | A read-only MCP server in docz-api: OAuth 2.1 tokens, tools, and resources | Implemented | 2026-10-17 | Donald Gifford | [0023-a-read-only-mcp-server-in-docz-api-oauth-21-tokens-tools-and.md](0023-a-read-only-mcp-server-in-docz-api-oauth-21-tokens-tools-and.md) |
 | DESIGN-0024 | docz-review: a blocking review page for agent-written documents | Implemented | 2026-10-23 | Donald Gifford | [0024-docz-review-a-blocking-review-page-for-agent-written-documents.md](0024-docz-review-a-blocking-review-page-for-agent-written-documents.md) |
 | DESIGN-0025 | docz-html: standalone HTML pages from docz documents, and one themeable design for docz's HTML | Implemented | 2026-10-31 | Donald Gifford | [0025-docz-html-standalone-html-pages-from-docz-documents-and-one.md](0025-docz-html-standalone-html-pages-from-docz-documents-and-one.md) |
-| DESIGN-0026 | docz-site's shell in repo-guardian's look, and the reader's documents as docz-html pages | Draft | 2026-11-01 | Donald Gifford | [0026-docz-sites-shell-in-repo-guardians-look-and-the-readers.md](0026-docz-sites-shell-in-repo-guardians-look-and-the-readers.md) |
+| DESIGN-0026 | docz-site's shell in repo-guardian's look, and the reader's documents as docz-html pages | Implemented | 2026-11-01 | Donald Gifford | [0026-docz-sites-shell-in-repo-guardians-look-and-the-readers.md](0026-docz-sites-shell-in-repo-guardians-look-and-the-readers.md) |
 <!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->
