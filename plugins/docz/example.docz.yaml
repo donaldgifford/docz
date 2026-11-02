@@ -1,0 +1,181 @@
+# .docz.yaml -- configuration for the docz CLI.
+#
+# This file is created by `docz init` and read by every other docz command.
+# Edit anything below; rerun `docz init` only on a fresh checkout — the
+# command will not overwrite an existing .docz.yaml.
+#
+# About the `types:` block:
+#   If you include `types:`, docz uses ONLY the types you list. Omitting a
+#   type opts it out of scaffolding and updates. Remove the `types:` block
+#   entirely to keep all six built-in types (rfc, adr, design, impl, plan,
+#   investigation).
+#
+# Custom types:
+#   Add your own type by giving it a unique `id_prefix` and `dir`. It can then
+#   be created/listed by its name, its `id_prefix`, or any `aliases:` entry
+#   (e.g. `docz create frameworks`, `docz create FW`, `docz create fw`).
+#   A duplicate `id_prefix` or an alias that collides with another type is
+#   rejected at startup. See the commented example below the built-in types.
+#
+# Documentation: https://github.com/donaldgifford/docz
+
+docs_dir: docs
+
+types:
+  adr:
+    enabled: true
+    dir: adr
+    template: ""
+    id_prefix: "ADR"
+    id_width: 4
+    statuses:
+      - Proposed
+      - Accepted
+      - Deprecated
+      - Superseded
+    status_field: "status"
+    plural_label: "ADRs"
+
+  design:
+    enabled: true
+    dir: design
+    template: ""
+    id_prefix: "DESIGN"
+    id_width: 4
+    statuses:
+      - Draft
+      - In Review
+      - Approved
+      - Implemented
+      - Abandoned
+    status_field: "status"
+    plural_label: "Design"
+
+  impl:
+    enabled: true
+    dir: impl
+    template: ""
+    id_prefix: "IMPL"
+    id_width: 4
+    statuses:
+      - Draft
+      - In Progress
+      - Completed
+      - Paused
+      - Cancelled
+    status_field: "status"
+    plural_label: "Implementation Plans"
+
+  investigation:
+    enabled: true
+    dir: investigation
+    template: ""
+    id_prefix: "INV"
+    id_width: 4
+    statuses:
+      - Open
+      - In Progress
+      - Concluded
+      - Inconclusive
+      - Abandoned
+    status_field: "status"
+    plural_label: "Investigations"
+
+  plan:
+    enabled: false
+    dir: plan
+    template: ""
+    id_prefix: "PLAN"
+    id_width: 4
+    statuses:
+      - Draft
+      - In Progress
+      - Completed
+      - Cancelled
+    status_field: "status"
+    plural_label: "Plans"
+
+  rfc:
+    enabled: true
+    dir: rfc
+    template: ""
+    id_prefix: "RFC"
+    id_width: 4
+    statuses:
+      - Draft
+      - Proposed
+      - Accepted
+      - Rejected
+      - Superseded
+    status_field: "status"
+    plural_label: "RFCs"
+
+  # Example custom type (uncomment and edit):
+  # frameworks:
+  #   enabled: true
+  #   dir: frameworks
+  #   template: ""              # defaults to docs/templates/frameworks.md, else embedded
+  #   id_prefix: "FW"           # must be unique across all types
+  #   id_width: 4
+  #   aliases: ["fw"]           # optional CLI shorthands
+  #   statuses:
+  #     - Draft
+  #     - Active
+  #     - Deprecated
+  #   status_field: "status"
+  #   plural_label: "Frameworks"
+
+index:
+  auto_update: true
+  preserve_header: true
+
+author:
+  from_git: true
+  default: ""
+
+wiki:
+  auto_update: true
+  mkdocs_path: mkdocs.yml
+  plugins:
+    - techdocs-core
+  exclude:
+    - templates
+    - examples
+  nav_titles:
+    adr: ADRs
+    design: Design
+    impl: Implementation Plans
+    investigation: Investigations
+    plan: Plans
+    rfc: RFCs
+
+toc:
+  enabled: true
+  min_headings: 3
+
+# Changelog awareness. Off by default; enable it so tools that read this
+# config (docz-api, docz-site) know where your changelog lives. docz does
+# not generate changelogs — git-cliff does.
+changelog:
+  enabled: false
+  file: CHANGELOG.md
+
+# docz-api / docz-site surface. Off by default. Enabling it publishes
+# every .md under docs_dir, so add exclude entries for anything that
+# should stay private. <docs_dir>/templates/ is always excluded.
+#
+# The URL path mirrors the docs_dir path: docs/index.md is the repo root,
+# a directory's README.md is that directory's page, and docz documents
+# keep their id-addressed route.
+api:
+  enabled: false
+  # Optional; defaults to <docs_dir>/index.md.
+  landing_page:
+  # Path prefixes under docs_dir that are never published, e.g.
+  #   exclude:
+  #     - scratch
+  exclude:
+  # Markdown outside docs_dir; anything inside it is already consumed, e.g.
+  #   additional_docs:
+  #     - CONTRIBUTING.md
+  additional_docs:
