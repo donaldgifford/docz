@@ -15,6 +15,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Every docz plugin is written here and copied to claude-skills
 - *(plugin)* The docz plugin's README names both marketplaces
+- *(plugin)* The core docz skill under 150 lines, as claude-skills' harness requires
 
 ## [2.6.1] - 2026-11-02
 
