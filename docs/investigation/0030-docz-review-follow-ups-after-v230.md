@@ -220,6 +220,13 @@ the Linux install and the settings `env` check are done.
 - c. Not now.
 - d. Other.
 
+> **Resolved 2026-11-02: (d).** Folded into INV-0032 question 2. The
+> diff since the previous round moves into the rendered document, with
+> added text tinted and removed text struck through in place, so a
+> word-level toggle on the raw diff is no longer the fix; the raw
+> source diff stays one toggle away. Nothing from this question is
+> built on its own.
+
 ### 3. How are tasks ticked from the page?
 
 - **a. As a decision sent to the agent, like a status change: a flip is
@@ -261,6 +268,8 @@ the Linux install and the settings `env` check are done.
   sections 5 and 7, the non-goals, rollout step 7, open question 9
 - [INV-0021](0021-confluence-comments-as-a-view-layer-kept-across-source-changes.md):
   the shared anchor shape, question 2
+- [INV-0032](0032-docz-reviews-page-after-plannotator-adopt-its-layout-or-fork-it.md):
+  docz-review's page after Plannotator, which takes over question 2
 - [docz #186](https://github.com/donaldgifford/docz/pull/186): anchors
   in the Confluence page property
 - [docz #205](https://github.com/donaldgifford/docz/pull/205) and

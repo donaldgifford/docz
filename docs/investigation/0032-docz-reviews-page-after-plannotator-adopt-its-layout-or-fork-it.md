@@ -165,10 +165,17 @@ Plannotator's annotate view of a document has:
   rendered "clean" mode and a raw mode, behind a mode switcher.
   Annotations made in the diff record whether the text was added,
   removed, or modified (`Annotation.diffContext`).
+- **A version history per annotated file** (`packages/server/annotate.ts`,
+  off with `PLANNOTATOR_ANNOTATE_HISTORY=0`), with a diff between two
+  versions of the file. So `plannotator annotate` has a round diff of
+  its own, and Approach step 4 compares two of them.
 
-Some of the ten default labels are written for code plans and name
-Plannotator's own plans directory ("Consider alternatives"), so the
-set itself is not portable as it stands. The shape is.
+Some of the ten default labels carry tips written for code plans:
+"Consider alternatives" names Plannotator's own plans directory,
+"Verify this" says to read the actual code, "Match existing patterns"
+says to search the codebase, and "Missing overview" places the overview
+before the implementation details. The set itself is not portable as
+it stands. The shape is.
 
 ### Observation 3: Plannotator is fifty times docz-review's size and ships daily
 
@@ -194,8 +201,10 @@ Beyond plan and document review, the monorepo also carries:
   Harness;
 - image, video, and HTML annotation.
 
-Each app surface checks GitHub for a newer release when it loads, with
-no setting to turn that off. `packages/ui` alone depends on CodeMirror,
+Every surface checks GitHub for a newer release (from the machine, at
+most once every ten minutes, off with `PLANNOTATOR_UPDATE_CHECK=0` or a
+settings toggle), and the binary can update itself when
+`PLANNOTATOR_AUTO_UPDATE` is on. `packages/ui` alone depends on CodeMirror,
 `@pierre/diffs`, `@base-ui/react`, KaTeX, `@viz-js/viz`, `motion`, and
 three of Plannotator's own published packages.
 
@@ -241,7 +250,9 @@ plain markdown today, but it does so without any of the above.
 
 Plannotator's tinted highlight is achievable with the Custom Highlight
 API that DESIGN-0024 already chose, so taking the look does not
-reopen question 8. The four files above total about 1,250 lines today.
+reopen question 8. The seven files above total about 1,900 lines
+today, of which `document-review.tsx`, `annotations.tsx`, `diff.tsx`,
+and `feedback.ts`, where most of the work lands, are about 1,250.
 If any code is copied rather than rewritten, the licence permits it
 with the copyright and licence notice kept beside it.
 
@@ -268,7 +279,7 @@ agent. That is out of scope here, but two things follow from it:
 
 **Answer:** Yes: port the pieces rather than fork (question 1).
 Observations 3 to 5 support the hypothesis: the wanted pieces are
-small, they need no new dependency, and they land in four existing
+small, they need no new dependency, and they land in seven existing
 files. A fork's cost is in what it carries and how fast upstream
 moves. The questions below fix the shape:
 
@@ -372,8 +383,11 @@ it separately.
 - b. Keep one column and add only the annotations rail.
 - c. Other.
 
-> **Resolved 2026-11-02: (a).** The left contents rail is part of
-> this work.
+> **Resolved 2026-11-02: (a), revised.** The left contents rail is part of
+> this work. The per-round list of changes lives in the right rail,
+> one collapsible section per round, as question 2 resolves it; the
+> left rail shows a count of annotations per section and marks the
+> sections the latest round changed, and lists no changes itself.
 
 ### 5. Does the future share page change this work?
 
@@ -403,7 +417,15 @@ document. The question here is what the panel does.
 - b. The panel without the walk-through mode.
 - c. Other.
 
-> **Resolved 2026-11-02: (a).**
+> **Resolved 2026-11-02: (a), revised.** Nothing is preselected.
+> DESIGN-0024 §5 says the recommended option is badged, never
+> preselected, and `questions.tsx` holds to that; this keeps it, so an
+> answer is always a choice the reviewer made. "Accept all
+> recommendations" already exists on the question cards and moves to the
+> panel rather than being added. §5 also already places the cards in a
+> sidebar and inline at each question, so the panel is where the
+> sidebar's cards go, not a third copy. The walk-through mode is the new
+> piece.
 
 <!--docz:open-questions:end-->
 
