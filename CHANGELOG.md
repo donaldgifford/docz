@@ -17,6 +17,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(plugin)* The docz plugin's README names both marketplaces
 - *(plugin)* The core docz skill under 150 lines, as claude-skills' harness requires
 - *(inv)* INV-0032, docz-review's page after Plannotator
+- *(inv)* INV-0032 review fixes, INV-0030 question 2 folded in
 
 ## [2.6.1] - 2026-11-02
 
