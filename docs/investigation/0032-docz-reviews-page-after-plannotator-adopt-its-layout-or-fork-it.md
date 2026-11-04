@@ -25,6 +25,7 @@ created: 2026-11-02
   - [Observation 4: what docz-review knows that Plannotator does not](#observation-4-what-docz-review-knows-that-plannotator-does-not)
   - [Observation 5: the pieces worth taking are small and map onto existing files](#observation-5-the-pieces-worth-taking-are-small-and-map-onto-existing-files)
   - [Observation 6: the share page is a future docz-site surface](#observation-6-the-share-page-is-a-future-docz-site-surface)
+  - [Observation 7: two passes over one document in each tool](#observation-7-two-passes-over-one-document-in-each-tool)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
 - [Open Questions](#open-questions)
@@ -111,8 +112,11 @@ and a review of INV-0006 on 2026-11-02
 3. List what docz-review does that Plannotator does not, and what a
    fork would therefore have to add.
 4. Run `plannotator annotate` over a docz document (INV-0006 or a
-   parity fixture) beside `docz-review` on the same document, two
-   rounds each, and note what each makes easy or hard.
+   parity fixture) beside `docz-review` on the same document, and note
+   what each makes easy or hard. Plannotator has no rounds: a session
+   ends at submit, so its second pass is a fresh `annotate` of the
+   edited file, diffed against the version it saw last. docz-review
+   runs both rounds in one review.
 5. For each piece worth taking, name the docz-review file it would
    change, and whether it needs a new dependency.
 6. Answer the open questions; the answers become a DESIGN-0024
@@ -130,6 +134,7 @@ and a review of INV-0006 on 2026-11-02
 | Plannotator licence | MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`) |
 | docz-review page | `ui/src/review`, 26 files, about 5,100 lines |
 | docz-review server | `ui/review`, 23 files, about 4,700 lines |
+| Step 4 run | Plannotator 0.28.45 release binary; docz-review from `main` at `c2fc80c`; Playwright Chromium, 1440 and 800 px |
 
 <!--docz:environment:end-->
 
@@ -181,8 +186,11 @@ Plannotator's annotate view of a document has:
   removed, or modified (`Annotation.diffContext`).
 - **A version history per annotated file** (`packages/server/annotate.ts`,
   off with `PLANNOTATOR_ANNOTATE_HISTORY=0`), with a diff between two
-  versions of the file. So `plannotator annotate` has a round diff of
-  its own, and Approach step 4 compares two of them.
+  versions of the file. This is not a round: `annotate` has no loop,
+  and a session ends at submit. Running it again on the edited file
+  opens a new session that diffs against the last version it saw,
+  the nearest thing it has to docz-review's round two, and what
+  Approach step 4 compares with it.
 
 Some of the ten default labels carry tips written for code plans:
 "Consider alternatives" names Plannotator's own plans directory,
@@ -295,6 +303,82 @@ agent. That is out of scope here, but two things follow from it:
   DESIGN-0023's scope grammar reserves `write`. A share page would
   need that decision revisited first, in its own document.
 
+### Observation 7: two passes over one document in each tool
+
+Approach step 4, run on 2026-11-04 by a Playwright script in Chromium,
+over a copy of this repository's INV-0030 (282 lines, four open
+questions) at 1440 and 800 pixels wide. Plannotator was the 0.28.45
+release binary, its checksum and build attestation checked, with its
+data directory in a scratch directory. docz-review was built from
+`main` at `c2fc80c`.
+
+Pass 1 was the same three tasks in both tools: comment on a phrase in
+Observation 2, answer questions 1 and 3, and send. Between the passes
+the same edit stood in for the agent's revision: one word changed and
+a sentence added in Observation 2, a sentence removed in Observation
+4, a phrase reworded in the Conclusion, and questions 1 and 3
+resolved. Pass 2 was: find the changes, comment on the changed word,
+and send. Plannotator has no rounds, so its pass 2 was a second
+`plannotator annotate` of the edited file.
+
+| Task | Plannotator | docz-review |
+| --- | --- | --- |
+| What scrolls | the document column (5,575 px tall at 1440, 7,348 at 800); header, Send, and both rails stay put | the whole page (6,935 px at 1440, 12,772 at 800) |
+| The commented phrase, from the top | 3,335 px (4,227 at 800) | 2,873 px (4,817 at 800) |
+| Comment on a phrase | 4 actions: select, Comment, type, add | 4 actions: select, Comment, type, Add |
+| Answer two questions | 8 actions, each a comment on the option's text; question 3 is 5,757 px down | 2 clicks on option cards in the right column; question 3 is about 750 px down |
+| What the agent gets for an answer | "Answer: (a)." against lines 201–207 | `{"number": 1, "choice": "a"}` |
+| Send | Send Feedback, always on screen | Submit, at the foot of the questions column, below the first screen (1,193 px down even in pass 2, with two questions resolved) |
+| Pass 2: that something changed | "+10/-5 since last review", a small badge; the diff is a click away | "3 regions changed since the previous round" and the source diff, open at the top |
+| Pass 2: the six edits | all six, in place, after two clicks (open the diff, choose Rendered) | all six in the source diff; the document badges the three regions CHANGED |
+| Pass 2: comment on the change | 4 actions: hover the changed block, Comment, type, add | 4 actions: select in the document, Comment, type, Add |
+| What the agent gets for it | "[In diff content]" and the `-`/`+` source lines, no line number | the quote, its context, region, heading, and line 129 |
+
+What each made easy or hard:
+
+- **Plannotator's fixed frame is its main advantage here.** Send, the
+  contents, and the annotations stay where they are while the
+  document scrolls. In docz-review the questions column scrolls with
+  the page, so answering a question while reading the findings
+  scrolls the findings away, and Submit is below the first screen at
+  both widths. This supports question 4.
+- **docz-review's answers are better.** One click per question, a
+  structured answer, and in round two each resolved question comes
+  back as a short "Resolved 2026-11-04: (a)" card. Plannotator has no
+  notion of a question, so an answer is a comment the agent has to
+  read. docz-review already has "Accept all recommendations", so
+  question 6's new work is the walk-through and the placement, not the
+  quick pick (AR8).
+- **Plannotator's Rendered diff is the view question 2 wants, but it
+  diffs source lines.** A hard-wrapped paragraph, which every docz
+  document is, splits at its line breaks, so a one-word change shows
+  as one line of the paragraph between unchanged ones. Its Classic
+  mode shows docz's region markers and markdownlint comments as text.
+  A port has to diff per rendered block, not per source line (gate 2).
+- **In Plannotator's diff a comment is block-level.** It cannot quote
+  words inside a change (`PlanCleanDiffView.tsx`: "block-level hover
+  … no text selection"), and it sends the diff lines without a line
+  number. docz-review anchors the same comment to the current text.
+  Plannotator avoids AR3's problem by not anchoring, which a port
+  should not copy.
+- **At 800 pixels** Plannotator keeps the annotations column (about
+  290 pixels) and hides the contents, leaving the document about 430
+  pixels. docz-review keeps both columns and the page nearly doubles
+  in height. Neither has a one-column layout.
+- **Neither has a "next change" control.** Plannotator's contents
+  marks sections that hold annotations, not sections that changed.
+- **docz-review's source diff is unreadable in the light shell.**
+  Added lines are dark text (`text-fg-primary`) on the code
+  background, which is dark in both modes: 1.04:1, removed lines
+  1.51:1, unchanged 2.23:1. Dark mode is 13.1, 9.8, and 8.8:1. This is
+  a bug in the shipped page, separate from this investigation.
+- **Plannotator recovers an unsent draft** when the page is reopened,
+  and checks for its own updates over the network each session.
+
+Not measured: time on task and mistakes need a person, and they and
+the narrow-package evaluation are what remains of gate 1. The scripts
+and screenshots stayed in the scratch directory.
+
 <!--docz:findings:end-->
 
 <!--docz:conclusion:start-->
@@ -313,17 +397,20 @@ and the Adversarial Review's gates are met:
 - three columns;
 - a questions panel at the top with a walk-through mode.
 
-Approach step 4, the side-by-side run of both tools, has not been
-done. Do it before the design, to check the layout against a real
-second round.
+Approach step 4 ran on 2026-11-04 as a scripted two-pass run in each
+tool (Observation 7). It supports the fixed three-column frame
+(question 4), a rendered diff (question 2), and the question cards
+(question 6), and adds a constraint to question 2: the diff has to
+work per rendered block, since docz documents are hard-wrapped. Time
+on task and mistakes still need a person.
 
 <!--docz:conclusion:end-->
 
 <!--docz:recommendation:start-->
 ## Recommendation
 
-The questions below are answered provisionally. Do step 4 of the
-Approach and meet the five gates in the Adversarial Review, then record
+The questions below are answered provisionally. Time step 4's tasks
+with a person, meet the five gates in the Adversarial Review, then record
 the answers that survive as an amendment to DESIGN-0024's §5, or in a
 new design if the layout change is large enough to need its own phases. Fold INV-0030
 question 2 (the word diff) into question 2 here rather than building
@@ -655,7 +742,7 @@ as awaiting validation rather than treating the experiment as a formality.
 **Response (2026-11-02):** Agreed; this is why the INV is Open and
 why the Recommendation now calls the resolutions provisional. Step 4
 runs the tasks this finding names on the same two-round fixture in both
-tools, with the smaller docz change (the collapsed diff plus
+tools (in Plannotator, two `annotate` sessions, since it has no rounds), with the smaller docz change (the collapsed diff plus
 generated-line filtering) as the control, and records time, scrolling,
 missed changes, and mistakes at wide and narrow widths.
 
