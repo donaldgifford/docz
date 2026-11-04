@@ -24,6 +24,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(inv)* INV-0032, docz-review's page after Plannotator
 - *(inv)* INV-0032 review fixes, INV-0030 question 2 folded in
 - *(inv)* INV-0032 adversarial review and responses
+- *(inv)* INV-0032 step 4, two passes in each tool
 
 ### Miscellaneous Tasks
 
