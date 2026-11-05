@@ -261,3 +261,39 @@ describe.each(SHELL_LOOKS)("%s type accent tint contrast", (_, css) => {
     }
   });
 });
+
+/*
+ * The review page's round diff (ui/src/review/diff.tsx) sets its lines on
+ * the shell's page surface: added text in fg-primary on a 12% st-active
+ * tint, removed in fg-secondary on a 12% st-rejected tint, unchanged in
+ * fg-tertiary. Each pair is held in both shell modes, because the box once
+ * sat on the always-dark code background and the light shell read 1.04:1.
+ */
+const DIFF_LINES = [
+  ["fg-primary", "st-active"],
+  ["fg-secondary", "st-rejected"],
+  ["fg-tertiary", null],
+] as const;
+
+describe.each(SHELL_LOOKS)("%s round diff contrast", (_, css) => {
+  const tokens = parseTokens(css);
+
+  it.each(DIFF_LINES)("%s holds 4.5:1 on the diff surface", (text, tint) => {
+    const fg = tokens.get(text);
+    const base = tokens.get("bg-base");
+    const hue = tint === null ? undefined : tokens.get(tint);
+    if (
+      fg === undefined ||
+      base === undefined ||
+      (tint !== null && hue === undefined)
+    ) {
+      throw new Error(`a token for ${text} on the diff surface is missing`);
+    }
+    const bg = hue === undefined ? base : mix(hue, base, 0.12);
+    const ratio = contrastRatio(fg, bg);
+    expect(
+      ratio,
+      `--color-${text} (${fg}) on the diff surface (${bg}) is ${ratio.toFixed(2)}:1`,
+    ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+  });
+});

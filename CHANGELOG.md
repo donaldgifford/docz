@@ -11,6 +11,10 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(plugin)* List docz in this repository's marketplace
 - *(plugin)* Docz 2.1.0, the docz plugin caught up with docz v2
 
+### Bug Fixes
+
+- *(review)* Make the round diff readable in light mode
+
 ### Documentation
 
 - DESIGN-0026 Implemented and IMPL-0032 Completed, merged as #218

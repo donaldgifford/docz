@@ -243,6 +243,12 @@ function SameRun({
   );
 }
 
+/*
+ * The diff sits on the shell's page surface, not the code background:
+ * its lines use the shell's text tokens, which are dark in light mode,
+ * and the code background is dark in both (the light shell put them at
+ * 1.04:1). contrast.test.ts holds these pairs, tints included.
+ */
 function DiffLine({ kind, text }: { kind: Hunk["kind"]; text: string }) {
   const look = {
     added:
@@ -302,7 +308,7 @@ export function RoundDiff({ comparison }: { comparison: RoundComparison }) {
           marked.
         </p>
       ) : (
-        <div className="max-h-[50vh] overflow-auto bg-code-bg p-2 font-mono text-[12.5px]">
+        <div className="max-h-[50vh] overflow-auto border border-border-hairline bg-bg-base p-2 font-mono text-[12.5px]">
           {parts.map((h, i) =>
             h.kind === "same" ? (
               <SameRun
