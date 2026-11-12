@@ -37,6 +37,7 @@ nav:
         - 'DESIGN-0024: docz-review: a blocking review page for agent-written documents': design/0024-docz-review-a-blocking-review-page-for-agent-written-documents.md
         - 'DESIGN-0025: docz-html: standalone HTML pages from docz documents, and one themeable design for docz''s HTML': design/0025-docz-html-standalone-html-pages-from-docz-documents-and-one.md
         - 'DESIGN-0026: docz-site''s shell in repo-guardian''s look, and the reader''s documents as docz-html pages': design/0026-docz-sites-shell-in-repo-guardians-look-and-the-readers.md
+        - 'DESIGN-0027: docz view and docz-review-rex: a terminal renderer for docz documents and a Rex client for docz-review': design/0027-docz-view-and-docz-review-rex-a-terminal-renderer-for-docz.md
     - Implementation Plans:
         - Overview: impl/README.md
         - 'IMPL-0001: docz CLI Implementation': impl/0001-docz-cli-implementation.md

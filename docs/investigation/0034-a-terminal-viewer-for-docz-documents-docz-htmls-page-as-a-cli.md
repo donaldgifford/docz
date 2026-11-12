@@ -433,6 +433,15 @@ the writer's size, and the mermaid route are measured rather than read.
    the largest is a second leaf. Decide which before the DESIGN.
 6. Record what leaf's diff comments to an agent pane mean for docz-review
    in INV-0033.
+
+> **Amended 2026-11-12.** Recommendation 5 is decided: leaf is prior art
+> only, and nothing in docz depends on it. The reader is docz's own,
+> `docz view`, over docz-html's structure, and it is also the base of
+> docz-review-rex, the Rex client of docz-review. Recommendation 4's
+> DESIGN is
+> [DESIGN-0027](../design/0027-docz-view-and-docz-review-rex-a-terminal-renderer-for-docz.md);
+> the Neovim plugin is outside it, a later piece.
+
 <!--docz:recommendation:end-->
 
 <!--docz:references:start-->

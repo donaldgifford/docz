@@ -480,6 +480,17 @@ are seen rather than read.
    If it holds, document the `DOCZ_REVIEW_BROWSER` script in the plugin's
    docs as the Rex recipe until the pane ships, with the `argv` caveat
    for shared servers. Run terminal-browser once, for the record.
+
+> **Amended 2026-11-12.** Recommendation 1 is superseded. The decision
+> is to build the terminal client now, as **docz-review-rex**: a second
+> client of the docz-review server, drawn by `docz view`'s renderer in a
+> Rex floating layer, which a person installs as an option beside the
+> browser page. docz-review is not replaced, and the browser pane and
+> Ladybird stay the path for the page when they ship. Recommendation 4's
+> opener (`--open rex|browser|auto`, `DOCZ_REVIEW_OPEN`, the token out of
+> `argv`, OSC 7501, `init.lua`) is part of
+> [DESIGN-0027](../design/0027-docz-view-and-docz-review-rex-a-terminal-renderer-for-docz.md).
+
 <!--docz:recommendation:end-->
 
 <!--docz:references:start-->
