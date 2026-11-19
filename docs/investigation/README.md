@@ -49,6 +49,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0032 | docz-review's page after Plannotator: adopt its layout or fork it | Open | 2026-11-02 | Donald Gifford | [0032-docz-reviews-page-after-plannotator-adopt-its-layout-or-fork-it.md](0032-docz-reviews-page-after-plannotator-adopt-its-layout-or-fork-it.md) |
 | INV-0033 | docz-review inside a Rex floating pane instead of a browser | Open | 2026-11-09 | Donald Gifford | [0033-docz-review-inside-a-rex-floating-pane-instead-of-a-browser.md](0033-docz-review-inside-a-rex-floating-pane-instead-of-a-browser.md) |
 | INV-0034 | A terminal viewer for docz documents: docz-html's page as a CLI, wrapped by Neovim and Rex | Open | 2026-11-12 | Donald Gifford | [0034-a-terminal-viewer-for-docz-documents-docz-htmls-page-as-a-cli.md](0034-a-terminal-viewer-for-docz-documents-docz-htmls-page-as-a-cli.md) |
+| INV-0035 | Go or Bun, not Rust: building leaf's reader for docz view and docz-review-rex without a third toolchain | Concluded | 2026-11-18 | Donald Gifford | [0035-go-or-bun-not-rust-building-leafs-reader-for-docz-view-and-docz.md](0035-go-or-bun-not-rust-building-leafs-reader-for-docz-view-and-docz.md) |
 <!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->

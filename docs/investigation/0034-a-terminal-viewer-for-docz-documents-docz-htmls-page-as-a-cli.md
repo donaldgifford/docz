@@ -222,6 +222,15 @@ uploads as 4,096-byte base64 chunks with fast PNG compression "while the
 mouse moves". The protocol's placement carries a source rectangle, so one
 tall upload can be shown a window at a time without re-sending.
 
+> **Amended 2026-11-18.** "Cannot be selected, searched, or reflowed"
+> in the hypothesis and here is half right. rexworks md-viewer and
+> mddog select, search, and follow links over Kitty pictures by
+> keeping the page's text in a display list beside the tiles; what
+> still holds is that reflow is a re-render and every scroll a new
+> frame. And tkmp draws its pictures with Unicode placeholders rather
+> than direct placement, in Rex, so the glyph concern is a per-terminal
+> fallback, not a reason to avoid them. INV-0035 Observation 2.
+
 ### Observation 2: leaf is the shape the question describes, without docz's model
 
 leaf is a terminal reader, 0.11.0 on crates.io, that already does most of
@@ -347,6 +356,16 @@ mermaid under a headless DOM, or nothing. Go has SVG rasterisers (resvg
 through wasm, tdewolff/canvas) for the second half. Whatever step 4
 finds, mermaid stays optional and the viewer works without it; a
 `docz view` that needed a JS runtime to show an ADR would be wrong.
+
+> **Amended 2026-11-18.** Mermaid needs a renderer, not a DOM, and
+> two run with no browser: Pele (Obsidian's, MIT, every Mermaid 12.1
+> diagram type) and `mermaid-rs-renderer` (Rust). INV-0035 spiked
+> Pele inside QuickJS compiled to wasm under wazero in Go, and
+> natively in a compiled Bun binary, with resvg as wasm for the PNG
+> in both: no cgo, no runtime on the machine, loading paid once and
+> a render in milliseconds. `docz view` therefore draws diagrams
+> itself (DESIGN-0027 question 5), and "optional behind a JS runtime"
+> in the Hypothesis and Conclusion no longer applies.
 
 The widgets are the opposite case: `widgets.go` already validates a
 block into a Go value, and a flow, a stepper, and a scorecard are a row

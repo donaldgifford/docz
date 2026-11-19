@@ -107,6 +107,7 @@ nav:
         - 'INV-0032: docz-review''s page after Plannotator: adopt its layout or fork it': investigation/0032-docz-reviews-page-after-plannotator-adopt-its-layout-or-fork-it.md
         - 'INV-0033: docz-review inside a Rex floating pane instead of a browser': investigation/0033-docz-review-inside-a-rex-floating-pane-instead-of-a-browser.md
         - 'INV-0034: A terminal viewer for docz documents: docz-html''s page as a CLI, wrapped by Neovim and Rex': investigation/0034-a-terminal-viewer-for-docz-documents-docz-htmls-page-as-a-cli.md
+        - 'INV-0035: Go or Bun, not Rust: building leaf''s reader for docz view and docz-review-rex without a third toolchain': investigation/0035-go-or-bun-not-rust-building-leafs-reader-for-docz-view-and-docz.md
     - RFCs:
         - Overview: rfc/README.md
     - Runbooks:
