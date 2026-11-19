@@ -25,6 +25,11 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(inv)* INV-0032 review fixes, INV-0030 question 2 folded in
 - *(inv)* INV-0032 adversarial review and responses
 - *(inv)* INV-0032 step 4, two passes in each tool
+- *(investigation)* INV-0033, docz-review inside a Rex floating pane
+- *(investigation)* INV-0034, a terminal viewer for docz documents
+- *(design)* DESIGN-0027, docz view and docz-review-rex
+- *(investigation)* INV-0035, Go or Bun, not Rust, for docz view and docz-review-rex
+- *(design)* Revise DESIGN-0027 against INV-0035 and Rex Custom UI
 
 ### Miscellaneous Tasks
 
