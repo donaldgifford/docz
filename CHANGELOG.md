@@ -30,6 +30,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(design)* DESIGN-0027, docz view and docz-review-rex
 - *(investigation)* INV-0035, Go or Bun, not Rust, for docz view and docz-review-rex
 - *(design)* Revise DESIGN-0027 against INV-0035 and Rex Custom UI
+- *(design)* Rexweb as a third docz-review opener in DESIGN-0027
 
 ### Miscellaneous Tasks
 
