@@ -27,6 +27,7 @@ created: 2026-11-19
   - [Observation 6: A has a Go half](#observation-6-a-has-a-go-half)
   - [Observation 7: what B needs from docz-api](#observation-7-what-b-needs-from-docz-api)
   - [Observation 8: what B moves, and what it leaves behind](#observation-8-what-b-moves-and-what-it-leaves-behind)
+  - [Observation 9: what a sketch of A shows](#observation-9-what-a-sketch-of-a-shows)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
 - [Open Questions](#open-questions)
@@ -109,9 +110,13 @@ migration twice.
    bundle budget, and `Dockerfile.ui` with the registry token. Not done.
 6. Design the Go side of A: how `pkg/theme`'s `charcoal` is derived from
    the package's `tokens.css` and held to it. Not done.
+7. Sketch A as static HTML on the package's tokens: docz-site's screens
+   with the package's parts, and a page of the parts docz has that the
+   package lacks. Done; Observation 9.
 
-Steps 1 to 4 were done by reading source on 2026-11-19. Nothing was
-installed, built, or rendered.
+Steps 1 to 4 were done by reading source on 2026-11-19, and step 7 by
+hand on 2026-11-21. The package was not installed or built for either,
+so step 7 is not the spike in step 5.
 
 <!--docz:approach:end-->
 
@@ -318,6 +323,51 @@ What B does not remove:
   the API, the site, and its backends in one release. Under B a docz-only
   install has no reader unless docz-site stays, and then there are two.
 
+### Observation 9: what a sketch of A shows
+
+`ui/design/` holds two static pages drawn by hand on a copy of the
+package's `tokens.css` at 0.3.2, after boop's `ui/design/candidates.html`.
+They were rendered in Chromium in both themes. They are something to look
+at, not the package's output.
+
+`mockup.html` draws the directory, a document, a type's index, the
+repositories page, the menus, and the states. It draws the document twice,
+in the package's frame and in docz's own, which is open question 1 side by
+side. Its first table maps the shell's twenty parts to what would draw each:
+eleven the package has at 0.3.2, one that waits on its working tree,
+seven that need something the package lacks, and the document pane,
+which stays docz's.
+
+`candidates.html` is those gaps, nine proposals in all:
+
+1. A sidebar tree: collapsible rows with a count, nested to any depth.
+   The package's `SidebarMenuSub` is one level and always open. This is
+   the largest of the nine.
+2. An outline, "On this page", with a scroll spy.
+3. A search result row: an eyebrow and a snippet on `ListRow`, and a
+   two-line time.
+4. Filter, preview, and footer slots on `CommandDialog`.
+5. A search trigger and a mode toggle for the top bar.
+6. A vertical `Stepper`, for a document's lifecycle.
+7. A disclosure. The package has no collapsible primitive.
+8. A tone the app supplies to `Badge` and `Dot`, for docz's type
+   colours, and a categorical palette. `Superseded` is the one docz
+   status with no package variant to take.
+9. Two tokens, a stronger border and a pressed surface, and one
+   decision: the package's `--code-bg` follows the page, and docz's code
+   stays dark in both modes.
+
+Two things the sketch found that the reading did not:
+
+- Four of boop's candidates (`SegmentedControl`, `OptionRows`,
+  `FilterBar`, and the inline loading and empty text) are in the
+  package's working tree, unreleased. docz would use all four: the format
+  switch, the repository and type pickers, and the directory's filter row.
+- The package's filter is a `key = value` chip that opens an editor.
+  docz's type filter is a row of toggle chips, one click to change. The
+  mockup draws both; keeping docz's means keeping it local or proposing
+  a tenth part.
+
 <!--docz:findings:end-->
 
 <!--docz:conclusion:start-->
@@ -338,6 +388,8 @@ reading points one way: adopt the package (A) and do not merge the UIs
   and the image build with a registry token.
 - **A's Go half is undesigned** (Observation 6), and it is the part with
   a public contract.
+- **A's gaps are listed but not filed** (Observation 9): nine parts the
+  package lacks, drawn in `ui/design/candidates.html`.
 
 <!--docz:conclusion:end-->
 
@@ -346,8 +398,9 @@ reading points one way: adopt the package (A) and do not merge the UIs
 
 1. Run the spike (step 5) on a throwaway branch and record the four
    results here.
-2. Before any design, compare the package with `ui/src` file by file and
-   file the gaps upstream, as repo-guardian did in design-system#11.
+2. Before any design, file the gaps upstream, as repo-guardian did in
+   design-system#11. `ui/design/candidates.html` is the list
+   (Observation 9); nothing has been filed.
 3. If the spike passes, write a DESIGN for A that answers the open
    questions below, then an IMPL in repo-guardian's phase order: tokens
    first, components after, shell last.
@@ -367,12 +420,16 @@ reading points one way: adopt the package (A) and do not merge the UIs
 - b. No: keep the top bar and rail, built from the package's primitives.
   Less change for readers, and a frame the package does not test.
 
+> **Resolved 2026-11-21: (a).**
+
 ### 2. How does the mode switch change?
 
 - a. The site sets both `.dark` and `data-mode`; exported pages and
   `pkg/theme` stay as they are.
 - b. Everything moves to `.dark`, the export included, as the package's
   IMPL-0001 Phase 6 says.
+
+> **Resolved 2026-11-21: (a).**
 
 ### 3. How does `pkg/theme` get the package's tokens?
 
@@ -383,17 +440,24 @@ reading points one way: adopt the package (A) and do not merge the UIs
   values with the package's.
 - c. `charcoal` is left alone and only the shell adopts the package.
 
+> **Resolved 2026-11-21: (a).**
+
 ### 4. Where do docz's extra colours live?
 
 - a. In docz, as a small local token file beside the package's.
 - b. Upstream, for the ones a second app would use (the surface and text
   steps), and in docz for the rest (types, hashes, alerts).
 
+> **Resolved 2026-11-21: (b).** The two that go upstream are a stronger
+> border and a pressed surface (`ui/design/candidates.html`, candidate 9).
+
 ### 5. Does docz-review's page adopt the package too?
 
 - a. Yes, in the same IMPL: its controls are buttons, tabs, and dialogs.
 - b. Later: it ships in a binary, and its bundle size and offline build
   are their own questions.
+
+> **Resolved 2026-11-21: (a).**
 
 ### 6. Do the widgets move onto the package's `flow` and `stepper` blocks?
 
@@ -402,11 +466,15 @@ reading points one way: adopt the package (A) and do not merge the UIs
 - b. For the React surfaces only, if the blocks can draw the same
   validated data.
 
+> **Resolved 2026-11-21: (a).**
+
 ### 7. When does docz adopt, given the package is 0.x?
 
 - a. Now, pinned exactly, as repo-guardian did; docz's adoption is what
   the package's 1.0 waits for.
 - b. After 1.0.
+
+> **Resolved 2026-11-21: (a).**
 
 <!--docz:open-questions:end-->
 
@@ -419,6 +487,9 @@ reading points one way: adopt the package (A) and do not merge the UIs
   `pkg/theme` and the document themes
 - [DESIGN-0023](../design/0023-a-read-only-mcp-server-in-docz-api-oauth-21-tokens-tools-and.md):
   docz-api's gate, scopes, and bearer tokens
+- [`ui/design/mockup.html`](../../ui/design/mockup.html) and
+  [`ui/design/candidates.html`](../../ui/design/candidates.html): the
+  sketch of A and the parts to propose upstream
 - [donaldgifford/design-system](https://github.com/donaldgifford/design-system):
   RFC-0001, IMPL-0001 Phase 6, and
   [issue 11](https://github.com/donaldgifford/design-system/issues/11)

@@ -1,0 +1,610 @@
+<!doctype html>
+<!--
+  Sketch of docz-site on @donaldgifford/design-system (INV-0036, option A):
+  the reader's screens drawn with the package's parts, with the parts docz
+  would propose upstream (candidates.html) where the package has none.
+
+  Static HTML: every colour, font, size and radius of the shell comes from
+  the package's tokens (tokens.css here is a copy of 0.3.2), but the markup
+  is drawn by hand. It is something to look at, not the package's output,
+  and not the spike INV-0036's step 5 asks for: nothing was installed.
+
+  Open it from a file URL. The two font links resolve after `just ui
+  install`; without it the page falls back to system fonts. Nothing here
+  ships.
+-->
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>docz-site on the design system · mockup</title>
+    <link rel="stylesheet" href="../node_modules/@fontsource-variable/ibm-plex-sans/wght.css" />
+    <link rel="stylesheet" href="../node_modules/@fontsource-variable/jetbrains-mono/wght.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="sketch.css" />
+    <style>
+      .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; font-size: var(--text-xs); color: var(--muted-foreground); }
+      .legend .status { margin-left: 0; margin-right: 4px; }
+      .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      .stack { display: flex; flex-direction: column; gap: 12px; }
+      .doclayout { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 24px; }
+      .repocard { padding: 14px; gap: 10px; }
+      .repocard .facts { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--text-xs); color: var(--muted-foreground); }
+      .repocard .facts b { font-weight: 500; color: var(--foreground); }
+      /* Frame B: docz's frame today, a top bar over a rail and the content. */
+      .frame.b { flex-direction: column; }
+      .frame.b .topbar { background: var(--card); gap: 16px; padding: 0 16px; }
+      .frame.b .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+      .frame.b .links { display: flex; align-items: center; gap: 18px; font-size: var(--text-sm); color: var(--muted-foreground); }
+      .frame.b .links a[aria-current="page"] { color: var(--foreground); }
+      .frame.b .cols { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 32px; padding: 20px 20px 24px; }
+      .frame.b .rail .nav:hover, .frame.b .rail .nav[aria-current="page"] { background: var(--accent); }
+      .frame.b .rail .sub { border-left-color: var(--border); }
+      .frame.b .rail .sub a[aria-current="page"] { background: var(--accent); }
+      .login { max-width: 340px; margin: 0 auto; padding: 22px; gap: 14px; text-align: center; }
+      .login > .btn { height: 2rem; justify-content: center; width: 100%; font-size: var(--text-sm); }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div>
+          <h1>docz-site on the design system</h1>
+          <p class="muted lede">
+            The reader drawn with <span class="mono">@donaldgifford/design-system</span> 0.3.2: its frame, its tokens,
+            and its parts wherever it has one. Where it has none, the part is drawn as docz would propose it, and
+            <a class="link" href="candidates.html">candidates.html</a> has each proposal on its own. A document keeps
+            its own theme inside the pane, so the pane is drawn in <span class="mono">paper</span>, as it is today.
+            This is a hand-drawn sketch to look at; nothing was installed or built.
+          </p>
+          <div class="legend">
+            <span><span class="status have">package</span>a part the package has at 0.3.2</span>
+            <span><span class="status prop">unreleased</span>in the package's working tree</span>
+            <span><span class="status new">candidate</span>docz would propose it</span>
+            <span><span class="status local">docz</span>stays in docz</span>
+          </div>
+        </div>
+        <button class="btn" data-theme-toggle="label" style="margin-left: auto">Light theme</button>
+      </header>
+
+      <!-- ─── What changes ───────────────────────────────────────────── -->
+      <h2 id="changes">What changes, part by part</h2>
+      <p class="muted note">Every part of docz-site's shell today, and what draws it after adoption.</p>
+      <div class="card">
+        <div class="body">
+          <table class="plain">
+            <thead><tr><th>In docz today</th><th>After</th><th>Source</th></tr></thead>
+            <tbody>
+              <tr><td>Top bar with logo, links, and avatar (<code>AppShell</code>)</td><td><code>ShellSidebar</code> and <code>TopBarLayout</code>, or the same bar on the package's primitives (screens 2 and 3)</td><td><span class="status have">package</span></td></tr>
+              <tr><td>Repository rail: types, drawers, pages tree (<code>RepoNav</code>)</td><td>Sidebar groups with a tree</td><td><span class="status new">candidate 1</span></td></tr>
+              <tr><td>Breadcrumbs (<code>RepoBreadcrumbs</code>)</td><td><code>Breadcrumb</code>, in the top bar</td><td><span class="status have">package</span></td></tr>
+              <tr><td>Search button and light/dark toggle</td><td><code>SearchTrigger</code>, <code>ModeToggle</code></td><td><span class="status new">candidate 5</span></td></tr>
+              <tr><td>Account disclosure (<code>SessionMenu</code>)</td><td><code>DropdownMenu</code> on the sidebar's footer identity</td><td><span class="status have">package</span></td></tr>
+              <tr><td>Page hero (path line, title, blurb)</td><td><code>PageHeader</code></td><td><span class="status have">package</span></td></tr>
+              <tr><td>Repo picker and type chips (<code>directory-controls</code>)</td><td><code>FilterBar</code>, <code>FilterChip</code>, <code>OptionRows</code> in a <code>Popover</code></td><td><span class="status prop">unreleased</span></td></tr>
+              <tr><td>Search hit cards (<code>HitRow</code>)</td><td><code>ListRow</code> with an eyebrow and a snippet</td><td><span class="status new">candidate 3</span></td></tr>
+              <tr><td>Status pill and status dot (<code>badges.tsx</code>)</td><td><code>Badge</code>, tinted, by a status-to-variant table</td><td><span class="status have">package</span></td></tr>
+              <tr><td>Type colours on dots and chips</td><td>A tone the app hands to <code>Dot</code> and <code>Badge</code></td><td><span class="status new">candidate 8</span></td></tr>
+              <tr><td>"show more" button</td><td><code>LoadMore</code></td><td><span class="status have">package</span></td></tr>
+              <tr><td>Metadata table and format buttons (<code>DocMetaTable</code>)</td><td><code>DetailsGrid</code> as a list, <code>SegmentedControl</code></td><td><span class="status have">package</span> <span class="status prop">unreleased</span></td></tr>
+              <tr><td>Lifecycle disclosure (<code>LifecycleRail</code>)</td><td>A disclosure holding a vertical stepper</td><td><span class="status new">candidates 6, 7</span></td></tr>
+              <tr><td>"On this page" (<code>TocList</code>)</td><td><code>Outline</code></td><td><span class="status new">candidate 2</span></td></tr>
+              <tr><td>A type's document table</td><td><code>DataTable</code>, bare</td><td><span class="status have">package</span></td></tr>
+              <tr><td>Repository cards</td><td><code>Card</code></td><td><span class="status have">package</span></td></tr>
+              <tr><td>Command palette</td><td><code>CommandDialog</code> with filters, a preview, and a foot</td><td><span class="status new">candidate 4</span></td></tr>
+              <tr><td>Not found, error, and empty panels (<code>query-states</code>)</td><td><code>EmptyState</code>, <code>ErrorState</code>, <code>Skeleton</code>, <code>InlineLoading</code></td><td><span class="status have">package</span></td></tr>
+              <tr><td>Sign-in and consent pages</td><td><code>Card</code>, <code>Button</code></td><td><span class="status have">package</span></td></tr>
+              <tr><td>The document pane and the document themes</td><td>Unchanged</td><td><span class="status local">docz</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ─── 1. Directory ───────────────────────────────────────────── -->
+      <h2 id="s1">1. Directory, in the package's frame</h2>
+      <p class="muted note">
+        The landing page: search across every repository. The frame is the package's, a full-height sidebar with the
+        top bar beside it (open question 1, option a). The search field is in the page because it is the page; the
+        top bar's trigger opens the palette from anywhere.
+      </p>
+      <div class="frame">
+        <aside class="sidebar">
+          <div class="sec">
+            <button class="identity">
+              <span class="mark">D</span>
+              <span class="names"><b>docz</b><span>reader</span></span>
+              <i data-icon="selector" class="muted"></i>
+            </button>
+          </div>
+          <div class="sec grow" style="padding-top: 0">
+            <div class="grouplabel label">Browse</div>
+            <a class="nav" aria-current="page"><i data-icon="files"></i>Directory</a>
+            <a class="nav"><i data-icon="repo"></i>Repositories</a>
+            <div class="grouplabel label">Pinned</div>
+            <a class="nav"><i data-icon="pin"></i>RFCs</a>
+            <a class="nav"><i data-icon="pin"></i>Runbooks</a>
+          </div>
+          <div class="sec">
+            <button class="identity">
+              <span class="mark avatar">DG</span>
+              <span class="names"><b>donaldgifford</b><span>via github</span></span>
+              <i data-icon="selector" class="muted"></i>
+            </button>
+          </div>
+        </aside>
+        <div class="main">
+          <div class="topbar">
+            <button class="btn ghost icon" aria-label="Toggle sidebar"><i data-icon="panel"></i></button>
+            <span class="sep"></span>
+            <nav class="crumbs" aria-label="Breadcrumb"><span class="here">Directory</span></nav>
+            <div class="end">
+              <button class="searchtrigger"><i data-icon="search"></i>Search docs, rfcs, authors…<span class="keys"><kbd>⌘</kbd><kbd>K</kbd></span></button>
+              <button class="btn ghost icon" data-theme-toggle="icon"><i data-icon="sun"></i></button>
+            </div>
+          </div>
+          <div class="scroll">
+            <div class="pagehead">
+              <div>
+                <div class="titleline"><h3>Documentation</h3></div>
+                <p>Designs, plans, RFCs, and decisions, across every repository registered with the API.</p>
+              </div>
+            </div>
+            <div class="content stack">
+              <div class="field"><i data-icon="search"></i><input class="input lg" placeholder="Search documents…" aria-label="Search documents" /></div>
+              <div class="filterbar">
+                <button class="chip">repo = <b>all</b></button>
+                <button class="chip"><span class="dot" data-type="design"></span>type = <b>design</b></button>
+                <button class="chip add">+ filter</button>
+                <button class="clear">Clear</button>
+                <span class="count">showing 5 of 66</span>
+              </div>
+              <div class="card flush">
+                <div class="results">
+                  <a class="result">
+                    <span style="min-width: 0">
+                      <span class="eyebrow">DESIGN-0027 <span class="muted">/</span> docz</span>
+                      <span class="title truncate" style="display: block">docz view and docz-review-rex: a terminal renderer and a Rex client for docz-review</span>
+                    </span>
+                    <span class="badge warning">Draft</span>
+                    <span class="stamp">Nov 21, 2026<span>10:48 AM</span></span>
+                  </a>
+                  <a class="result">
+                    <span style="min-width: 0">
+                      <span class="eyebrow">DESIGN-0026 <span class="muted">/</span> docz</span>
+                      <span class="title truncate" style="display: block">docz-site's shell in repo-guardian's look, and the reader's documents as docz-html pages</span>
+                    </span>
+                    <span class="badge success">Implemented</span>
+                    <span class="stamp">Nov 2, 2026<span>3:14 PM</span></span>
+                  </a>
+                  <a class="result">
+                    <span style="min-width: 0">
+                      <span class="eyebrow">DESIGN-0039 <span class="muted">/</span> repo-guardian</span>
+                      <span class="title truncate" style="display: block">The UI on the shared design system</span>
+                    </span>
+                    <span class="badge success">Implemented</span>
+                    <span class="stamp">Nov 18, 2026<span>4:31 PM</span></span>
+                  </a>
+                  <a class="result">
+                    <span style="min-width: 0">
+                      <span class="eyebrow">DESIGN-0025 <span class="muted">/</span> docz</span>
+                      <span class="title truncate" style="display: block">docz-html: standalone HTML pages from docz documents</span>
+                    </span>
+                    <span class="badge success">Implemented</span>
+                    <span class="stamp">Nov 1, 2026<span>9:20 AM</span></span>
+                  </a>
+                  <a class="result">
+                    <span style="min-width: 0">
+                      <span class="eyebrow">DESIGN-0023 <span class="muted">/</span> docz</span>
+                      <span class="title truncate" style="display: block">A read-only MCP server in docz-api: OAuth 2.1 tokens, tools, and resources</span>
+                    </span>
+                    <span class="badge success">Implemented</span>
+                    <span class="stamp">Oct 18, 2026<span>1:05 PM</span></span>
+                  </a>
+                </div>
+              </div>
+              <div style="text-align: center"><button class="btn">Load more</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="grid two" style="margin-top: 14px; align-items: start">
+        <div>
+          <div class="popover">
+            <div class="heading label">Type</div>
+            <button class="option"><span class="check"></span>all types<span class="detail">217</span></button>
+            <hr />
+            <button class="option"><span class="check"></span><span class="dot" data-type="rfc"></span>rfc<span class="detail">2</span></button>
+            <button class="option"><span class="check"></span><span class="dot" data-type="adr"></span>adr<span class="detail">16</span></button>
+            <button class="option"><span class="check"><i data-icon="check"></i></span><span class="dot" data-type="design"></span>design<span class="detail">66</span></button>
+            <button class="option"><span class="check"></span><span class="dot" data-type="impl"></span>impl<span class="detail">68</span></button>
+            <button class="option"><span class="check"></span><span class="dot" data-type="investigation"></span>investigation<span class="detail">61</span></button>
+          </div>
+          <p class="caption">What the <span class="mono">type</span> chip opens: <code>OptionRows</code> in a <code>Popover</code>, with the facet counts docz already has.</p>
+        </div>
+        <div class="today">
+          <div class="label">The other way to draw the filters: docz's chips today</div>
+          <div class="row" data-seg>
+            <button class="chip" aria-pressed="false">all types</button>
+            <button class="chip" aria-pressed="false"><span class="dot" data-type="rfc"></span>rfc</button>
+            <button class="chip" aria-pressed="false"><span class="dot" data-type="adr"></span>adr</button>
+            <button class="chip" aria-pressed="true"><span class="dot" data-type="design"></span>design</button>
+            <button class="chip" aria-pressed="false"><span class="dot" data-type="impl"></span>impl</button>
+            <button class="chip" aria-pressed="false"><span class="dot" data-type="investigation"></span>investigation</button>
+          </div>
+          <p class="xs muted" style="margin-top: 8px">
+            One click to change type and every type in view, against the package's chip, which is two clicks and
+            matches repo-guardian and boop. The package has no toggle chip, so keeping this row means keeping it local
+            or proposing it.
+          </p>
+        </div>
+      </div>
+
+      <!-- ─── 2. Document, frame A ───────────────────────────────────── -->
+      <h2 id="s2">2. A document, in the package's frame</h2>
+      <p class="muted note">
+        The repository's navigation becomes sidebar groups under the app's own, so one sidebar carries both. The
+        breadcrumbs move into the top bar. A design's routes take the design type's colour, as they do today: here on
+        the tree's active segment and the type dot. The pane below the details is docz-api's fragment in the
+        document's own theme, with its own tabs, and is not restyled.
+      </p>
+      <div class="frame tall">
+        <aside class="sidebar">
+          <div class="sec">
+            <button class="identity">
+              <span class="mark">D</span>
+              <span class="names"><b>docz</b><span>reader</span></span>
+              <i data-icon="selector" class="muted"></i>
+            </button>
+          </div>
+          <div class="sec grow tree" style="padding-top: 0">
+            <div class="grouplabel label">Browse</div>
+            <a class="nav"><i data-icon="files"></i>Directory</a>
+            <a class="nav"><i data-icon="repo"></i>Repositories</a>
+
+            <div class="grouplabel label">donaldgifford/docz · main</div>
+            <a class="nav"><i data-icon="home"></i>Home</a>
+            <a class="nav"><i data-icon="history"></i>Changelog</a>
+            <div class="row">
+              <a class="nav"><i data-icon="folder"></i>Pages</a>
+              <button class="caret" aria-expanded="false" aria-controls="s2-pages" aria-label="Pages"><i data-icon="chevron"></i></button>
+            </div>
+            <div class="sub" id="s2-pages" hidden>
+              <a>DEVELOPMENT</a>
+              <a>guides/</a>
+            </div>
+
+            <div class="grouplabel label">Documents</div>
+            <div class="row">
+              <a class="nav"><span class="dot" data-type="rfc"></span>rfc<span class="count">0</span></a>
+              <button class="caret" disabled aria-label="rfc documents"><i data-icon="chevron"></i></button>
+            </div>
+            <div class="row">
+              <a class="nav"><span class="dot" data-type="adr"></span>adr<span class="count">5</span></a>
+              <button class="caret" aria-expanded="false" aria-controls="s2-adr" aria-label="adr documents"><i data-icon="chevron"></i></button>
+            </div>
+            <div class="sub" id="s2-adr" hidden><a>ADR-0005 · impl is opt-in for export</a></div>
+            <div class="row">
+              <a class="nav" aria-current="page"><span class="dot" data-type="design"></span>design<span class="count">27</span></a>
+              <button class="caret" aria-expanded="true" aria-controls="s2-design" aria-label="design documents"><i data-icon="chevron"></i></button>
+            </div>
+            <div class="sub" id="s2-design" data-type="design">
+              <a>DESIGN-0023 · A read-only MCP server</a>
+              <a>DESIGN-0024 · docz-review</a>
+              <a>DESIGN-0025 · docz-html</a>
+              <a aria-current="page">DESIGN-0026 · The shell in repo-guardian's look</a>
+              <a>DESIGN-0027 · docz view</a>
+            </div>
+            <div class="row">
+              <a class="nav"><span class="dot" data-type="impl"></span>impl<span class="count">31</span></a>
+              <button class="caret" aria-expanded="false" aria-controls="s2-impl" aria-label="impl documents"><i data-icon="chevron"></i></button>
+            </div>
+            <div class="sub" id="s2-impl" hidden><a>IMPL-0032 · Shell and document look</a></div>
+            <div class="row">
+              <a class="nav"><span class="dot" data-type="investigation"></span>investigation<span class="count">36</span></a>
+              <button class="caret" aria-expanded="false" aria-controls="s2-inv" aria-label="investigation documents"><i data-icon="chevron"></i></button>
+            </div>
+            <div class="sub" id="s2-inv" hidden><a>INV-0036 · Design system or repo-guardian's UI</a></div>
+            <div class="row">
+              <a class="nav"><span class="dot" data-type="runbook"></span>runbook<span class="count">4</span></a>
+              <button class="caret" aria-expanded="false" aria-controls="s2-rb" aria-label="runbook documents"><i data-icon="chevron"></i></button>
+            </div>
+            <div class="sub" id="s2-rb" hidden><a>RUNBOOK-0004 · MCP and tokens</a></div>
+          </div>
+          <div class="sec">
+            <button class="identity">
+              <span class="mark avatar">DG</span>
+              <span class="names"><b>donaldgifford</b><span>via github</span></span>
+              <i data-icon="selector" class="muted"></i>
+            </button>
+          </div>
+        </aside>
+        <div class="main">
+          <div class="topbar">
+            <button class="btn ghost icon" aria-label="Toggle sidebar"><i data-icon="panel"></i></button>
+            <span class="sep"></span>
+            <nav class="crumbs" aria-label="Breadcrumb">
+              <a>Repositories</a><i data-icon="chevron"></i>
+              <a>donaldgifford/docz</a><i data-icon="chevron"></i>
+              <a>design</a><i data-icon="chevron"></i>
+              <span class="here mono xs">DESIGN-0026</span>
+            </nav>
+            <div class="end">
+              <button class="searchtrigger"><i data-icon="search"></i>Search docs, rfcs, authors…<span class="keys"><kbd>⌘</kbd><kbd>K</kbd></span></button>
+              <button class="btn ghost icon" data-theme-toggle="icon"><i data-icon="sun"></i></button>
+            </div>
+          </div>
+          <div class="scroll">
+            <div class="content stack" style="padding-top: 20px">
+              <div class="card">
+                <div class="head">
+                  <h3>Details</h3>
+                  <div class="action row">
+                    <div class="segmented" role="group" aria-label="Document format" data-seg>
+                      <button aria-pressed="true">html</button>
+                      <button aria-pressed="false">md</button>
+                      <button aria-pressed="false">json</button>
+                    </div>
+                    <button class="btn"><i data-icon="external"></i>View in Confluence</button>
+                  </div>
+                </div>
+                <div class="body">
+                  <dl class="details">
+                    <dt>Type</dt><dd><span class="row" style="gap: 6px"><span class="dot" data-type="design"></span>design · DESIGN-0026</span></dd>
+                    <dt>Repository</dt><dd><a class="link">donaldgifford/docz</a></dd>
+                    <dt>Source</dt><dd class="mono xs">docs/design/0026-docz-sites-shell-in-repo-guardians-look-and-the-readers.md</dd>
+                    <dt>Created</dt><dd>2026-11-01</dd>
+                  </dl>
+                </div>
+              </div>
+              <details class="disclosure">
+                <summary><i data-icon="chevron"></i><span class="label">Lifecycle</span><span class="badge success value">Implemented</span></summary>
+                <div class="panel">
+                  <ol class="vstepper">
+                    <li data-status="done">Draft</li>
+                    <li data-status="done">In Review</li>
+                    <li data-status="done">Approved</li>
+                    <li data-status="current">Implemented</li>
+                    <li>Abandoned</li>
+                  </ol>
+                </div>
+              </details>
+              <div class="docpage" data-type="design">
+                <div class="eyebrow">docz · Design</div>
+                <h4>docz-site's shell in repo-guardian's look, and the reader's documents as docz-html pages</h4>
+                <div class="meta"><span class="pill">Implemented</span><span>DESIGN-0026</span><span>Donald Gifford</span><span>2026-11-01</span></div>
+                <div class="doctabs"><span class="on">Overview</span><span>Goals</span><span>Design</span><span>Testing</span><span>Open questions</span><span>References</span></div>
+                <h5>Overview</h5>
+                <p>
+                  The site's chrome takes repo-guardian's look in light and dark. A document keeps its own theme inside
+                  its page, so <a>DESIGN-0025</a>'s themes control how a document reads and the shell controls how the
+                  app looks.
+                </p>
+                <div class="doccard">The reader shows a document as the fragment docz-api renders, so an exported page and the site agree.</div>
+                <pre>$ docz export html DESIGN-0026 --fragment</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="caption">
+        The sidebar tree is candidate 1 and is the largest thing docz would ask of the package. The collapsed icon
+        rail and the sidebar's keyboard shortcut come with the package's frame, and its mobile sheet replaces the
+        "repo menu" disclosure docz shows on a narrow screen.
+      </p>
+
+      <!-- ─── 3. Document, frame B ───────────────────────────────────── -->
+      <h2 id="s3">3. The same document, in docz's frame</h2>
+      <p class="muted note">
+        Open question 1, option b: keep the top bar and the per-repository rail, and build them from the package's
+        primitives. Same tokens, same badges, same details card, same tree rows. Readers see less change. The frame
+        itself is one the package does not test, and docz keeps the code for it. The question was resolved for the
+        package's frame (screen 2) on 2026-11-21; this screen stays as the record of what it was compared with.
+      </p>
+      <div class="frame b">
+        <div class="topbar">
+          <span class="brand"><span class="mark sm" data-type="design" style="background: var(--tone)">D</span>docz <span class="muted" style="font-weight: 400">· reader</span></span>
+          <button class="searchtrigger"><i data-icon="search"></i>Search docs, rfcs, authors…<span class="keys"><kbd>⌘</kbd><kbd>K</kbd></span></button>
+          <div class="end" style="gap: 16px">
+            <nav class="links"><a>Directory</a><a aria-current="page">Repos</a><a>RFCs</a></nav>
+            <button class="btn ghost icon" data-theme-toggle="icon"><i data-icon="sun"></i></button>
+            <span class="mark sm avatar">DG</span>
+          </div>
+        </div>
+        <div class="cols">
+          <nav class="rail tree" aria-label="donaldgifford/docz navigation">
+            <div class="row" style="gap: 10px; align-items: center; margin-bottom: 12px">
+              <span class="mark sm other">D</span>
+              <span style="min-width: 0; line-height: 1.25"><b style="font-weight: 600; display: block" class="truncate">donaldgifford/docz</b><span class="mono muted" style="font-size: var(--label-size)">main · docz.yaml</span></span>
+            </div>
+            <a class="nav">Home<span class="count">index.md</span></a>
+            <a class="nav">Changelog<span class="count">CHANGELOG.md</span></a>
+            <div class="grouplabel label" style="padding-left: 10px">Doc types</div>
+            <div class="row"><a class="nav"><span class="dot" data-type="rfc"></span>rfc<span class="count">0</span></a><button class="caret" disabled aria-label="rfc documents"><i data-icon="chevron"></i></button></div>
+            <div class="row"><a class="nav"><span class="dot" data-type="adr"></span>adr<span class="count">5</span></a><button class="caret" aria-label="adr documents"><i data-icon="chevron"></i></button></div>
+            <div class="row"><a class="nav" aria-current="page"><span class="dot" data-type="design"></span>design<span class="count">27</span></a><button class="caret" aria-expanded="true" aria-controls="s3-design" aria-label="design documents"><i data-icon="chevron"></i></button></div>
+            <div class="sub" id="s3-design" data-type="design">
+              <a>DESIGN-0024 · docz-review</a>
+              <a>DESIGN-0025 · docz-html</a>
+              <a aria-current="page">DESIGN-0026 · The shell in repo-guardian's look</a>
+              <a>DESIGN-0027 · docz view</a>
+            </div>
+            <div class="row"><a class="nav"><span class="dot" data-type="impl"></span>impl<span class="count">31</span></a><button class="caret" aria-label="impl documents"><i data-icon="chevron"></i></button></div>
+            <div class="row"><a class="nav"><span class="dot" data-type="investigation"></span>investigation<span class="count">36</span></a><button class="caret" aria-label="investigation documents"><i data-icon="chevron"></i></button></div>
+          </nav>
+          <div class="stack" style="min-width: 0">
+            <nav class="crumbs" aria-label="Breadcrumb">
+              <a>Repositories</a><i data-icon="chevron"></i>
+              <a>donaldgifford/docz</a><i data-icon="chevron"></i>
+              <a>design</a><i data-icon="chevron"></i>
+              <span class="here mono xs">DESIGN-0026</span>
+            </nav>
+            <div class="card">
+              <div class="head">
+                <h3>Details</h3>
+                <div class="action row">
+                  <div class="segmented" role="group" aria-label="Document format" data-seg>
+                    <button aria-pressed="true">html</button>
+                    <button aria-pressed="false">md</button>
+                    <button aria-pressed="false">json</button>
+                  </div>
+                </div>
+              </div>
+              <div class="body">
+                <dl class="details">
+                  <dt>Type</dt><dd><span class="row" style="gap: 6px"><span class="dot" data-type="design"></span>design · DESIGN-0026</span></dd>
+                  <dt>Repository</dt><dd><a class="link">donaldgifford/docz</a></dd>
+                  <dt>Source</dt><dd class="mono xs">docs/design/0026-docz-sites-shell-in-repo-guardians-look-and-the-readers.md</dd>
+                </dl>
+              </div>
+            </div>
+            <div class="docpage" data-type="design">
+              <div class="eyebrow">docz · Design</div>
+              <h4>docz-site's shell in repo-guardian's look, and the reader's documents as docz-html pages</h4>
+              <div class="meta"><span class="pill">Implemented</span><span>DESIGN-0026</span><span>Donald Gifford</span><span>2026-11-01</span></div>
+              <div class="doctabs"><span class="on">Overview</span><span>Goals</span><span>Design</span><span>Testing</span><span>Open questions</span></div>
+              <h5>Overview</h5>
+              <p>The site's chrome takes repo-guardian's look in light and dark. A document keeps its own theme inside its page.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── 4. Type index and repositories ─────────────────────────── -->
+      <h2 id="s4">4. A type's index, and the repositories page</h2>
+      <p class="muted note">
+        Pages the site renders itself. The type's index is a <code>PageHeader</code>, the create command, and a bare
+        <code>DataTable</code>, with the outline (candidate 2) in the right rail, where the changelog, a published
+        page, and a fallback render also show it.
+      </p>
+      <div class="card flush" style="margin-bottom: 14px">
+        <div class="pagehead">
+          <div>
+            <div class="titleline"><h3>Designs</h3><span class="badge tone" data-type="design">design</span></div>
+            <p>Design documents in donaldgifford/docz: how a thing is built, before it is built.</p>
+          </div>
+          <div class="actions"><button class="btn"><i data-icon="external"></i>Open on GitHub</button></div>
+        </div>
+        <div class="content doclayout">
+          <div class="stack" style="min-width: 0">
+            <div>
+              <div class="label" style="margin-bottom: 6px">Creating a new design</div>
+              <pre class="mono xs" style="margin: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--code-bg)">$ docz create design "Your design title"</pre>
+            </div>
+            <div class="card flush">
+              <table class="table">
+                <thead><tr><th>ID</th><th>Title</th><th>Status</th><th>Created</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono xs">DESIGN-0027</td><td>docz view and docz-review-rex: a terminal renderer and a Rex client for docz-review</td><td><span class="badge warning">Draft</span></td><td class="mono xs muted">2026-11-12</td></tr>
+                  <tr><td class="mono xs">DESIGN-0026</td><td>docz-site's shell in repo-guardian's look, and the reader's documents as docz-html pages</td><td><span class="badge success">Implemented</span></td><td class="mono xs muted">2026-11-01</td></tr>
+                  <tr><td class="mono xs">DESIGN-0025</td><td>docz-html: standalone HTML pages from docz documents</td><td><span class="badge success">Implemented</span></td><td class="mono xs muted">2026-10-31</td></tr>
+                  <tr><td class="mono xs">DESIGN-0013</td><td>Library-first docz: per-type document packages and a core API the CLI can sit on</td><td><span class="badge muted">Abandoned</span></td><td class="mono xs muted">2026-09-13</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <div class="label" style="margin-bottom: 8px">On this page</div>
+            <ul class="outline">
+              <li><a href="#">Creating a new design</a></li>
+              <li><a href="#" aria-current="location">All designs</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="grid two">
+        <a class="card repocard">
+          <div class="row" style="gap: 10px"><span class="mark sm other">D</span><b style="font-weight: 600">donaldgifford/docz</b><span class="badge outline" style="margin-left: auto">main</span></div>
+          <div class="facts"><span><b>5</b> adr</span><span><b>27</b> design</span><span><b>31</b> impl</span><span><b>36</b> investigation</span><span><b>4</b> runbook</span></div>
+          <div class="facts mono"><span>docs/</span><span>docs: <b>103</b></span><span style="margin-left: auto">sync 3a43d13</span></div>
+        </a>
+        <a class="card repocard">
+          <div class="row" style="gap: 10px"><span class="mark sm other">R</span><b style="font-weight: 600">donaldgifford/repo-guardian</b><span class="badge outline" style="margin-left: auto">main</span></div>
+          <div class="facts"><span><b>2</b> rfc</span><span><b>11</b> adr</span><span><b>39</b> design</span><span><b>37</b> impl</span><span><b>25</b> investigation</span></div>
+          <div class="facts mono"><span>docs/</span><span>docs: <b>114</b></span><span style="margin-left: auto">sync cc97e3f</span></div>
+        </a>
+      </div>
+
+      <!-- ─── 5. Overlays ────────────────────────────────────────────── -->
+      <h2 id="s5">5. Menus</h2>
+      <p class="muted note">
+        The account menu moves from the top bar's avatar to the sidebar's footer, as in repo-guardian. The header's
+        menu is boop's app switcher (its candidate 6), which is how a reader would get from a repository's compliance
+        to its documents: a link between two apps that look the same, INV-0036's answer to merging them. The command
+        palette is drawn in <a class="link" href="candidates.html#c4">candidates.html</a>.
+      </p>
+      <div class="grid three" style="align-items: start">
+        <div>
+          <div class="menu">
+            <div class="heading label">Apps</div>
+            <a class="item"><span class="mark sm">D</span><span class="names"><b style="font-weight: 500">docz</b><span>reader</span></span><span class="here">here</span></a>
+            <a class="item"><span class="mark sm other"><i data-icon="shield"></i></span><span class="names"><b style="font-weight: 500">repo-guardian</b><span>compliance</span></span><i data-icon="external" class="muted"></i></a>
+            <a class="item"><span class="mark sm other"><i data-icon="refresh"></i></span><span class="names"><b style="font-weight: 500">boop</b><span>renovate · fleet</span></span><i data-icon="external" class="muted"></i></a>
+            <hr />
+            <div class="foot">Links only: no shared session.</div>
+          </div>
+          <p class="caption">The sidebar header's menu, when a deployment lists other apps.</p>
+        </div>
+        <div>
+          <div class="menu">
+            <div class="item" style="pointer-events: none"><span class="mark sm avatar">DG</span><span class="names"><b style="font-weight: 500">donaldgifford</b><span>via github</span></span></div>
+            <hr />
+            <button class="item"><i data-icon="logout" class="muted"></i>Sign out</button>
+          </div>
+          <p class="caption">The footer's menu: a <code>DropdownMenu</code>, in place of docz's hand-built disclosure.</p>
+        </div>
+        <div>
+          <div class="popover">
+            <div class="heading label">Repository</div>
+            <button class="option"><span class="check"><i data-icon="check"></i></span>all repos<span class="detail">217</span></button>
+            <hr />
+            <button class="option"><span class="check"></span>donaldgifford/docz<span class="detail">103</span></button>
+            <button class="option"><span class="check"></span>donaldgifford/repo-guardian<span class="detail">114</span></button>
+          </div>
+          <p class="caption">The directory's <span class="mono">repo</span> chip: docz's <code>RepoPicker</code> as <code>OptionRows</code>.</p>
+        </div>
+      </div>
+
+      <!-- ─── 6. States ──────────────────────────────────────────────── -->
+      <h2 id="s6">6. States, sign-in, and consent</h2>
+      <p class="muted note">
+        docz's three panels become the package's two blocks. A 404 keeps its deliberately vague wording, because a
+        404 also hides a private repository.
+      </p>
+      <div class="grid three">
+        <div class="state"><i data-icon="inbox"></i><h4>No documents yet</h4><p>Onboard a repository with the docz GitHub App to index its documents here.</p></div>
+        <div class="state"><i data-icon="search"></i><h4>Not found, or not visible to you</h4><p>The address may be wrong, or the repository may not be shared with you.</p></div>
+        <div class="state error"><i data-icon="alert"></i><h4>Something went wrong</h4><p>docz-api returned 502 for the search.</p><button class="btn" style="margin-top: 6px"><i data-icon="refresh"></i>Retry</button></div>
+      </div>
+      <div class="grid three" style="margin-top: 14px; align-items: start">
+        <div class="card flush">
+          <div class="results">
+            <div class="result" style="grid-template-columns: 1fr auto auto"><span><span class="skel" style="display: block; height: 10px; width: 90px"></span><span class="skel" style="display: block; height: 14px; width: 70%; margin-top: 8px"></span></span><span class="skel" style="height: 18px; width: 70px"></span><span class="skel" style="height: 26px; width: 80px"></span></div>
+            <div class="result" style="grid-template-columns: 1fr auto auto"><span><span class="skel" style="display: block; height: 10px; width: 90px"></span><span class="skel" style="display: block; height: 14px; width: 55%; margin-top: 8px"></span></span><span class="skel" style="height: 18px; width: 70px"></span><span class="skel" style="height: 26px; width: 80px"></span></div>
+            <p class="inline-state loading">Loading documents…</p>
+          </div>
+        </div>
+        <div class="card login">
+          <div class="row" style="justify-content: center; gap: 10px"><span class="mark">D</span><b style="font-size: var(--text-lg); font-weight: 600">docz</b></div>
+          <p class="muted xs">Sign in to read your organisation's documents.</p>
+          <a class="btn primary">Continue with GitHub</a>
+          <a class="btn">Continue with Okta</a>
+        </div>
+        <div class="card login" style="text-align: left">
+          <h3>Claude Code wants to read your documents</h3>
+          <dl class="details xs">
+            <dt>Client</dt><dd class="mono">claude.ai/oauth/client</dd>
+            <dt>Scopes</dt><dd><span class="row" style="gap: 4px"><span class="badge outline">public:read</span><span class="badge outline">platform:read</span></span></dd>
+            <dt>As</dt><dd>donaldgifford</dd>
+          </dl>
+          <div class="row" style="justify-content: flex-end"><button class="btn">Deny</button><button class="btn primary">Allow</button></div>
+        </div>
+      </div>
+      <p class="caption">
+        Not drawn: docz-review's page (open question 5), the three widgets (open question 6), and anything inside a
+        document. The mode toggle here switches the <code>.dark</code> class, which is the package's switch; docz's
+        today is <code>data-mode</code>, shared with exported pages (open question 2).
+      </p>
+    </div>
+    <script src="sketch.js"></script>
+  </body>
+</html>
