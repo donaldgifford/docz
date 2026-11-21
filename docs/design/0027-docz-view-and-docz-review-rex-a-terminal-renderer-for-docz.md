@@ -49,6 +49,7 @@ created: 2026-11-12
   - [13. Does the review ask through the palette?](#13-does-the-review-ask-through-the-palette)
   - [14. Is there a Claude Code pane client?](#14-is-there-a-claude-code-pane-client)
   - [15. Does the opener learn tmux and Herdr?](#15-does-the-opener-learn-tmux-and-herdr)
+  - [16. Is --open rexweb in the first release?](#16-is---open-rexweb-in-the-first-release)
 - [References](#references)
 <!-- markdownlint-restore -->
 <!--toc:end-->
@@ -129,10 +130,12 @@ the client, and no Rust or Bazel.
 - **A Neovim plugin.** `docz view --plain` is what a `docz.nvim`
   would wrap, as mdp's plugin wraps its server, and INV-0034 names it;
   it is a later piece, outside this design.
-- **A web view in Rex.** Rex's browser pane is built and demoed but
-  not released (INV-0033 Observation 2). When it ships, docz-review's
-  page can open there with no change to this design; this design is
-  what works in a terminal today.
+- **A web view of docz's own in Rex.** Rex's browser pane is built and
+  demoed but not released (INV-0033 Observation 2); rexweb is a
+  community WebKit overlay that exists today on macOS and is an opener
+  here (§8, question 16), not a client. When Rex's own pane ships,
+  docz-review's page opens there the same way; the terminal client is
+  what works everywhere else.
 - **leaf and the Rex markdown viewers.** leaf, tkmp, mddog,
   rex-md-viewer, and rexworks md-viewer are prior art for Kitty
   placement, embedded mermaid, pane ownership, and a Rex installer,
@@ -196,6 +199,23 @@ CLI calls the API with `rex api call`, and `init.lua` defines palette
 actions and key bindings. Kitty graphics are supported in full on Mac
 and Linux, with a per-block image budget. Ladybird's terminal mode is
 merged but unreleased, and the browser pane is demoed but unreleased.
+
+**rexweb** (acoyfellow/rexweb, MIT, November 2026) is a web view in a
+Rex pane from outside Rex: a browser pane is a shell block running
+`rexweb-pane <url>`, and `RexWeb.app` lays a borderless WebKit window
+exactly over that pane's body, following the layout through
+`rex events`, hiding when the pane is off screen, and tracking
+floating layers. A Lua module adds `rexweb_open` and
+`rexweb_open_tab` over `rex.session.new_split` and `new_window`, and
+a CLI prints the block id, waits for the page, and can drive it
+(`snapshot`, `click`, `type`, `eval`, `screenshot`). It is macOS 14
+only and built locally with the Xcode command line tools, since it is
+signed for one Mac; a Rex restart turns its panes into plain shells;
+the URL is in the pane's command line; and its author says
+Superlogical neither maintains nor endorses it. docz-review's page
+runs in it unchanged, which makes it the shortest path to a review in
+a pane on a Mac, and the reason the terminal client is for everything
+rexweb is not.
 
 **INV-0034** looked at what a terminal viewer of docz documents would
 take. The panes that look like browsers in Rex are pictures drawn with
@@ -643,13 +663,30 @@ sequenceDiagram
   Hook-->>Agent: block with the feedback, or continue
 ```
 
-docz-review's `browserOpener` becomes one of two openers chosen by
-`--open browser|rex|auto` or `DOCZ_REVIEW_OPEN` (the flag wins;
-`browser` is the default; `auto` is `rex` when `REX_SESSION` and
-`REX_BLOCK` are set and `rex` is on `PATH`, else `browser`). Every
-call the opener makes is `rex -S "$REX_SERVER" --autostart=false
---timeout 10s …`, so it talks to the server the session is on and
-never starts one. The Rex opener:
+docz-review's `browserOpener` becomes one of three openers chosen by
+`--open browser|rex|rexweb|auto` or `DOCZ_REVIEW_OPEN` (the flag
+wins; `browser` is the default; `auto` is `rexweb` when `REX_SESSION`
+and `REX_BLOCK` are set and `rexweb doctor` exits 0, else `rex` when
+`rex` is on `PATH`, else `browser`). Every call either Rex opener
+makes is `rex -S "$REX_SERVER" --autostart=false --timeout 10s …`, so
+it talks to the server the session is on and never starts one.
+
+**The rexweb opener** (question 16) opens the **page**, not the
+client: a floating layer as steps 2 to 6 below, whose shell block runs
+`rexweb-pane <url>` with the label `docz-review:<16 random hex>`, so
+`RexWeb.app` lays its WebKit window over the layer and the person
+reviews in the browser page they already know, over the agent's
+window, with no client to install. The URL carries no token: the page
+is opened at `/review?claim=<one-time code>`, and the server answers
+the first `GET /api/review/claim/<code>` within 30 s with the round's
+token and refuses every later one, so the pane's command line, which
+anyone who can inspect the server's blocks can read, holds nothing a
+second reader can use. A pane the person closes is the page's
+disconnect, as for the client. Everything else is the Rex opener's:
+the same `rex.json`, the same label check before `close_layer`, the
+same fallback.
+
+**The Rex opener** runs the terminal client:
 
 1. Writes the token to `<session dir>/token`, mode 0600, created
    exclusively, and removes it on exit. The token goes nowhere else:
@@ -684,7 +721,9 @@ never starts one. The Rex opener:
    documents are dismissed, and `--resume` reopens the layer.
 6. Falls back to the browser opener, with one stderr line, when
    `session.new_layer` fails (Rex not reachable, Remote Control off,
-   an older server with no layers).
+   an older server with no layers). The rexweb opener falls back to
+   this one when `rexweb doctor` fails or `rexweb-pane` cannot be
+   found, and from there to the browser.
 
 Everything the opener needs from Rex is the CLI, which the hook's
 shell inherits from the Rex session, so no Lua is needed for the
@@ -754,7 +793,8 @@ keeps the agent's instruction the same.
 | Surface | Change |
 | ------- | ------ |
 | `docz-review tui <url> --token-file <path>` | new subcommand, the terminal client of §6; exit 2 without a token file, 1 for a server that cannot be reached or a `docz` that cannot be run |
-| `--open browser\|rex\|auto` | new flag; `DOCZ_REVIEW_OPEN` the variable; `--no-open` unchanged |
+| `--open browser\|rex\|rexweb\|auto` | new flag; `DOCZ_REVIEW_OPEN` the variable; `--no-open` unchanged |
+| `GET /api/review/claim/{code}` | new route for the rexweb opener: the round's token once, within 30 s of the open, `404` after; the page reads `?claim=` and calls it before anything else |
 | `--rex-bounds x,y,w,h` | new, fractions; default `0.1,0.1,0.8,0.8` |
 | `DOCZ_REVIEW_BROWSER`, `BROWSER` | unchanged, used by the browser opener only |
 | the API, the record, the hook output | unchanged |
@@ -829,7 +869,8 @@ record, under the existing `$XDG_STATE_HOME/docz/review/<root>/<session>/`:
 | Path | Holds |
 | ---- | ----- |
 | `token` | the round's token, 0600, present only while a Rex layer is open |
-| `rex.json` | `{layer_id, block_id, label, session_id, window_id, opened_at}`, written after `new_layer`, removed after `close_layer`; `label` is what the close verifies |
+| `rex.json` | `{layer_id, block_id, label, session_id, window_id, opened_at, opener}`, written after `new_layer`, removed after `close_layer`; `label` is what the close verifies, `opener` is `rex` or `rexweb` |
+| `claim` | the rexweb opener's one-time code and its expiry, in memory only, consumed by the first `GET /api/review/claim/{code}` |
 
 **The draft** is the page's `Draft` as `PUT /api/review/{doc}/draft`
 already takes it; the client sends the same JSON.
@@ -910,7 +951,9 @@ and writes the file back with a `.bak` beside it on the first write.
   that records its argv and prints a layer id) cover the chosen
   opener, the token file's mode and removal, `rex.json`, the window
   lookup, the fallback on a failed `new_layer`, and the close on
-  every end path.
+  every end path; a fake `rexweb` whose `doctor` exits 0 or 1 covers
+  `auto`'s order, the claim route's one use and its expiry, and the
+  fall-through to the Rex opener and the browser.
 - **The drill.** A hand-run drill on Rex, recorded as
   `plugins/docz-review-rex/docs/rex-drill.md` in the shape of
   docz-review's `hook-drill.md`: the pane opens over the agent's
@@ -948,7 +991,7 @@ work lands in phases, each a `dont-release` PR, the last a `minor`.
 | 2. The renderer | `pkg/export/term`, `theme.Tokens`, `frame.schema.json`, goldens, fuzz | a frame for every corpus document; the frame contract |
 | 3. The reader | `docz view`, `--plain`, `--frame json`, `--watch`, the loop, pictures, the vendored mermaid modules | the key table; the pager form; a diagram drawn |
 | 4. The client | `docz-review tui` in `ui/review/tui/` over the page's logic: the frame drawn, controls, draft, submit, status reports | the fake-server test and the parity test |
-| 5. The opener | `--open`, the token file, the layer, `rex.json`, the fallback | the opener tests and the real-server test |
+| 5. The opener | `--open`, the token file, the layer, `rex.json`, the fallback; `rexweb` and the claim route | the opener tests and the real-server test; the page in a rexweb pane on a Mac |
 | 6. The plugin | `plugins/docz-review-rex/`, `docz rex install`, READMEs, the skill | the drill |
 
 The release is a `minor` (new commands, a new public package, a new
@@ -975,6 +1018,11 @@ rules say.
   page's from remark; the parity test holds them equal over a corpus,
   and a document that splits them is found by the drill or a user and
   added to it.
+- **rexweb is a third party.** It is a community overlay built from
+  source on one Mac, and a change in Rex's layout or events can break
+  it; the opener treats it as the browser with a better place to
+  land, never as something a review depends on, and `rexweb doctor`
+  failing is the ordinary path to the Rex opener.
 - **Prompt skew.** A Rex server can carry prompts while every app on
   it does not (INV-0035 Observation 8); the client reads
   `unsupported` per call and nothing in a review depends on a prompt.
@@ -1191,8 +1239,9 @@ rules say.
 
 ### 15. Does the opener learn tmux and Herdr?
 
-- **a. Not in the first release; `--open` keeps `browser`, `rex`, and
-  `auto`, and the client is a plain program any terminal can run, so
+- **a. Not in the first release; `--open` keeps `browser`, `rex`,
+  `rexweb`, and `auto`, and the client is a plain program any
+  terminal can run, so
   a person in tmux runs `docz-review tui` by hand from the URL the
   server prints.** *(recommendation)* Each host is one more opener of
   the same shape (a pane beside the agent, a wait, a close), and leaf
@@ -1201,6 +1250,23 @@ rules say.
 - b. Add `tmux` now: `tmux split-window` with the same token file,
   closed by pane id, a day's work.
 - c. Add `tmux` and `herdr` now.
+- d. Other.
+
+### 16. Is `--open rexweb` in the first release?
+
+- **a. Yes: the page in a floating layer over the agent's window
+  through rexweb, first in `auto`'s order on a Mac where
+  `rexweb doctor` passes, with a one-time claim code in the URL in
+  place of the token.** *(recommendation)* It is the review in a Rex
+  pane with no client to install, a day's work on the Rex opener's
+  pattern, and it keeps every feature of the page; the terminal
+  client remains the answer on Linux, on a remote host, and for
+  anyone without Xcode, which is why both ship.
+- b. Later: ship the terminal client first and add rexweb once its
+  own project has settled.
+- c. Never: a community overlay signed for one Mac is not something
+  docz-review should point at; a person who has it can open the
+  printed URL in it by hand.
 - d. Other.
 
 <!--docz:open-questions:end-->
@@ -1221,6 +1287,7 @@ rules say.
 - [docz-review's hook drill](../../plugins/docz-review/docs/hook-drill.md)
 - [Rex: custom actions](https://www.superlogical.com/rex/docs/customize/actions)
 - [Rex: custom UI](https://www.superlogical.com/rex/docs/customize/custom-ui), `rex.ui.input` and `rex.ui.pick`
+- [rexweb](https://github.com/acoyfellow/rexweb), WebKit browser panes for Rex on macOS
 - [Rex: the program status protocol](https://www.superlogical.com/rex/docs/build/program-status)
 - [Rex: the Lua API](https://www.superlogical.com/rex/docs/reference/lua)
 - [The Kitty graphics protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/)

@@ -243,6 +243,20 @@ What it settles is that part 1's "no" is temporary: the pane renders real
 pages, it is tied to the terminal that started the server, and it works
 across hosts in the one way docz-review needs.
 
+> **Amended 2026-11-21.** A web view in a Rex pane exists today from
+> outside Rex: [rexweb](https://github.com/acoyfellow/rexweb) (MIT,
+> November 2026) runs `rexweb-pane <url>` in an ordinary shell block
+> and lays a borderless WebKit window from `RexWeb.app` over the
+> pane's body, following the layout through `rex events`, floating
+> layers included, with a Lua module, a CLI that opens a pane and
+> waits for the page, and agent commands to read and drive it. It is
+> macOS 14 only, built from source with the Xcode tools because it is
+> signed for one Mac, loses its panes to plain shells when the Rex
+> server restarts, and is not maintained by Superlogical. docz-review's
+> page runs in it unchanged, so DESIGN-0027 §8 makes it an opener
+> (`--open rexweb`, question 16) beside the terminal client, which
+> stays for everything rexweb is not.
+
 ### Observation 3: Ladybird draws a page into the terminal, and its author says it works in Rex
 
 Ladybird merged `--headless=terminal` on 2026-11-09 (PR 14186, 1,418
