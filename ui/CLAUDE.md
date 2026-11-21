@@ -845,3 +845,70 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
 - Conventional commits (git-cliff changelog); branches `<type>/<kebab>`.
 - After each IMPL-0001 task: check it off in the impl doc, update this
   file if guidance changed, commit.
+
+## In the docz repository
+
+What moving docz-site into docz's repository changed (IMPL-0020,
+DESIGN-0017, ADR-0004). Publishing and CI's path filters are in
+`.github/CLAUDE.md`.
+
+- **`ui/go.mod` fences the npm tree.** It is a stub
+  (`module github.com/donaldgifford/docz/v2/ui`) with no Go in it, and it
+  exists because `ui/node_modules` ships stray `.go` files (flatted's) that
+  the root module's `./...` would otherwise walk into and fail to build. A
+  nested `go.mod` ends the root module at `ui/`, so `go test ./...`,
+  golangci-lint, and go-licenses need no exclusion. `TestUIModuleFence` in
+  `test/archive` pins it exists and that `go list` stops there; the ui CI job,
+  the one place `node_modules` is populated, proves it still works.
+- **One spec, four readers.** `api/openapi.yaml` is the only copy: docz-api
+  embeds it (`api/spec.go`) and serves it at `GET /openapi.yaml`, the
+  contract test in `internal/httpapi` reads the same embed, `api::lint-openapi`
+  runs vacuum over it, and orval generates the client from it
+  (`ui/orval.config.ts` → `../api/openapi.yaml`). The vendored
+  `ui/api/openapi.yaml` and docz-site's `spec-drift.yml` are gone, so a spec
+  change that breaks the client fails the same PR in `typecheck` or
+  `gen-api-check`.
+- **The image sees the spec through a named context.** `Dockerfile.ui` builds
+  with context `ui/` and gets the spec from bake's `contexts = { spec = "api" }`
+  via `COPY --from=spec openapi.yaml /api/openapi.yaml`, laid out so orval's
+  `../api/openapi.yaml` resolves inside the stage, and `api/cli/` the same way
+  for `gen-cli`, since `tsc -b` checks the review page too. `pkg/theme` arrives
+  as a second named context, `theme`, copied to `/pkg/theme`, where
+  `gen-themes` reads the token files and writes `page.css` (pkg/theme
+  scoped to `.docz-page`) and the pane imports `runtime.js`
+  (IMPL-0028, IMPL-0032); `just ui docker-build` passes the same
+  `--build-context`, and `vite.config.ts` lists `../pkg/theme` in
+  `server.fs.allow` beside the workspace root. **Both pages wear the
+  shell** (DESIGN-0026): `ui/src/theme/shell.css`, repo-guardian's look in
+  light and dark, with no `data-theme` on `<html>` and no theme selector;
+  `tokens.css`'s `@theme` values are the shell's dark set. **A document's
+  theme sits on its own `.docz-page`**: the deployment's `DOCZ_THEME` in
+  the reader, the repository's `html.theme` (which `docz inspect` reports
+  and the session carries, IMPL-0030) in the review page's document
+  column. The light/dark toggle shares `docz:mode` with exported pages,
+  and a mode change redraws mermaid through `refreshMermaidTheme`.
+  `contrast.test.ts` holds the shell in both modes and every theme and
+  mode to 4.5:1, reading `pkg/theme`. Only the spec, the CLI schemas, and
+  the themes cross the boundary; `.dockerignore` excludes `ui` from the
+  api image's root context.
+- **The reader shows a document as its docz-html fragment** (DESIGN-0026,
+  IMPL-0032). `pkg/export/html`'s `RenderOptions.Fragment` writes the
+  page's `div.wrap` inside one `div.docz-page` with no stylesheet, runtime,
+  mermaid loader, or mode toggle (`docz export html --fragment`; the page
+  and the fragment share one template, so the page goldens pin both).
+  docz-api serves it at `GET /api/v1/repos/{owner}/{name}/types/{type}/docs/{doc_id}/html`
+  (`internal/httpapi/fragment.go`, spec 1.8.0): the type's heading spec
+  from its embedded template, `html.theme` from the config snapshot,
+  relative links mapped to docz-site's routes, and the same 404 as
+  `getDoc` for a hidden document. `pkg/theme/runtime.js`'s
+  `docz.mount(scope, opts)` runs the runtime inside one element (`hash`,
+  `tab`, `onTab`; returns `showTab`, `unmount`) and starts itself only when
+  `<html>` has `data-doc`, so exported pages are unchanged. `ui`'s
+  `DocPane` injects the fragment, mounts the runtime with the tab in
+  `?tab=`, draws `pre.mermaid` with the site's mermaid, routes `/`-paths
+  in-app, and falls back to the site's own render with a note when the
+  fragment fails. `TestUIFragmentFixtures` and `TestUIHostileFragments`
+  (`internal/httpapi/ui_fixtures_test.go`, `-update`) render the MSW demo
+  documents and the XSS payloads through the handler's `renderFragment`
+  into `ui/src/mocks/__generated__/`, so the site's tests embed what
+  docz-api sends; both files are in the `go` path filter.

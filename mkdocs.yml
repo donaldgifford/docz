@@ -118,6 +118,8 @@ nav:
         - 'RUNBOOK-0003: Enable Confluence export on docz-api': runbook/0003-enable-confluence-export-on-docz-api.md
         - 'RUNBOOK-0004: Enable MCP on docz-api': runbook/0004-enable-mcp-on-docz-api.md
     - Migrating from docz v1 to v2: migrating-to-v2.md
+    - Development:
+        - Build notes: development/build-notes.md
 plugins:
     - techdocs-core
 site_description: Documentation for docz
