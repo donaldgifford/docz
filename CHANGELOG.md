@@ -14,6 +14,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(investigation)* INV-0035, Go or Bun, not Rust, for docz view and docz-review-rex
 - *(design)* Revise DESIGN-0027 against INV-0035 and Rex Custom UI
 - *(design)* Rexweb as a third docz-review opener in DESIGN-0027
+- Split CLAUDE.md into per-directory files
 
 ## [2.6.2] - 2026-11-05
 
