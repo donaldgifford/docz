@@ -3,6 +3,17 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
+## [unreleased]
+
+### Documentation
+
+- *(investigation)* INV-0033, docz-review inside a Rex floating pane
+- *(investigation)* INV-0034, a terminal viewer for docz documents
+- *(design)* DESIGN-0027, docz view and docz-review-rex
+- *(investigation)* INV-0035, Go or Bun, not Rust, for docz view and docz-review-rex
+- *(design)* Revise DESIGN-0027 against INV-0035 and Rex Custom UI
+- *(design)* Rexweb as a third docz-review opener in DESIGN-0027
+
 ## [2.6.2] - 2026-11-05
 
 ### Features
