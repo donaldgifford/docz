@@ -7,6 +7,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Documentation
 
+- *(investigation)* INV-0036, docz-site on the shared design system or docz as a backend of repo-guardian's UI
 - *(investigation)* INV-0033, docz-review inside a Rex floating pane
 - *(investigation)* INV-0034, a terminal viewer for docz documents
 - *(design)* DESIGN-0027, docz view and docz-review-rex
