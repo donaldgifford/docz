@@ -47,6 +47,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0030 | docz-review follow-ups after v2.3.0 | Open | 2026-10-31 | Donald Gifford | [0030-docz-review-follow-ups-after-v230.md](0030-docz-review-follow-ups-after-v230.md) |
 | INV-0031 | Trial: docz-review on its own repository | Open | 2026-10-31 | Donald Gifford | [0031-trial-docz-review-on-its-own-repository.md](0031-trial-docz-review-on-its-own-repository.md) |
 | INV-0032 | docz-review's page after Plannotator: adopt its layout or fork it | Open | 2026-11-02 | Donald Gifford | [0032-docz-reviews-page-after-plannotator-adopt-its-layout-or-fork-it.md](0032-docz-reviews-page-after-plannotator-adopt-its-layout-or-fork-it.md) |
+| INV-0036 | docz-site on the shared design system, or docz as a backend of repo-guardian's UI | Open | 2026-11-19 | Donald Gifford | [0036-docz-site-on-the-shared-design-system-or-docz-as-a-backend-of.md](0036-docz-site-on-the-shared-design-system-or-docz-as-a-backend-of.md) |
 <!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
