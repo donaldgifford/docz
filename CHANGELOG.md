@@ -15,6 +15,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(design)* Revise DESIGN-0027 against INV-0035 and Rex Custom UI
 - *(design)* Rexweb as a third docz-review opener in DESIGN-0027
 - Split CLAUDE.md into per-directory files
+- Drop the Go patch version from the server's pin note
 
 ## [2.6.2] - 2026-11-05
 
