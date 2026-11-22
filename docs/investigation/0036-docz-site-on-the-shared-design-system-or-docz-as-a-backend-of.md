@@ -30,6 +30,7 @@ created: 2026-11-19
   - [Observation 9: what a sketch of A shows](#observation-9-what-a-sketch-of-a-shows)
   - [Observation 10: the spike](#observation-10-the-spike)
   - [Observation 11: the Go side](#observation-11-the-go-side)
+  - [Observation 12: the package's answer, and 0.5.0](#observation-12-the-packages-answer-and-050)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
 - [Open Questions](#open-questions)
@@ -129,7 +130,7 @@ local branch, `chore/spike-design-system`, which is not for merge.
 
 | Component | Version / Value |
 | --------- | --------------- |
-| `@donaldgifford/design-system` | 0.3.2 (`064bb78`), GitHub Packages |
+| `@donaldgifford/design-system` | 0.3.2 (`064bb78`), GitHub Packages; 0.5.0 for Observation 12 |
 | repo-guardian | `main` at `cc97e3f`, UI on the package at 0.3.2 |
 | docz | `main` at `0aa53f1` |
 | docz-site | React 19, react-router 8, Tailwind 4.3, Vite 8, vitest in jsdom |
@@ -485,6 +486,69 @@ Two things the DESIGN has to carry:
   `data-mode` in `pkg/theme` and exported pages, and has the site set
   `.dark` beside it.
 
+### Observation 12: the package's answer, and 0.5.0
+
+design-system#32 was answered the day it was filed, on #11's rule: a gap
+in a component is fixed in the package, and a design difference is the
+package's design and docz adopts it. The four parts that were waiting in
+the working tree shipped in 0.4.0, and 0.5.0, released on 2026-11-22,
+carries the rest.
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
+
+| Item in #32 | Decision | In 0.5.0 |
+| --- | --- | --- |
+| A1 sidebar tree | Package, after RFC-0003 | `shell/sidebar-tree`, `hooks/use-tree-open` |
+| A2 outline | Package | `blocks/outline`, `hooks/use-active-heading` |
+| A3 search result row | Package | `eyebrow`, `detail`, `render` on `ListRow`; `Time` `style="stacked"`; `blocks/marked` |
+| A4 palette slots | Package | `CommandFilters`, `CommandFooter`, `preview` on `CommandDialog` |
+| A5 top-bar controls | Package | `shell/search-trigger`, `shell/mode-toggle` |
+| A6 vertical stepper | Package | `orientation="vertical"` and `size="sm"` on `Stepper` |
+| A7 disclosure | Package | `components/collapsible`, `blocks/disclosure` |
+| A8 a tone the app supplies | Package; `Superseded` maps to `ignored` | `tone` on `Badge` and `Dot`; `--category-1` to `--category-8` |
+| A9 two tokens | Package | `--border-strong`, `--surface-pressed` |
+| B1 `--code-bg` follows the page | Intended; docz adopts | docz moves to a light and dark Shiki theme pair |
+| B2 toggle filter chip | Package | `pressed` on `FilterChip` |
+| B3 `accent` | docz renames its token | A README note |
+| C1, C2 stylesheet scans everything, static fonts | Package | `core.css` and `fonts.css`; `globals.css` unchanged |
+| C3 no `prefers-color-scheme` | Package | A README note with the script |
+
+<!-- markdownlint-restore -->
+
+So none of the nine parts is docz's to build, and two decisions fall to
+docz: its site-rendered code follows the page's mode, and `Superseded`
+takes the `ignored` variant.
+
+The spike branch was moved to 0.5.0 and its stylesheet to `core.css`
+with `source(none)` and one `@source` line per part the probe uses. The
+contrast test and the unit suite pass as before (1439 of 1439), and
+`tsc -b` passes. The image build was not run again; nothing about the
+install changed.
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
+
+| Measure | Before | 0.3.2, `globals.css` | 0.5.0, `core.css` |
+| --- | --- | --- | --- |
+| Stylesheet | 68.0 KB (16.6 KB gzipped) | 149.7 KB (29.4 KB) | 107.9 KB (23.6 KB) |
+| Static font files emitted | 0 | 5 | 0 |
+| Eager JS, button and badge | 124.0 KB gzipped | 137.3 KB | 137.3 KB |
+| Eager JS, with the frame | 124.0 KB gzipped | 156.6 KB | 156.6 KB |
+
+<!-- markdownlint-restore -->
+
+The stylesheet numbers on 0.5.0 include the classes of the frame's ten
+parts, which the stylesheet names whether or not the probe mounts them.
+The JavaScript is unchanged, so the bundle budget is still the one gate
+that does not hold.
+
+0.5.0's new tokens are docz's own values. `--border-strong` and
+`--surface-pressed` convert to the shell's `border-strong` and
+`bg-active`, and `--category-1` to `--category-8` to the shell's eight
+hash colours, exactly, in both modes. That moves Observation 11's count
+from 22 of 58 tokens to 32, and leaves 26 that are docz's own.
+
 <!--docz:findings:end-->
 
 <!--docz:conclusion:start-->
@@ -513,7 +577,9 @@ small edits; the bundle budget does not hold and needs a new number.
 - **A's gaps are filed** (Observation 9) as
   [design-system#32](https://github.com/donaldgifford/design-system/issues/32):
   nine parts the package lacks, three differences to decide, and three
-  things the spike found in the package's stylesheet.
+  things the spike found in the package's stylesheet. All were answered,
+  and 0.5.0 ships every part asked for (Observation 12), so docz builds
+  none of the nine locally.
 
 <!--docz:conclusion:end-->
 
@@ -522,15 +588,16 @@ small edits; the bundle budget does not hold and needs a new number.
 
 1. The spike (step 5) is run and its four results are in Observation
    10.
-2. The gaps are filed upstream as design-system#32, as repo-guardian
-   did in design-system#11. The DESIGN waits on its answers for the
-   parts it would otherwise build locally.
+2. The gaps were filed upstream as design-system#32 and are answered
+   (Observation 12). The DESIGN targets 0.5.0 or later and imports
+   `core.css`, not `globals.css`.
 3. Write a DESIGN for A from the open questions' answers below, then an
    IMPL in repo-guardian's phase order: tokens first, components after,
    shell last. The DESIGN also has to set a new bundle budget, rename
    docz's `accent`, drop the radius wipe, add `ui/bun.lock` to CI's `go`
-   path filter, and decide whether the generated `charcoal` carries a
-   light mode (Observation 11).
+   path filter, decide whether the generated `charcoal` carries a light
+   mode (Observation 11), and move site-rendered code to a Shiki theme
+   pair that follows the page (Observation 12).
 4. Record B as not doing. If one place to go from compliance to
    documents is still wanted, that is a link from repo-guardian's
    repository page to docz-site, which needs nothing from this work.
