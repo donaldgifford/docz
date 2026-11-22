@@ -50,7 +50,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0033 | docz-review inside a Rex floating pane instead of a browser | Open | 2026-11-09 | Donald Gifford | [0033-docz-review-inside-a-rex-floating-pane-instead-of-a-browser.md](0033-docz-review-inside-a-rex-floating-pane-instead-of-a-browser.md) |
 | INV-0034 | A terminal viewer for docz documents: docz-html's page as a CLI, wrapped by Neovim and Rex | Open | 2026-11-12 | Donald Gifford | [0034-a-terminal-viewer-for-docz-documents-docz-htmls-page-as-a-cli.md](0034-a-terminal-viewer-for-docz-documents-docz-htmls-page-as-a-cli.md) |
 | INV-0035 | Go or Bun, not Rust: building leaf's reader for docz view and docz-review-rex without a third toolchain | Concluded | 2026-11-18 | Donald Gifford | [0035-go-or-bun-not-rust-building-leafs-reader-for-docz-view-and-docz.md](0035-go-or-bun-not-rust-building-leafs-reader-for-docz-view-and-docz.md) |
-| INV-0036 | docz-site on the shared design system, or docz as a backend of repo-guardian's UI | Open | 2026-11-19 | Donald Gifford | [0036-docz-site-on-the-shared-design-system-or-docz-as-a-backend-of.md](0036-docz-site-on-the-shared-design-system-or-docz-as-a-backend-of.md) |
+| INV-0036 | docz-site on the shared design system, or docz as a backend of repo-guardian's UI | Concluded | 2026-11-19 | Donald Gifford | [0036-docz-site-on-the-shared-design-system-or-docz-as-a-backend-of.md](0036-docz-site-on-the-shared-design-system-or-docz-as-a-backend-of.md) |
 <!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
