@@ -5,6 +5,11 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Bug Fixes
+
+- *(deps)* Go 1.26.11 and brotli 1.2.7 for govulncheck
+- *(deps)* Golang.org/x/net 0.62.0 for CVE-2026-78661
+
 ### Documentation
 
 - *(investigation)* INV-0036, docz-site on the shared design system or docz as a backend of repo-guardian's UI
