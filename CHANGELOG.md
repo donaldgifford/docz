@@ -8,6 +8,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Bug Fixes
 
 - *(deps)* Go 1.26.11 and brotli 1.2.7 for govulncheck
+- *(deps)* Golang.org/x/net 0.62.0 for CVE-2026-78661
 
 ### Documentation
 
