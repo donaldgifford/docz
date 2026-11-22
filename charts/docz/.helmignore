@@ -23,3 +23,5 @@
 /ci/
 README.md.gotmpl
 cliff.toml
+# Agent guidance, not part of the chart.
+CLAUDE.md
