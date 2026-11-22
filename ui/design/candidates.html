@@ -1,0 +1,558 @@
+<!doctype html>
+<!--
+  Sketch of the components docz-site has today that
+  @donaldgifford/design-system does not, so they can be proposed upstream
+  before docz adopts the package (INV-0036, recommendation 2). It follows
+  boop's ui/design/candidates.html and leaves out what that page already
+  proposed.
+
+  Static HTML: every colour, font, size and radius comes from the package's
+  tokens (tokens.css here is a copy of 0.3.2), but the markup is drawn by
+  hand, so treat it as a proposal and not as the package's output.
+
+  Open it from a file URL. The two font links resolve after `just ui
+  install`; without it the page falls back to system fonts. Nothing here
+  ships.
+-->
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>docz · component candidates</title>
+    <link rel="stylesheet" href="../node_modules/@fontsource-variable/ibm-plex-sans/wght.css" />
+    <link rel="stylesheet" href="../node_modules/@fontsource-variable/jetbrains-mono/wght.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="sketch.css" />
+    <style>
+      .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+      .swatch { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+      .swatch i { display: block; height: 34px; background: var(--c); }
+      .swatch div { padding: 6px 8px; font-size: var(--text-xs); }
+      .swatch div span { display: block; color: var(--muted-foreground); font-family: var(--font-family-mono); font-size: var(--label-size); }
+      .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      .stack { display: flex; flex-direction: column; gap: 12px; }
+      .codeblock { margin: 0; padding: 12px 14px; border-radius: var(--radius); font-family: var(--font-family-mono); font-size: var(--text-xs); line-height: 1.5; overflow-x: auto; }
+      .codeblock.follows { background: var(--code-bg); border: 1px solid var(--border); }
+      .codeblock.dark { background: #101215; color: #e8eaed; }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div>
+          <h1>docz · component candidates</h1>
+          <p class="muted lede">
+            What docz-site draws by hand today that <span class="mono">@donaldgifford/design-system</span> 0.3.2 has no
+            part for: a sidebar tree, an outline, a search result row, three palette slots, two top-bar controls, a
+            vertical stepper, a disclosure, and a way to colour a badge by category. Colours, fonts and sizes are the
+            package's tokens. The markup is hand-drawn, so this is a proposal. The companion page,
+            <a class="link" href="mockup.html">mockup.html</a>, shows docz-site with these and with what the package
+            already has.
+          </p>
+        </div>
+        <button class="btn" data-theme-toggle="label" style="margin-left: auto">Light theme</button>
+      </header>
+
+      <div class="card" style="margin-top: 16px">
+        <div class="head">
+          <h3>Already on its way</h3>
+          <div class="desc">
+            Four of boop's candidates are in the package's working tree, unreleased, and docz would use all four. They
+            are drawn in the mockup as if released and are not proposed again here.
+          </div>
+        </div>
+        <div class="body row">
+          <span class="badge success">SegmentedControl</span>
+          <span class="badge success">OptionRows</span>
+          <span class="badge success">FilterBar</span>
+          <span class="badge success">InlineLoading · InlineEmpty</span>
+          <span class="badge muted">app switcher: boop's candidate 6, still a proposal</span>
+        </div>
+      </div>
+
+      <!-- ─── 1 ──────────────────────────────────────────────────────── -->
+      <h2 id="c1">1. Sidebar tree <span class="status new">new shell part</span></h2>
+      <p class="muted note">
+        A repository's navigation: one row per document type with its count, each opening a list of that type's
+        documents, and a pages tree nested as deep as the repository's folders. The package's
+        <code>SidebarMenuSub</code> is one level and always open, and the package has no collapsible primitive. docz
+        needs the caret to be its own button, because the row is a link to the type's page and the caret only peeks.
+      </p>
+      <div class="grid two" style="align-items: start">
+        <div class="frame" style="height: 590px">
+          <aside class="sidebar">
+            <div class="sec grow tree">
+              <div class="grouplabel label">Repository</div>
+              <a class="nav"><i data-icon="home"></i>Home<span class="count">index.md</span></a>
+              <a class="nav"><i data-icon="history"></i>Changelog<span class="count">CHANGELOG.md</span></a>
+
+              <div class="grouplabel label">Documents</div>
+              <div class="row-wrap">
+                <div class="row">
+                  <a class="nav"><span class="dot" data-type="adr"></span>adr<span class="count">5</span></a>
+                  <button class="caret" aria-expanded="false" aria-controls="t1-rfc" aria-label="adr documents"><i data-icon="chevron"></i></button>
+                </div>
+                <div class="sub" id="t1-rfc" hidden>
+                  <a>ADR-0004 · One repository: docz, docz-api and docz-site</a>
+                  <a>ADR-0005 · Leave impl out of the Confluence export</a>
+                </div>
+              </div>
+              <div class="row">
+                <a class="nav" aria-current="page"><span class="dot" data-type="design"></span>design<span class="count">27</span></a>
+                <button class="caret" aria-expanded="true" aria-controls="t1-design" aria-label="design documents"><i data-icon="chevron"></i></button>
+              </div>
+              <div class="sub" id="t1-design" data-type="design">
+                <a>DESIGN-0024 · docz-review</a>
+                <a>DESIGN-0025 · docz-html</a>
+                <a aria-current="page">DESIGN-0026 · The shell in repo-guardian's look</a>
+                <a>DESIGN-0027 · docz view</a>
+              </div>
+              <div class="row">
+                <a class="nav"><span class="dot" data-type="impl"></span>impl<span class="count">31</span></a>
+                <button class="caret" aria-expanded="true" aria-controls="t1-impl" aria-label="impl documents"><i data-icon="chevron"></i></button>
+              </div>
+              <div class="sub" id="t1-impl">
+                <p class="inline-state loading" style="padding: 4px 10px">Loading…</p>
+              </div>
+              <div class="row">
+                <a class="nav"><span class="dot" data-type="runbook"></span>runbook<span class="count">0</span></a>
+                <button class="caret" disabled aria-label="runbook documents"><i data-icon="chevron"></i></button>
+              </div>
+
+              <div class="grouplabel label">Pages</div>
+              <div class="row">
+                <a class="nav"><i data-icon="folder"></i>guides/</a>
+                <button class="caret" aria-expanded="true" aria-controls="t1-guides" aria-label="guides pages"><i data-icon="chevron"></i></button>
+              </div>
+              <div class="sub" id="t1-guides">
+                <a>Markdown specimen</a>
+                <a>operations/</a>
+                <div class="sub">
+                  <a>ECR publish setup</a>
+                </div>
+              </div>
+            </div>
+          </aside>
+          <div class="main"></div>
+        </div>
+        <div class="stack">
+          <div class="today">
+            <div class="label">In docz today</div>
+            <p class="xs muted">
+              <code>repo-nav.tsx</code>, <code>repo-nav-pages.tsx</code> and <code>nav-rail.ts</code>, 480 lines. A
+              drawer's documents are fetched when it first opens, the route's type opens by itself, and a type with no
+              documents has a disabled caret.
+            </p>
+          </div>
+          <p class="caption" style="margin-top: 0">
+            Proposed, beside <code>ShellSidebarGroup</code>: <code>ShellSidebarTree</code> rows taking
+            <code>label</code>, <code>icon</code> or <code>mark</code>, <code>badge</code> (the count),
+            <code>active</code>, <code>open</code> and <code>onOpenChange</code>, a <code>render</code> for the app's
+            link, and children that are rows or leaves, to any depth. A sub-list hangs on a hairline and the active leaf
+            colours its own 2px segment, in <code>--primary</code> or a tone the app sets. Collapsed to the icon rail,
+            a tree row shows its icon and its leaves move to a popover, as shadcn's sidebar-07 does.
+          </p>
+          <p class="caption" style="margin-top: 0">
+            Needs candidate 7 (the disclosure) underneath, and candidate 8 for the type dots.
+          </p>
+        </div>
+      </div>
+
+      <!-- ─── 2 ──────────────────────────────────────────────────────── -->
+      <h2 id="c2">2. Outline <span class="status new">new block</span></h2>
+      <p class="muted note">
+        "On this page": a document's headings on a hairline, with the section being read marked. docz shows it beside
+        the changelog, a published page, a type's index, and a document it renders itself. Click a row here to move
+        the mark; in the app a scroll spy moves it.
+      </p>
+      <div class="grid three">
+        <div class="card">
+          <div class="body">
+            <div class="label" style="margin-bottom: 8px">On this page</div>
+            <ul class="outline">
+              <li><a href="#">Overview</a></li>
+              <li><a href="#" aria-current="location">Goals and non-goals</a></li>
+              <li><a href="#">Design</a></li>
+              <li><a href="#" class="deep">The shell</a></li>
+              <li><a href="#" class="deep">The document's theme</a></li>
+              <li><a href="#" class="deep">The mode switch</a></li>
+              <li><a href="#">Testing strategy</a></li>
+              <li><a href="#">Open questions</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="body stack">
+            <details class="disclosure" open>
+              <summary><i data-icon="chevron"></i><span class="label">On this page</span></summary>
+              <div class="panel">
+                <ul class="outline">
+                  <li><a href="#" aria-current="location">Overview</a></li>
+                  <li><a href="#">Design</a></li>
+                  <li><a href="#">Open questions</a></li>
+                </ul>
+              </div>
+            </details>
+            <p class="xs muted">Below the breakpoint where the rail hides, the same list in a disclosure above the article.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="body">
+            <div class="label" style="margin-bottom: 8px">On this page</div>
+            <p class="inline-state" style="padding: 0">No sections.</p>
+          </div>
+        </div>
+      </div>
+      <p class="caption">
+        Proposed props: <code>items</code> (each <code>{ id, text, depth }</code>), <code>activeId</code>, and
+        <code>label</code>. The scroll spy is a hook beside it, <code>useActiveHeading(ids)</code>, so an app that
+        tracks position some other way passes <code>activeId</code> itself. In docz today: <code>TocList</code> in
+        <code>doc-rail.tsx</code> and <code>hooks/useActiveHeading.ts</code>.
+      </p>
+
+      <!-- ─── 3 ──────────────────────────────────────────────────────── -->
+      <h2 id="c3">3. Search result row <span class="status prop">new props</span></h2>
+      <p class="muted note">
+        The package's <code>ListRow</code> has a title, a subtitle, and leading and trailing slots. A search hit needs
+        two more lines: a mono eyebrow over the title for the hit's coordinates, and a snippet under it with the
+        matched words marked. The trailing time is a date over a time, where the package's <code>Time</code> writes
+        one line.
+      </p>
+      <div class="card flush">
+        <div class="results">
+          <a class="result">
+            <span style="min-width: 0">
+              <span class="eyebrow">DESIGN-0026 <span class="muted">/</span> docz</span>
+              <span class="title truncate" style="display: block">docz-site's shell in repo-guardian's look, and the reader's documents as docz-html pages</span>
+              <span class="snippet">The site's chrome takes repo-guardian's <mark>tokens</mark>, copied in and mapped onto docz's names, in light and dark…</span>
+            </span>
+            <span class="badge success">Implemented</span>
+            <span class="stamp">Nov 2, 2026<span>3:14 PM</span></span>
+          </a>
+          <a class="result">
+            <span style="min-width: 0">
+              <span class="eyebrow">INV-0036 <span class="muted">/</span> docz</span>
+              <span class="title truncate" style="display: block">docz-site on the shared design system, or docz as a backend of repo-guardian's UI</span>
+              <span class="snippet">docz's <mark>token</mark> names are not the package's: 498 uses across 33 files are written against docz's own…</span>
+            </span>
+            <span class="badge warning">Open</span>
+            <span class="stamp">Nov 21, 2026<span>9:02 AM</span></span>
+          </a>
+          <a class="result">
+            <span style="min-width: 0">
+              <span class="eyebrow">page <span class="muted">/</span> docz</span>
+              <span class="title truncate" style="display: block">Markdown specimen</span>
+              <span class="snippet">Every construct the pipeline renders on one page, with the theme's <mark>tokens</mark> under each…</span>
+            </span>
+            <span></span>
+            <span class="stamp">Nov 18, 2026<span>11:40 AM</span></span>
+          </a>
+        </div>
+      </div>
+      <p class="caption">
+        Proposed: <code>eyebrow</code> and <code>detail</code> on <code>ListRow</code>, and a <code>render</code> for
+        the title so the row can be the app's link and not only a button. <code>Time style="stamp"</code> for the
+        two-line form. A <code>Marked</code> helper that takes a string with literal <code>&lt;em&gt;</code> markers
+        and returns text and <code>&lt;mark&gt;</code> elements, never HTML: docz's <code>snippet.tsx</code>, 36
+        lines, which exists because a snippet is untrusted.
+      </p>
+
+      <!-- ─── 4 ──────────────────────────────────────────────────────── -->
+      <h2 id="c4">4. Command palette slots <span class="status prop">new slots</span></h2>
+      <p class="muted note">
+        The package's <code>CommandDialog</code> is an input over a list. docz's palette has three more regions: a row
+        of filters under the input, a preview of the highlighted hit beside the list, and key hints along the foot.
+        repo-guardian's palette uses none of them, so this is docz's shape, proposed as optional slots.
+      </p>
+      <div class="palette">
+        <div class="inputrow">
+          <i data-icon="search"></i>
+          <input value="tokens" aria-label="Search documents" />
+          <kbd>esc</kbd>
+        </div>
+        <div class="filters" data-seg>
+          <button class="chip" aria-pressed="true">all <b>14</b></button>
+          <button class="chip" aria-pressed="false">docz</button>
+          <button class="chip" aria-pressed="false">repo-guardian</button>
+          <button class="chip" aria-pressed="false"><span class="dot" data-type="design"></span>design</button>
+          <button class="chip" aria-pressed="false"><span class="dot" data-type="investigation"></span>investigation</button>
+        </div>
+        <div class="cols">
+          <div class="list">
+            <div class="group label">donaldgifford/docz · 2 matches</div>
+            <button class="item" aria-selected="true">
+              <span class="top"><span class="mono xs muted">DESIGN-0026</span><span class="badge success">Implemented</span></span>
+              <span style="display: block; font-weight: 500">docz-site's shell in repo-guardian's look</span>
+              <span class="snippet xs muted" style="display: block">The site's chrome takes repo-guardian's <mark>tokens</mark>, copied in…</span>
+            </button>
+            <button class="item">
+              <span class="top"><span class="mono xs muted">INV-0036</span><span class="badge warning">Open</span></span>
+              <span style="display: block; font-weight: 500">docz-site on the shared design system</span>
+              <span class="snippet xs muted" style="display: block">docz's <mark>token</mark> names are not the package's…</span>
+            </button>
+            <div class="group label">donaldgifford/repo-guardian · 1 match</div>
+            <button class="item">
+              <span class="top"><span class="mono xs muted">IMPL-0037</span><span class="badge success">Completed</span></span>
+              <span style="display: block; font-weight: 500">The UI on the design system</span>
+              <span class="snippet xs muted" style="display: block">Stylesheet and <mark>tokens</mark> first, then leaves, then the shell…</span>
+            </button>
+          </div>
+          <div class="preview">
+            <div class="mono xs muted">DESIGN-0026 · donaldgifford/docz</div>
+            <div style="font-size: var(--text-lg); font-weight: 600; line-height: 1.3">docz-site's shell in repo-guardian's look, and the reader's documents as docz-html pages</div>
+            <div class="row"><span class="badge success">Implemented</span><span class="xs muted">Donald Gifford · Nov 2, 2026</span></div>
+            <p class="xs muted" style="line-height: 1.55">
+              The site's chrome takes repo-guardian's tokens, copied in and mapped onto docz's names, in light and
+              dark. A document keeps its own theme inside its page.
+            </p>
+            <div class="label">Sections</div>
+            <ul class="outline">
+              <li><a href="#">Overview</a></li>
+              <li><a href="#">Design</a></li>
+              <li><a href="#">Open questions</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="foot">
+          <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+          <span><kbd>↵</kbd> open</span>
+          <span><kbd>tab</kbd> preview</span>
+          <span style="margin-left: auto" class="mono">docz-index</span>
+        </div>
+      </div>
+      <p class="caption">
+        Proposed on <code>CommandDialog</code>: <code>filters</code>, <code>preview</code> and <code>footer</code>
+        slots, a wider size for when <code>preview</code> is set, and the preview hidden below the
+        <code>sm</code> breakpoint, where the dialog is full screen. The item's three lines are candidate 3's row. In
+        docz today: <code>command-palette.tsx</code>, 544 lines, on cmdk directly.
+      </p>
+
+      <!-- ─── 5 ──────────────────────────────────────────────────────── -->
+      <h2 id="c5">5. Top-bar controls <span class="status new">new shell parts</span></h2>
+      <p class="muted note">
+        <code>TopBarLayout</code>'s <code>end</code> slot is documented as holding "search, clock, theme", and the
+        package ships none of the three as a part. repo-guardian draws its Search button locally. docz needs two: the
+        field-shaped button that opens the palette, and the light and dark switch.
+      </p>
+      <div class="card">
+        <div class="body row" style="gap: 28px">
+          <div>
+            <div class="label" style="margin-bottom: 6px">Search trigger</div>
+            <button class="searchtrigger"><i data-icon="search"></i>Search docs, rfcs, authors…<span class="keys"><kbd>⌘</kbd><kbd>K</kbd></span></button>
+          </div>
+          <div>
+            <div class="label" style="margin-bottom: 6px">Narrow: icon only</div>
+            <button class="btn ghost icon" aria-label="Search"><i data-icon="search"></i></button>
+          </div>
+          <div>
+            <div class="label" style="margin-bottom: 6px">Mode toggle</div>
+            <button class="btn ghost icon" data-theme-toggle="icon"><i data-icon="sun"></i></button>
+          </div>
+        </div>
+      </div>
+      <p class="caption">
+        Proposed: <code>SearchTrigger</code> (<code>placeholder</code>, <code>shortcut</code>, <code>onClick</code>,
+        and the icon-only form below a breakpoint) and <code>ModeToggle</code> (<code>mode</code>,
+        <code>onToggle</code>; it names the mode it switches to). The toggle is controlled, because where the mode is
+        stored is the app's: docz shares one key with its exported pages (INV-0036 open question 2).
+      </p>
+
+      <!-- ─── 6 ──────────────────────────────────────────────────────── -->
+      <h2 id="c6">6. Vertical stepper <span class="status prop">new prop</span></h2>
+      <p class="muted note">
+        A document's lifecycle: its type's statuses in order, with the document's own marked. The package's
+        <code>Stepper</code> is horizontal and wraps, which reads well for three phases and badly for a type's statuses
+        in a narrow column (an RFC has five, an IMPL five, and a custom type as many as it declares). <code>Timeline</code> is vertical but is a list of events with actors and times.
+      </p>
+      <div class="grid two">
+        <div class="card">
+          <div class="head"><h3>Proposed: <span class="mono">orientation="vertical"</span></h3></div>
+          <div class="body">
+            <ol class="vstepper">
+              <li data-status="done">Draft</li>
+              <li data-status="done">In Review</li>
+              <li data-status="current">Approved</li>
+              <li>Implemented</li>
+              <li>Abandoned</li>
+            </ol>
+          </div>
+        </div>
+        <div class="card">
+          <div class="head"><h3>The package's Stepper today</h3><div class="desc">the same five statuses</div></div>
+          <div class="body">
+            <ol class="stepper">
+              <li data-status="done"><span class="marker"><i data-icon="check"></i></span><span class="name">Draft</span></li>
+              <li data-status="done"><span class="marker"><i data-icon="check"></i></span><span class="name">In Review</span></li>
+              <li data-status="current"><span class="marker">3</span><span class="name">Approved</span></li>
+              <li><span class="marker">4</span><span class="name">Implemented</span></li>
+              <li><span class="marker">5</span><span class="name">Abandoned</span></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <p class="caption">
+        Proposed: <code>orientation</code> on <code>Stepper</code>, and a <code>size="sm"</code> whose marker is a dot
+        with no number, since a lifecycle's position matters and its ordinal does not. In docz today:
+        <code>LifecycleRail</code> in <code>doc-rail.tsx</code>.
+      </p>
+
+      <!-- ─── 7 ──────────────────────────────────────────────────────── -->
+      <h2 id="c7">7. Disclosure <span class="status new">new primitive</span></h2>
+      <p class="muted note">
+        A panel that opens and closes under a labelled row. The package has no <code>Collapsible</code> or
+        <code>Accordion</code>; Base UI has both. docz uses one for the lifecycle under a document's details, for the
+        outline on a narrow screen, and it is what the sidebar tree (candidate 1) opens and closes with.
+      </p>
+      <div class="grid two" style="align-items: start">
+        <details class="disclosure">
+          <summary><i data-icon="chevron"></i><span class="label">Lifecycle</span><span class="badge success value">Approved</span></summary>
+          <div class="panel">
+            <ol class="vstepper">
+              <li data-status="done">Draft</li>
+              <li data-status="done">In Review</li>
+              <li data-status="current">Approved</li>
+              <li>Implemented</li>
+            </ol>
+          </div>
+        </details>
+        <details class="disclosure" open>
+          <summary><i data-icon="chevron"></i><span class="label">Lifecycle</span><span class="badge success value">Approved</span></summary>
+          <div class="panel">
+            <ol class="vstepper">
+              <li data-status="done">Draft</li>
+              <li data-status="done">In Review</li>
+              <li data-status="current">Approved</li>
+              <li>Implemented</li>
+            </ol>
+          </div>
+        </details>
+      </div>
+      <p class="caption">
+        Proposed: <code>components/collapsible</code> on Base UI's Collapsible (<code>Collapsible</code>,
+        <code>CollapsibleTrigger</code>, <code>CollapsiblePanel</code>), and a bordered <code>Disclosure</code> block
+        over it with <code>label</code> and a <code>value</code> shown while closed. In docz today: three native
+        <code>&lt;details&gt;</code> elements, each styled where it stands.
+      </p>
+
+      <!-- ─── 8 ──────────────────────────────────────────────────────── -->
+      <h2 id="c8">8. Categorical tone <span class="status token">new prop and tokens</span></h2>
+      <p class="muted note">
+        The package's <code>Badge</code> and <code>Dot</code> take a tone from a fixed list of states. docz colours by
+        category: one colour per document type, on the sidebar's dots, the filter chips, and the active document's
+        rail. The colours stay in docz, as the package's RFC says a mapping from an app's states does. What is missing
+        is a way to hand one to a badge or a dot, and a small categorical palette for an app with no colours of its
+        own.
+      </p>
+      <div class="grid two" style="align-items: start">
+        <div class="card">
+          <div class="head"><h3>A tone the app supplies</h3><div class="desc">docz's seven built-in type colours, as badges, dots and chips</div></div>
+          <div class="body stack">
+            <div class="row">
+              <span class="badge tone" data-type="rfc">rfc</span>
+              <span class="badge tone" data-type="adr">adr</span>
+              <span class="badge tone" data-type="design">design</span>
+              <span class="badge tone" data-type="impl">impl</span>
+              <span class="badge tone" data-type="investigation">investigation</span>
+              <span class="badge tone" data-type="runbook">runbook</span>
+              <span class="badge tone" data-type="docs">docs</span>
+            </div>
+            <div class="row" data-seg>
+              <button class="chip" aria-pressed="true">all types</button>
+              <button class="chip" aria-pressed="false"><span class="dot" data-type="rfc"></span>rfc</button>
+              <button class="chip" aria-pressed="false"><span class="dot" data-type="adr"></span>adr</button>
+              <button class="chip" aria-pressed="false"><span class="dot" data-type="design"></span>design</button>
+              <button class="chip" aria-pressed="false"><span class="dot" data-type="impl"></span>impl</button>
+            </div>
+            <p class="xs muted">
+              The second row is docz's type filter today: a toggle chip with a dot, where the package's
+              <code>FilterChip</code> is <code>key = value</code> and opens an editor. The mockup shows the directory
+              both ways.
+            </p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="head"><h3>docz's statuses on the package's variants</h3><div class="desc">one status has no tone to take</div></div>
+          <div class="body">
+            <table class="plain">
+              <thead><tr><th>Status</th><th>Variant</th><th>Badge</th></tr></thead>
+              <tbody>
+                <tr><td>Draft, Open</td><td class="mono xs">warning</td><td><span class="badge warning">Draft</span></td></tr>
+                <tr><td>Proposed, In Review, In Progress</td><td class="mono xs">info</td><td><span class="badge info">Proposed</span></td></tr>
+                <tr><td>Accepted, Approved, Implemented, Completed, Concluded</td><td class="mono xs">success</td><td><span class="badge success">Accepted</span></td></tr>
+                <tr><td>Rejected, Cancelled</td><td class="mono xs">destructive</td><td><span class="badge destructive">Rejected</span></td></tr>
+                <tr><td>Deprecated, Abandoned, Paused, Inconclusive</td><td class="mono xs">muted</td><td><span class="badge muted">Deprecated</span></td></tr>
+                <tr><td>Superseded</td><td class="mono xs muted">none: violet in docz</td><td><span class="badge tone superseded">Superseded</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <p class="caption">
+        Proposed: <code>tone</code> on <code>Badge</code> and <code>Dot</code>, a CSS colour that sets
+        <code>--tone</code> and takes the tinted form's mix, so a badge in any colour keeps the package's contrast
+        rule. And eight categorical tokens, <code>--category-1</code> to <code>--category-8</code>, fitted to 4.5:1 on
+        the three surfaces in both themes, beside the five <code>--chart-*</code> colours, which are tuned for bars
+        and not for text. docz's hash colours for a custom type are such a set already (<code>--color-hash-0</code>
+        to <code>-7</code> in <code>shell.css</code>) and could be the starting values.
+      </p>
+
+      <!-- ─── 9 ──────────────────────────────────────────────────────── -->
+      <h2 id="c9">9. Tokens <span class="status token">two tokens, one decision</span></h2>
+      <p class="muted note">
+        docz's shell has seven steps the package has no name for (INV-0036, Observation 4). Most map to a neighbour
+        with no visible loss. Two do not, and one existing token behaves differently from docz's.
+      </p>
+      <div class="swatches">
+        <div class="swatch" style="--c: var(--background)"><i></i><div>bg-base<span>→ background</span></div></div>
+        <div class="swatch" style="--c: var(--card)"><i></i><div>bg-raised<span>→ card</span></div></div>
+        <div class="swatch" style="--c: var(--muted)"><i></i><div>bg-elevated, bg-hover<span>→ muted, accent</span></div></div>
+        <div class="swatch" style="--c: color-mix(in oklch, var(--foreground) 12%, var(--background))"><i></i><div>bg-active<span>no neighbour: a pressed step</span></div></div>
+        <div class="swatch" style="--c: var(--border)"><i></i><div>border-default, border-hairline<span>→ border</span></div></div>
+        <div class="swatch" style="--c: color-mix(in oklch, var(--foreground) 30%, var(--border))"><i></i><div>border-strong<span>no neighbour: a hovered edge</span></div></div>
+        <div class="swatch" style="--c: var(--foreground)"><i></i><div>fg-primary, fg-secondary<span>→ foreground</span></div></div>
+        <div class="swatch" style="--c: var(--muted-foreground)"><i></i><div>fg-tertiary, fg-muted<span>→ muted-foreground</span></div></div>
+      </div>
+      <div class="grid two" style="margin-top: 14px">
+        <div class="card">
+          <div class="head"><h3><span class="mono">--code-bg</span> follows the page</h3><div class="desc">the package, both themes</div></div>
+          <div class="body"><pre class="codeblock follows">$ docz create design "Your design title"</pre></div>
+        </div>
+        <div class="card">
+          <div class="head"><h3>docz's code stays dark</h3><div class="desc">both modes, because the Shiki theme is a dark one</div></div>
+          <div class="body"><pre class="codeblock dark">$ docz create design "Your design title"</pre></div>
+        </div>
+      </div>
+      <p class="caption">
+        Proposed: <code>--border-strong</code> for a bordered control's hover and a popover's edge, and
+        <code>--surface-pressed</code> for a pressed row; both go upstream (INV-0036 open question 4, resolved
+        2026-11-21). Everything else docz drops. The decision is the code
+        surface: switch the toggle above and compare the two blocks in light. Either docz's site-rendered code moves
+        to a Shiki theme pair that follows the page, or docz sets <code>--code-bg</code> itself and keeps it dark.
+        Documents are not affected either way; a document's code is styled by its own theme.
+      </p>
+      <p class="caption">
+        Not a candidate, but the one name to watch: the package's <code>--color-accent</code> is a hover surface and
+        docz's is the brand colour, <code>primary</code> in the package. A <code>bg-accent</code> left behind
+        compiles and paints the wrong colour.
+      </p>
+
+      <!-- ─── Stays ──────────────────────────────────────────────────── -->
+      <h2 id="stays">What stays in docz <span class="status local">not proposed</span></h2>
+      <div class="card">
+        <div class="body">
+          <table class="plain">
+            <thead><tr><th>Part</th><th>Why it stays</th></tr></thead>
+            <tbody>
+              <tr><td>The document pane, <code>page.css</code>, and the document themes</td><td>A document's look is <code>pkg/theme</code>'s, shared with exported pages. The package's RFC leaves it in docz.</td></tr>
+              <tr><td>The markdown pipeline, Shiki, mermaid</td><td>Rendering, not chrome. It takes colours from the shell and nothing else.</td></tr>
+              <tr><td>The three widgets (flow, stepper, scorecard)</td><td>Drawn on three surfaces from one validated corpus, one of them without React (open question 6).</td></tr>
+              <tr><td>Type colours and the status mapping</td><td>An app's states and categories. Candidate 8 is only the way to hand them over.</td></tr>
+              <tr><td>docz-review's page</td><td>Its own question (open question 5).</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <script src="sketch.js"></script>
+  </body>
+</html>

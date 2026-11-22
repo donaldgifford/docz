@@ -21,6 +21,8 @@ export default tseslint.config(
       "review/__generated__",
       "review/compiled.ts",
       "dist-review-bin",
+      // Static sketches for INV-0036: browser scripts, shipped nowhere.
+      "design",
       "public/mockServiceWorker.js",
     ],
   },
