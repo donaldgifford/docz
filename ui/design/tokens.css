@@ -1,0 +1,266 @@
+/*
+ * COPY: @donaldgifford/design-system 0.3.2, src/styles/tokens.css, verbatim
+ * below this comment. It is here so the sketches in this directory open
+ * with no install, since docz does not depend on the package yet
+ * (INV-0036). Do not edit it; replace it from the package when the version
+ * moves. Nothing in this directory ships.
+ */
+
+/*
+ * The design tokens in three tiers.
+ *
+ * Raw: what a value is (a gray at 92 percent lightness, a blue, a
+ * typeface, the base radius). Read only by the semantic and component
+ * tiers below, never by a component.
+ *
+ * Semantic: what a value is for (--background, --primary, --success),
+ * defined for both themes, on :root (light) and .dark. Components read
+ * these, through the Tailwind theme map in globals.css.
+ *
+ * Component: one component's knob (--sidebar-*, --header-height,
+ * --badge-radius, --table-row-h), used sparingly.
+ *
+ * Colors are full oklch values (computed from the HSL they replaced), so
+ * a utility reads var(--x) directly and a tint is color-mix(in oklch,
+ * var(--x) N%, transparent). The values are the look of
+ * repo-guardian's v2 UI: graphite surfaces, a sky accent, IBM Plex
+ * Sans and JetBrains Mono, a 3px radius.
+ */
+
+/* ─── Raw ─────────────────────────────────────────────────────────── */
+
+:root {
+  --amber-48: oklch(0.4811 0.1024 68.55);
+  --amber-74: oklch(0.739 0.145 80.4);
+  --blue-42: oklch(0.4163 0.0601 262.08);
+  --blue-47: oklch(0.474 0.1518 261.4);
+  --blue-50: oklch(0.5013 0.1435 254.06);
+  --blue-72: oklch(0.7187 0.1336 251.58);
+  --blue-73: oklch(0.7328 0.1377 263.22);
+  --gray-100: oklch(1 0 0);
+  --green-45: oklch(0.4499 0.1196 146.54);
+  --green-70: oklch(0.6986 0.1804 145.86);
+  --red-48: oklch(0.4769 0.1678 29.12);
+  --red-71: oklch(0.714 0.1619 25.04);
+  --slate-21: oklch(0.2111 0.0079 264.39);
+  --slate-23: oklch(0.2323 0.012 258.37);
+  --slate-25: oklch(0.2538 0.0103 261.45);
+  --slate-28: oklch(0.2847 0.0129 258.37);
+  --slate-34: oklch(0.335 0.0145 256.78);
+  --slate-47: oklch(0.466 0.0233 253.51);
+  --slate-71: oklch(0.7084 0.0179 256.74);
+  --slate-90: oklch(0.8958 0.0092 258.34);
+  --slate-94: oklch(0.9369 0.0041 258.32);
+  --slate-95: oklch(0.9521 0.0045 258.32);
+  --slate-98: oklch(0.9755 0.0029 264.54);
+
+  --font-family-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-family-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius-base: 3px;
+  /* The spacing steps, on Tailwind's 0.25rem grid. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 1.75rem;
+  --space-8: 2rem;
+}
+
+/* ─── Semantic ────────────────────────────────────────────────────── */
+
+:root {
+  --background: var(--slate-98);
+  --foreground: var(--slate-23);
+  --card: var(--gray-100);
+  --card-foreground: var(--slate-23);
+  --popover: var(--gray-100);
+  --popover-foreground: var(--slate-23);
+  --primary: var(--blue-50);
+  --primary-foreground: var(--gray-100);
+  --secondary: var(--slate-95);
+  --secondary-foreground: var(--slate-23);
+  --muted: var(--slate-95);
+  --muted-foreground: var(--slate-47);
+  --accent: var(--slate-95);
+  --accent-foreground: var(--slate-23);
+  --destructive: var(--red-48);
+  --destructive-foreground: var(--gray-100);
+  --success: var(--green-45);
+  --warning: var(--amber-48);
+  --info: var(--blue-47);
+  --success-foreground: var(--gray-100);
+  --warning-foreground: var(--gray-100);
+  --info-foreground: var(--gray-100);
+  /* Domain states: each defaults to a role and diverges
+     only where a look needs it. */
+  --pending: var(--secondary);
+  --pending-foreground: var(--secondary-foreground);
+  --approved: var(--success);
+  --approved-foreground: var(--success-foreground);
+  --ignored: var(--secondary);
+  --ignored-foreground: var(--secondary-foreground);
+  --running: var(--info);
+  --running-foreground: var(--info-foreground);
+  /* Code and diffs. */
+  --code-bg: var(--background);
+  --diff-add: color-mix(in oklch, var(--success) 10%, transparent);
+  --diff-remove: color-mix(in oklch, var(--destructive) 10%, transparent);
+  --border: var(--slate-90);
+  --input: var(--slate-90);
+  --ring: var(--blue-50);
+  --chart-1: var(--blue-50);
+  --chart-2: var(--green-45);
+  --chart-3: var(--blue-47);
+  --chart-4: var(--amber-48);
+  --chart-5: var(--red-48);
+  --radius: var(--radius-base);
+  /* Dots, tracks, toggles, and avatars' badges: fully rounded. */
+  --pill-radius: 9999px;
+  /* Sizing: one compact density, plain values with no
+     setting; a second density would be one more block. */
+  --control-h: 1.75rem;
+  --row-h: 2rem;
+  /* The type scale, under Tailwind's own --text-* names so text-xs to
+     text-xl read it. The base is the body's 14px, repo-guardian's. */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 0.875rem;
+  --text-base--line-height: 1.45;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  /* Line heights as ratios of the size (Tailwind's sm and xs steps), so a
+     smaller size keeps its step's rhythm: leading-compact, leading-dense. */
+  --line-height-compact: calc(1.25 / 0.875);
+  --line-height-dense: calc(1 / 0.75);
+  /* Labels: the uppercase, tracked small text over table columns, KPIs,
+     and navigation and menu groups (text-label, text-label-sm,
+     tracking-label). */
+  --label-size: 0.6875rem;
+  --label-size-sm: 0.65625rem;
+  --label-size-xs: 0.625rem;
+  --label-tracking: 0.08em;
+  /* Motion: Tailwind's default transition timing, read as
+     duration-(--duration-fast) and ease-(--ease-standard). */
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+  }
+}
+
+.dark {
+  --background: var(--slate-21);
+  --foreground: var(--slate-94);
+  --card: var(--slate-25);
+  --card-foreground: var(--slate-94);
+  --popover: var(--slate-25);
+  --popover-foreground: var(--slate-94);
+  --primary: var(--blue-72);
+  --primary-foreground: var(--slate-21);
+  --secondary: var(--slate-28);
+  --secondary-foreground: var(--slate-94);
+  --muted: var(--slate-28);
+  --muted-foreground: var(--slate-71);
+  --accent: var(--slate-28);
+  --accent-foreground: var(--slate-94);
+  --destructive: var(--red-71);
+  --destructive-foreground: var(--slate-21);
+  --success: var(--green-70);
+  --warning: var(--amber-74);
+  --info: var(--blue-73);
+  --success-foreground: var(--slate-21);
+  --warning-foreground: var(--slate-21);
+  --info-foreground: var(--slate-21);
+  /* Domain states: each defaults to a role and diverges
+     only where a look needs it. */
+  --pending: var(--secondary);
+  --pending-foreground: var(--secondary-foreground);
+  --approved: var(--success);
+  --approved-foreground: var(--success-foreground);
+  --ignored: var(--secondary);
+  --ignored-foreground: var(--secondary-foreground);
+  --running: var(--info);
+  --running-foreground: var(--info-foreground);
+  /* Code and diffs. */
+  --code-bg: var(--background);
+  --diff-add: color-mix(in oklch, var(--success) 10%, transparent);
+  --diff-remove: color-mix(in oklch, var(--destructive) 10%, transparent);
+  --border: var(--slate-34);
+  --input: var(--slate-34);
+  --ring: var(--blue-72);
+  --chart-1: var(--blue-72);
+  --chart-2: var(--green-70);
+  --chart-3: var(--blue-73);
+  --chart-4: var(--amber-74);
+  --chart-5: var(--red-71);
+}
+
+/* ─── Component ───────────────────────────────────────────────────── */
+
+:root {
+  --header-height: 2.5rem;
+  --sidebar: var(--gray-100);
+  --sidebar-foreground: var(--slate-23);
+  --sidebar-primary: var(--blue-50);
+  --sidebar-primary-foreground: var(--gray-100);
+  --sidebar-accent: var(--slate-95);
+  --sidebar-accent-foreground: var(--slate-23);
+  --sidebar-border: var(--slate-90);
+  --sidebar-ring: var(--blue-50);
+  /* Badges are square-cornered. A tinted badge fills with
+     --badge-tint of its tone, and its text is the tone mixed
+     --badge-tint-text of the way from --badge-mix, black (light) or
+     white (dark). */
+  --badge-radius: 0;
+  --badge-mix: black;
+  --badge-tint: 18%;
+  --badge-tint-text: 65%;
+  --badge-px: 0.4375rem;
+  --badge-py: 0.3125rem;
+  /* The signed-in user's initials. */
+  --avatar: var(--blue-42);
+  --avatar-foreground: var(--gray-100);
+  /* A data table's body row: 10px cell padding around one compact line
+     of base text, and the row's hairline. */
+  --table-row-h: calc(1.25rem + var(--text-base) * var(--line-height-compact) + 1px);
+  /* A table's head row, and the height past which a data table scrolls
+     under its sticky head. */
+  --table-head-h: 2rem;
+  /* A KPI's figure. */
+  --kpi-value-size: 1.375rem;
+  --table-max-h: 32rem;
+  /* Side sheets: the default width, the detail view's wider one, and the
+     padding around the header and body. */
+  --sheet-width: 24rem;
+  --sheet-width-wide: 36rem;
+  --sheet-padding: 1rem;
+  /* Overlays lift off the page: menus, popovers, dialogs, and sheets
+     take --elevation-overlay, a chart's tooltip the smaller
+     --elevation-tooltip. Lighter in the light theme, where a dark shadow on
+     a pale page reads as a smudge. */
+  --elevation-overlay: 0 12px 36px rgb(15 23 42 / 0.14);
+  --elevation-tooltip: 0 8px 24px rgb(15 23 42 / 0.12);
+}
+
+.dark {
+  --badge-mix: white;
+  --elevation-overlay: 0 12px 36px rgb(0 0 0 / 0.45);
+  --elevation-tooltip: 0 8px 24px rgb(0 0 0 / 0.4);
+  --avatar: var(--blue-42);
+  --avatar-foreground: var(--gray-100);
+  --sidebar: var(--slate-25);
+  --sidebar-foreground: var(--slate-94);
+  --sidebar-primary: var(--blue-72);
+  --sidebar-primary-foreground: var(--slate-21);
+  --sidebar-accent: var(--slate-28);
+  --sidebar-accent-foreground: var(--slate-94);
+  --sidebar-border: var(--slate-34);
+  --sidebar-ring: var(--blue-72);
+}
