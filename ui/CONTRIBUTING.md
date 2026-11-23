@@ -6,10 +6,24 @@ issues, propose changes, and submit pull requests.
 ## Quick start
 
 ```bash
-mise install                      # toolchain pinned in the root mise.toml
-just ui install                   # bun install, in ui/
-just ui lint                      # lint
+mise install                               # toolchain pinned in the root mise.toml
+NPM_TOKEN=$(gh auth token) just ui install # bun install, in ui/
+just ui lint                               # lint
 ```
+
+Installing needs a GitHub token with the `read:packages` scope in
+`NPM_TOKEN`, because `@donaldgifford/design-system` comes from GitHub
+Packages. `gh auth token` prints one; add the scope with
+`gh auth refresh --scopes read:packages` if the install answers 401 or
+403. The token stays in the environment: never write it into `.npmrc`
+or any other file.
+
+### Pull requests from a fork
+
+A fork's pull request runs with a read-only token that may not be able
+to read the package, in which case the UI jobs fail at the install. A
+maintainer then pushes the branch to this repository so the jobs run
+there. No gate is skipped for a fork.
 
 `just ui` enumerates the frontend's recipes; `just --list` shows the root's.
 
@@ -36,7 +50,8 @@ Use [GitHub Issues](https://github.com/donaldgifford/docz/issues) for:
 ```bash
 git clone https://github.com/donaldgifford/docz.git
 cd docz
-just ui install    # the frontend lives in ui/; its recipes are `just ui <recipe>`
+# the frontend lives in ui/; its recipes are `just ui <recipe>`
+NPM_TOKEN=$(gh auth token) just ui install
 just ui lint
 ```
 

@@ -31,10 +31,20 @@ no extra requests, byte-identical surfaces.
 ## Quickstart
 
 ```sh
-mise install       # pinned toolchain (bun, just, linters)
-just ui install    # dependencies
-just ui dev        # dev server, proxied to a local docz-api on :8080
+mise install                               # pinned toolchain (bun, just, linters)
+NPM_TOKEN=$(gh auth token) just ui install # dependencies
+just ui dev                                # dev server, proxied to a local docz-api on :8080
 ```
+
+Installing needs a GitHub token with the `read:packages` scope in
+`NPM_TOKEN`: `@donaldgifford/design-system` is on GitHub Packages, which
+asks for a token even to read a public package. `gh auth token` prints
+gh's own; `gh auth refresh --scopes read:packages` adds the scope if it
+is missing. `ui/.npmrc` reads the variable, so the token is never
+written to a file, and `just ui install` stops with this line when the
+variable is unset. An image build takes the same variable as a build
+secret (`just ui docker-build`, `docker buildx bake dev-ui`,
+`just ui local-up`).
 
 No docz-api running? Use the MSW-backed dev server instead:
 

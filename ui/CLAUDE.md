@@ -20,6 +20,19 @@ SPA, no SSR. The authoritative docs:
 
 Bun is the package manager and script runner (pinned in `mise.toml`).
 
+- `NPM_TOKEN=$(gh auth token) just ui install` — `@donaldgifford/design-system`
+  (pinned exactly, no caret) comes from GitHub Packages, and `ui/.npmrc`
+  reads the token from `NPM_TOKEN`. The token comes from the environment
+  and is NEVER written to a file: not `.npmrc`, not `.env*`, not
+  `mise.toml`, not a compose file. The recipe fails before Bun runs when
+  the variable is unset. Every other install path takes the same
+  variable: CI's install steps from the job's `GITHUB_TOKEN`
+  (`packages: read`), and every image build as a BuildKit secret
+  (`--mount=type=secret,id=NPM_TOKEN,env=NPM_TOKEN` in `Dockerfile.ui`;
+  `_common_ui` in `docker-bake.hcl`, `just ui docker-build`, both compose
+  files). Never an `ARG` or `ENV`: either would put the token in a layer.
+  Secrets are not part of BuildKit's cache key, so a cached install
+  layer hides a missing secret; test the wiring with `--no-cache`.
 - `bun run dev` — Vite dev server; proxies `/api`, `/auth`,
   `/openapi.yaml` to a local docz-api (`:8080`; override `DOCZ_API_URL`)
 - `bun run dev:msw` — dev server against MSW fixtures (no API needed)

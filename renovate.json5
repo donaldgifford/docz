@@ -7,5 +7,22 @@
     "github>donaldgifford/renovate-config:mise",
     "github>donaldgifford/renovate-config:ci",
     "github>donaldgifford/renovate-config:node"
+  ],
+  "packageRules": [
+    {
+      // ui/ pins the design system exactly, and a bump is never part of a
+      // grouped update: it changes the look, and from IMPL-0033 Phase 3 it
+      // also means regenerating pkg/theme's charcoal.css and the export's
+      // goldens in the same pull request.
+      "description": "@donaldgifford/design-system: pinned exactly, in its own pull request",
+      "matchPackageNames": ["@donaldgifford/design-system"],
+      "rangeStrategy": "pin",
+      "groupName": null,
+      "automerge": false
+    }
   ]
+  // Still to add, by a person: a `hostRules` entry for npm.pkg.github.com
+  // with a token encrypted for this repository (hostType "npm", matchHost
+  // "npm.pkg.github.com", encrypted.token). Renovate cannot read the
+  // package's versions without it, so it proposes no bump until then.
 }
