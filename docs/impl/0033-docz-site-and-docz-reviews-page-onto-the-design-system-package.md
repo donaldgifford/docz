@@ -393,9 +393,9 @@ states, the page header, and load more.
 - [x] `statusVariant()` in `lib/colors.ts` over the existing
   `STATUS_GROUPS`, by DESIGN-0028's section 8 table, with a table test
   over every status and an unknown one.
-- [ ] `badges.tsx`: the status pill and dot as `Badge` and `Dot` by
+- [x] `badges.tsx`: the status pill and dot as `Badge` and `Dot` by
   variant, and the type dot and chip by `tone` from `typeColor()`.
-- [ ] Point the eight hash colours at `--category-1` to `--category-8`
+- [x] Point the eight hash colours at `--category-1` to `--category-8`
   and confirm a custom type still gets a stable colour.
 - [ ] `query-states.tsx`: `EmptyState`, `ErrorState`, `Skeleton`, and
   `InlineLoading`, with `SessionRequiredRedirect` unchanged.
@@ -407,7 +407,7 @@ states, the page header, and load more.
 - [ ] `login.tsx` and `consent.tsx` on `Card` and `Button`, with each
   provider button still a real `<a href="/auth/login?...">` through
   `Button`'s `render` prop. Keep the test that asserts the anchor.
-- [ ] Rewrite `badges.test.tsx` to assert the variant and tone a status
+- [x] Rewrite `badges.test.tsx` to assert the variant and tone a status
   and a type produce.
 - [ ] Move the classes in the files touched here from docz's names to
   the package's.

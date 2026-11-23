@@ -17,6 +17,11 @@
 @source "../../index.html";
 @source "../../review.html";
 
+/* One line per package part imported under src/, in order.
+ * parts.test.ts holds this list to the imports, both ways. */
+@import "@donaldgifford/design-system/parts/blocks/list-row.css";
+@import "@donaldgifford/design-system/parts/components/badge.css";
+
 /* docz's 58 token names, in two files (DESIGN-0028 §4). shell.css
  * aliases the 32 whose value is the package's, so chrome that still
  * writes a docz name keeps working until it moves (IMPL-0033 Phase 9

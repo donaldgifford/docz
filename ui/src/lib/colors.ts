@@ -1,9 +1,15 @@
 /*
- * Type and status colors (DESIGN-0001 "Type and status color system"):
- * curated map first, deterministic fallback second, neutral default
- * last. Values are CSS custom-property references so the palette stays
- * single-sourced in src/theme/tokens.css. `.docz.yaml` types/statuses
- * are free-form — there is deliberately no hardcoded "valid" list.
+ * Type and status colours (DESIGN-0001 "Type and status color system",
+ * DESIGN-0028 §8): curated map first, deterministic fallback second,
+ * neutral default last. `.docz.yaml` types and statuses are free-form,
+ * so there is deliberately no hardcoded "valid" list.
+ *
+ * A type's colour is a CSS custom-property reference: docz's own
+ * `--color-t-*` (src/theme/docz-tokens.css in the chrome, the document's
+ * theme inside a .docz-page), or one of eight `--color-hash-*` for a
+ * custom type, which are the design system's `--category-1` to
+ * `--category-8`. A status has no colour here: it takes one of the
+ * design system's Badge variants.
  */
 
 const CURATED_TYPES: Readonly<Record<string, string | undefined>> = {
@@ -82,16 +88,6 @@ const STATUS_TOKENS: Readonly<Record<string, StatusGroup | undefined>> =
     ),
   );
 
-/** Neutral for anything outside the convention — never an error. */
-export const NEUTRAL_STATUS_COLOR = "var(--color-fg-muted)";
-
-export function statusColor(status: string): string {
-  const token = STATUS_TOKENS[normalize(status)];
-  return token !== undefined
-    ? `var(--color-st-${token})`
-    : NEUTRAL_STATUS_COLOR;
-}
-
 /**
  * The design system's `Badge` variants a status can take (DESIGN-0028
  * §8). Each is one of the package's status roles or states, so a status
@@ -115,9 +111,9 @@ const STATUS_VARIANTS: Readonly<Record<StatusGroup, StatusVariant>> = {
 export const NEUTRAL_STATUS_VARIANT: StatusVariant = "outline";
 
 /**
- * The `Badge` variant for a status, by the same groups `statusColor`
- * reads. `.docz.yaml` statuses are free-form, so an unknown one is
- * neutral, and matching ignores case and extra whitespace.
+ * The `Badge` variant for a status. `.docz.yaml` statuses are free-form,
+ * so an unknown one is neutral, and matching ignores case and extra
+ * whitespace.
  */
 export function statusVariant(status: string): StatusVariant {
   const group = STATUS_TOKENS[normalize(status)];

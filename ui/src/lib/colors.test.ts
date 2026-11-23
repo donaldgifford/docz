@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  NEUTRAL_STATUS_COLOR,
-  NEUTRAL_STATUS_VARIANT,
-  statusColor,
-  statusVariant,
-  typeColor,
-} from "@/lib/colors";
+import { NEUTRAL_STATUS_VARIANT, statusVariant, typeColor } from "@/lib/colors";
 
 describe("typeColor", () => {
   it.each([
@@ -54,39 +48,6 @@ describe("typeColor", () => {
     // that's a breaking visual change, not a refactor.
     expect(typeColor("postmortem")).toBe("var(--color-hash-7)");
     expect(typeColor("playbook")).toBe("var(--color-hash-6)");
-  });
-});
-
-describe("statusColor", () => {
-  it.each([
-    ["Draft", "var(--color-st-draft)"],
-    ["open", "var(--color-st-draft)"],
-    ["Proposed", "var(--color-st-proposed)"],
-    ["In Review", "var(--color-st-proposed)"],
-    ["in progress", "var(--color-st-proposed)"],
-    ["Accepted", "var(--color-st-accepted)"],
-    ["ACTIVE", "var(--color-st-accepted)"],
-    ["Adopted", "var(--color-st-accepted)"],
-    ["implemented", "var(--color-st-accepted)"],
-    ["Concluded", "var(--color-st-accepted)"],
-    ["Rejected", "var(--color-st-rejected)"],
-    ["cancelled", "var(--color-st-rejected)"],
-    ["canceled", "var(--color-st-rejected)"],
-    ["Superseded", "var(--color-st-superseded)"],
-    ["Deprecated", "var(--color-st-deprecated)"],
-    ["archived", "var(--color-st-deprecated)"],
-    ["Paused", "var(--color-st-deprecated)"],
-  ])("maps %s by convention", (status, expected) => {
-    expect(statusColor(status)).toBe(expected);
-  });
-
-  it("normalizes internal whitespace", () => {
-    expect(statusColor("in    review")).toBe("var(--color-st-proposed)");
-  });
-
-  it("returns neutral for anything unrecognized", () => {
-    expect(statusColor("Percolating")).toBe(NEUTRAL_STATUS_COLOR);
-    expect(statusColor("")).toBe(NEUTRAL_STATUS_COLOR);
   });
 });
 
