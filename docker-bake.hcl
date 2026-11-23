@@ -130,6 +130,9 @@ target "_common_ui" {
     spec  = "api"
     theme = "pkg/theme"
   }
+  // ui/.npmrc reads NPM_TOKEN to fetch @donaldgifford/design-system from
+  // GitHub Packages. A secret, not an arg: it reaches one RUN and no layer.
+  secret = ["id=NPM_TOKEN,env=NPM_TOKEN"]
   labels = {
     "org.opencontainers.image.source"      = "https://github.com/donaldgifford/docz"
     "org.opencontainers.image.revision"    = "${COMMIT_SHA}"
