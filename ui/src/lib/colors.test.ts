@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { NEUTRAL_STATUS_COLOR, statusColor, typeColor } from "@/lib/colors";
+import {
+  NEUTRAL_STATUS_COLOR,
+  NEUTRAL_STATUS_VARIANT,
+  statusColor,
+  statusVariant,
+  typeColor,
+} from "@/lib/colors";
 
 describe("typeColor", () => {
   it.each([
@@ -81,5 +87,51 @@ describe("statusColor", () => {
   it("returns neutral for anything unrecognized", () => {
     expect(statusColor("Percolating")).toBe(NEUTRAL_STATUS_COLOR);
     expect(statusColor("")).toBe(NEUTRAL_STATUS_COLOR);
+  });
+});
+
+describe("statusVariant", () => {
+  // DESIGN-0028 section 8's table, every status in every group.
+  it.each([
+    ["Draft", "warning"],
+    ["Open", "warning"],
+    ["Proposed", "info"],
+    ["In Review", "info"],
+    ["In Progress", "info"],
+    ["Accepted", "success"],
+    ["Active", "success"],
+    ["Approved", "success"],
+    ["Adopted", "success"],
+    ["Completed", "success"],
+    ["Implemented", "success"],
+    ["Concluded", "success"],
+    ["Rejected", "destructive"],
+    ["Cancelled", "destructive"],
+    ["Canceled", "destructive"],
+    ["Abandoned", "destructive"],
+    ["Superseded", "ignored"],
+    ["Deprecated", "outline"],
+    ["Archived", "outline"],
+    ["Paused", "outline"],
+    ["Inconclusive", "outline"],
+  ] as const)("maps %s to %s", (status, expected) => {
+    expect(statusVariant(status)).toBe(expected);
+  });
+
+  it("ignores case and extra whitespace", () => {
+    expect(statusVariant("ACCEPTED")).toBe("success");
+    expect(statusVariant("  in    review ")).toBe("info");
+  });
+
+  it("is neutral for anything outside the convention", () => {
+    expect(NEUTRAL_STATUS_VARIANT).toBe("outline");
+    expect(statusVariant("Percolating")).toBe(NEUTRAL_STATUS_VARIANT);
+    expect(statusVariant("")).toBe(NEUTRAL_STATUS_VARIANT);
+  });
+
+  it("gives Superseded the package's ignored colour, not a status role", () => {
+    // The one visible change of the move (design-system#32): it was a
+    // violet of docz's own.
+    expect(statusVariant("Superseded")).toBe("ignored");
   });
 });

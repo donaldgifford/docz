@@ -390,7 +390,7 @@ states, the page header, and load more.
   held to it.
 - [x] `bundle-budget.ts`: 165 KB, with the comment rewritten for the new
   eager set (question 4 below).
-- [ ] `statusVariant()` in `lib/colors.ts` over the existing
+- [x] `statusVariant()` in `lib/colors.ts` over the existing
   `STATUS_GROUPS`, by DESIGN-0028's section 8 table, with a table test
   over every status and an unknown one.
 - [ ] `badges.tsx`: the status pill and dot as `Badge` and `Dot` by

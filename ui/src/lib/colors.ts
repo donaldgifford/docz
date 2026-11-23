@@ -50,7 +50,10 @@ export function typeColor(type: string): string {
   return `var(--color-hash-${String(fnv1a(key) % HASH_PALETTE_SIZE)})`;
 }
 
-const STATUS_GROUPS: readonly [token: string, statuses: string[]][] = [
+type StatusGroup =
+  "draft" | "proposed" | "accepted" | "rejected" | "superseded" | "deprecated";
+
+const STATUS_GROUPS: readonly [token: StatusGroup, statuses: string[]][] = [
   ["draft", ["draft", "open"]],
   ["proposed", ["proposed", "in review", "in progress"]],
   [
@@ -72,7 +75,7 @@ const STATUS_GROUPS: readonly [token: string, statuses: string[]][] = [
   ["deprecated", ["deprecated", "archived", "paused", "inconclusive"]],
 ];
 
-const STATUS_TOKENS: Readonly<Record<string, string | undefined>> =
+const STATUS_TOKENS: Readonly<Record<string, StatusGroup | undefined>> =
   Object.fromEntries(
     STATUS_GROUPS.flatMap(([token, statuses]) =>
       statuses.map((status) => [status, token]),
@@ -87,4 +90,36 @@ export function statusColor(status: string): string {
   return token !== undefined
     ? `var(--color-st-${token})`
     : NEUTRAL_STATUS_COLOR;
+}
+
+/**
+ * The design system's `Badge` variants a status can take (DESIGN-0028
+ * §8). Each is one of the package's status roles or states, so a status
+ * carries no colour of docz's own in the chrome.
+ */
+export type StatusVariant =
+  "warning" | "info" | "success" | "destructive" | "ignored" | "outline";
+
+const STATUS_VARIANTS: Readonly<Record<StatusGroup, StatusVariant>> = {
+  draft: "warning",
+  proposed: "info",
+  accepted: "success",
+  rejected: "destructive",
+  superseded: "ignored",
+  // Ended without a verdict, or parked: no fill, so these never read as
+  // either success or failure.
+  deprecated: "outline",
+};
+
+/** Neutral for anything outside the convention, never an error. */
+export const NEUTRAL_STATUS_VARIANT: StatusVariant = "outline";
+
+/**
+ * The `Badge` variant for a status, by the same groups `statusColor`
+ * reads. `.docz.yaml` statuses are free-form, so an unknown one is
+ * neutral, and matching ignores case and extra whitespace.
+ */
+export function statusVariant(status: string): StatusVariant {
+  const group = STATUS_TOKENS[normalize(status)];
+  return group !== undefined ? STATUS_VARIANTS[group] : NEUTRAL_STATUS_VARIANT;
 }
