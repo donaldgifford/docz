@@ -172,9 +172,10 @@ preview:
 
 # Build the image without bake: context ui/, with docz-api's spec as the
 # named context the Dockerfile copies (DESIGN-0017 OQ 3). The bake spelling,
-# from the repository root, is `docker buildx bake dev-ui`.
+# from the repository root, is `docker buildx bake dev-ui`. NPM_TOKEN goes in
+# as a build secret for the install (see `install`).
 docker-build:
-    docker build -f ../Dockerfile.ui --build-context spec=../api --build-context theme=../pkg/theme -t donaldgifford/docz-site:dev .
+    docker build -f ../Dockerfile.ui --secret id=NPM_TOKEN,env=NPM_TOKEN --build-context spec=../api --build-context theme=../pkg/theme -t donaldgifford/docz-site:dev .
 
 local_compose := "docker compose -f ../deploy/ui/compose.local.yaml"
 

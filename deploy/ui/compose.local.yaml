@@ -18,6 +18,12 @@ services:
       dockerfile: ../Dockerfile.ui
       additional_contexts:
         spec: ../../api
+        theme: ../../pkg/theme
+      # The install fetches @donaldgifford/design-system from GitHub
+      # Packages: NPM_TOKEN (a GitHub token with read:packages) from the
+      # environment, as a build secret. It reaches no layer.
+      secrets:
+        - NPM_TOKEN
     image: docz-site:local
     container_name: docz-site-local
     restart: unless-stopped
@@ -27,6 +33,10 @@ services:
       - "8090:8080"
     networks:
       - docz-api-local
+
+secrets:
+  NPM_TOKEN:
+    environment: NPM_TOKEN
 
 networks:
   docz-api-local:

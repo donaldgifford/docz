@@ -154,22 +154,22 @@ nothing imports it yet.
   `ui`, `ui-e2e`, and `plugin` jobs.
 - [x] `release.yml` and `prerelease.yml`: the same on the "Install ui
   dependencies" step of the docz-review build.
-- [ ] `Dockerfile.ui`: copy `.npmrc` beside `package.json` and
+- [x] `Dockerfile.ui`: copy `.npmrc` beside `package.json` and
   `bun.lock`, and run the install with
   `--mount=type=secret,id=NPM_TOKEN`. No `ARG` and no `ENV` carries the
   token.
-- [ ] `docker-bake.hcl`: `_common_ui` gains
+- [x] `docker-bake.hcl`: `_common_ui` gains
   `secret = ["id=NPM_TOKEN,env=NPM_TOKEN"]`, so `dev-ui`, `ci-ui`, and
   `release-ui` all pass it.
-- [ ] Give `NPM_TOKEN` to every workflow step that bakes a ui target:
+- [x] Give `NPM_TOKEN` to every workflow step that bakes a ui target:
   `ci.yml`'s `docker-build` job, and each workflow that bakes
   `release-ui` (find them with a search for `bake` under
   `.github/workflows`).
-- [ ] The other image builds: the `docker build` recipe in `ui.just`
+- [x] The other image builds: the `docker build` recipe in `ui.just`
   (`--secret id=NPM_TOKEN,env=NPM_TOKEN`), and
   `deploy/ui/compose.yaml` and `deploy/ui/compose.local.yaml` (a
   `secrets:` entry sourced from the environment on the `build:` block).
-- [ ] Prove the cache trap is closed: build the image once with the
+- [x] Prove the cache trap is closed: build the image once with the
   secret, then again without it and with `--no-cache`, and confirm the
   second fails.
 - [ ] `renovate.json5`: a `hostRules` entry for `npm.pkg.github.com`
