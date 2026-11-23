@@ -1,8 +1,6 @@
-/// <reference types="node" />
-import { readdirSync, readFileSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
-
 import { describe, expect, it } from "vitest";
+
+import { sourceFiles } from "@/test/source-tree";
 
 /*
  * docz's brand colour is the `brand` utility (DESIGN-0028 question 2).
@@ -17,45 +15,27 @@ import { describe, expect, it } from "vitest";
  * tokens.css explains the rule by naming the utility.
  */
 
-const SRC = resolve(process.cwd(), "src");
 const SELF = "theme/accent-utility.test.ts";
-const SCANNED = /\.(ts|tsx|css|html)$/;
 // The bare utility only: text-accent-foreground is the package's own.
 const ACCENT_UTILITY = /(?<![\w-])(bg|text|border)-accent(?![\w-])/g;
 
-function files(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      return entry.name === "__generated__" ? [] : files(path);
-    }
-    return SCANNED.test(entry.name) ? [path] : [];
-  });
-}
-
-function source(path: string): string {
-  const text = readFileSync(path, "utf8");
-  return path.endsWith(".css") ? text.replace(/\/\*[\s\S]*?\*\//g, "") : text;
-}
-
 describe("the accent utility", () => {
-  const scanned = files(SRC).filter((path) => relative(SRC, path) !== SELF);
+  const scanned = sourceFiles(/\.(ts|tsx|css|html)$/).filter(
+    (file) => file.path !== SELF,
+  );
 
   it("scans the source tree", () => {
     expect(scanned.length).toBeGreaterThan(150);
-    expect(scanned.some((path) => path.endsWith("theme/tokens.css"))).toBe(
-      true,
-    );
+    expect(scanned.some((file) => file.path === "theme/tokens.css")).toBe(true);
   });
 
   it("is written nowhere under src: use bg-brand, text-brand, border-brand", () => {
-    const found = scanned.flatMap((path) =>
-      source(path)
+    const found = scanned.flatMap((file) =>
+      file.text
         .split("\n")
         .flatMap((line, index) =>
           [...line.matchAll(ACCENT_UTILITY)].map(
-            (match) =>
-              `${relative(SRC, path)}:${String(index + 1)} ${match[0]}`,
+            (match) => `${file.path}:${String(index + 1)} ${match[0]}`,
           ),
         ),
     );

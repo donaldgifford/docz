@@ -384,7 +384,7 @@ states, the page header, and load more.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] The `parts/` line test: read every package import under `ui/src`
+- [x] The `parts/` line test: read every package import under `ui/src`
   and fail when a part has no matching `parts/*.css` import in
   `tokens.css`. Add it before the first import, so every later phase is
   held to it.
