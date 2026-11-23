@@ -596,20 +596,39 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   CURATED_TYPES + blurb — type colors are never runtime-configurable.
 - Reader lives in `src/routes/doc.tsx` + `src/components/doc-rail.tsx`
   + `src/components/query-states.tsx` (shared 401/404/error panels).
-  Since IMPL-0002 Phase 5 the right rail is ToC-ONLY: metadata is a
-  bordered table under the doc header (`doc-meta-table.tsx`, fields
-  ""-omitting, format switch html/md/json right-aligned above it) and
-  the lifecycle is a closed-by-default `<details>` owned by
-  `LifecycleRail` (renders nothing — shell included — for unknown
-  types). The header meta row ends in a "View in Confluence" link
+  Since IMPL-0002 Phase 5 the right rail is ToC-ONLY: metadata sits
+  under the doc header (`doc-meta-table.tsx`: the design system's
+  `DetailsGrid` in its `list` layout, fields ""-omitting, a
+  `SegmentedControl` for html/md with the json link beside it) and the
+  lifecycle is a closed-by-default `Disclosure` holding a vertical
+  `Stepper`, owned by `LifecycleRail` (renders nothing — box included —
+  for unknown types; closed, it shows the status in force, and its
+  steps are not in the DOM until it opens, so a test clicks it first).
+  The header meta row ends in a "View in Confluence" link
   (new tab, `noopener noreferrer`) when spec 1.6.0's `confluence_url` is
-  non-empty, and in nothing otherwise. Gated mockup rows (relationships, tags) slot into the table
-  when the DESIGN-0001 API asks land. `TocList` runs a scroll spy
-  (`src/hooks/useActiveHeading.ts`, IntersectionObserver over the
-  heading ids, top-of-viewport band) and marks the current row
-  `aria-current="location"` — it returns undefined where the observer
-  is missing (jsdom) and HOLDS the last heading when a long section
-  fills the band, so the rail never flickers to nothing.
+  non-empty, and in nothing otherwise. Gated mockup rows (relationships,
+  tags) slot into the details when the DESIGN-0001 API asks land.
+  `TocList` is the package's `Outline` with its `use-active-heading`
+  scroll spy (IntersectionObserver over the heading ids; docz passes
+  the band, whose top margin clears the sticky top bar) and marks the
+  current row `aria-current="location"` — it is undefined where the
+  observer is missing (jsdom) and HOLDS the last heading when a long
+  section fills the band, so the rail never flickers to nothing. The
+  Outline draws its own "On this page" heading, so a route hands the
+  rail `<TocList toc={…} />` and nothing else, and it draws nothing for
+  a page with no headings. Only a page docz renders itself has an
+  outline: a fragment in the document pane has its own tabs and takes
+  no rail. A trigger's accessible name joins its label and value with
+  no space in jsdom (`/^Lifecycle\s*Approved$/`).
+- Type index (`src/routes/repo-type.tsx`): the docz-create hint is a
+  document, in a `DocSurface`; the type's documents are the package's
+  `DataTable` UNDER it, outside the surface, whose prose rules would
+  restyle a table inside. `sortable={false}`: the rows come in
+  docz-api's order and the table offers no other. Build columns with
+  `dataTableColumns<T>()` and wrap them in its `.columns([...])`, or
+  the accessors' value types do not fit `DataTableColumn<T>`. A cell
+  is `whitespace-nowrap` unless its column's `meta.className` says
+  otherwise.
 - Directory (`src/routes/directory.tsx`): hit rows are CARDS since the
   DESIGN-0005 dial-in — `DOC-ID / repo` over the title, `StatusPill` in
   the middle, the updated stamp (date over time) on the right — NOT the

@@ -576,20 +576,25 @@ The reader's side columns and the type index are the package's.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `repo-type.tsx`: the type's document table as `DataTable`, with
+- [x] `repo-type.tsx`: the type's document table as `DataTable`, with
   the sort it has today.
-- [ ] `TocList` as `blocks/outline` with `hooks/use-active-heading`,
+- [x] `TocList` as `blocks/outline` with `hooks/use-active-heading`,
   following the headings the document pane and `DocSurface` render.
 - [ ] Confirm the outline tracks headings inside a fragment after the
   runtime switches a tab, since the pane's HTML is not React's.
-- [ ] `LifecycleRail` as `blocks/disclosure` holding a `Stepper` with
+  **Deferred** - human required: there is no outline beside a fragment
+  to track. `doc.tsx` gives the document pane no rail, because a
+  fragment has its own tabs, and that is `main`'s behaviour, which the
+  success criteria hold. An outline over the pane's headings would be
+  new: it needs a decision.
+- [x] `LifecycleRail` as `blocks/disclosure` holding a `Stepper` with
   `orientation="vertical"` and `size="sm"`.
-- [ ] `DocMetaTable` as `DetailsGrid`.
-- [ ] Keep the right rail a column of the content at the same
+- [x] `DocMetaTable` as `DetailsGrid`.
+- [x] Keep the right rail a column of the content at the same
   breakpoints, so the document's measure does not change.
-- [ ] Add tests for the outline's active heading and the lifecycle's
+- [x] Add tests for the outline's active heading and the lifecycle's
   steps for a document with and without a status history.
-- [ ] Move the classes in the files touched here to the package's
+- [x] Move the classes in the files touched here to the package's
   names, and record the eager JavaScript size.
 
 <!--docz:tasks:end-->
@@ -604,6 +609,30 @@ The reader's side columns and the type index are the package's.
 - The document pane's files are untouched, and
   `doc-pane.xss.test.tsx` passes unchanged.
 - The eager JavaScript is under 165 KB.
+
+Measured on 2026-11-23. The eager JavaScript is 125.9 KB gzipped, against
+125.7 KB after Phase 5, with 26 parts imported. The unit suite (1,570
+tests) and the e2e suite (84, with full-rule axe in both modes) pass.
+`reader-pane.spec.ts` and `pages.spec.ts` needed no change, and no file
+of the document pane was touched.
+
+Four things differ from the list above:
+
+- The outline follows the headings a `DocSurface` renders: a page, a
+  repository's home, its changelog, the type index, and a document in
+  the site's own rendering. A fragment in the document pane has no
+  outline on `main`, so the third task has nothing to confirm and is
+  left for a decision.
+- The type index's table sits under the document surface, not in it:
+  the surface's prose rules would restyle a table inside. The "docz
+  auto-generated" markers around it are gone with that, and the empty
+  type is the package's `EmptyState`. The table has no sort, as on
+  `main`: `sortable={false}`.
+- The lifecycle's steps are not in the DOM while its `Disclosure` is
+  closed, where the `<details>` it replaces held them hidden. Closed, it
+  shows the status in force.
+- docz's own `useActiveHeading` hook is deleted; the package's takes
+  the band docz used as its `rootMargin`.
 
 <!--docz:criteria:end-->
 <!--docz:phase:end-->
