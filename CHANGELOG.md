@@ -67,6 +67,9 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl)* Record IMPL-0033 Phase 8
 - *(impl)* Record IMPL-0033 Phase 9
 - *(impl)* Record two decisions in IMPL-0033
+- *(inv)* Add INV-0037 on nested .docz.yaml files in one repository
+- *(design)* Add DESIGN-0029 for projects and the repo and site jobs
+- *(impl)* Record the pull request, the beta, and the app-switcher issue in IMPL-0033
 
 ### Testing
 
