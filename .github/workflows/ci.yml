@@ -352,6 +352,10 @@ jobs:
       - name: Build and push dev image
         if: github.event_name == 'pull_request'
         uses: docker/bake-action@v7
+        env:
+          # _common_ui's build secret: ui/.npmrc reads it to fetch
+          # @donaldgifford/design-system from GitHub Packages.
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           targets: ci
           source: .
@@ -362,6 +366,10 @@ jobs:
       - name: Build multi-arch images (post-merge validation)
         if: github.event_name == 'push'
         uses: docker/bake-action@v7
+        env:
+          # _common_ui's build secret: ui/.npmrc reads it to fetch
+          # @donaldgifford/design-system from GitHub Packages.
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           targets: ci
           source: .
