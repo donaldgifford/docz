@@ -298,23 +298,14 @@ describe("portal sibling navigation", () => {
     mountAt(DOC_URL);
     await findRenderedDesign0001();
 
-    // The repo nav frames the reader; other types' drawers start
-    // closed, so peek into impl first (the nav renders twice — narrow
-    // drawer + desktop rail; either works).
-    const [implToggle] = await screen.findAllByRole("button", {
-      name: "impl documents",
-    });
-    if (implToggle === undefined) {
-      throw new Error("impl drawer toggle not found");
-    }
-    await userEvent.click(implToggle);
-    const [navLink] = await screen.findAllByRole("link", {
-      name: /IMPL-0001 · docz-site MVP/,
-    });
-    if (navLink === undefined) {
-      throw new Error("sibling nav link not found");
-    }
-    await userEvent.click(navLink);
+    // The sidebar holds the repository's documents; other types' rows
+    // start closed, so open impl first.
+    await userEvent.click(
+      await screen.findByRole("button", { name: "impl, show contents" }),
+    );
+    await userEvent.click(
+      await screen.findByRole("link", { name: /IMPL-0001 · docz-site MVP/ }),
+    );
 
     expect(
       await screen.findByRole(
@@ -323,8 +314,10 @@ describe("portal sibling navigation", () => {
         { timeout: 10_000 },
       ),
     ).toBeInTheDocument();
-    // The previous doc is gone from the article; the nav still lists it.
-    expect(navLink).toHaveAttribute("aria-current", "page");
+    // The sidebar follows: the document it opened is the current page.
+    expect(
+      screen.getByRole("link", { name: /IMPL-0001 · docz-site MVP/ }),
+    ).toHaveAttribute("aria-current", "page");
   });
 });
 

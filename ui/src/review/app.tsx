@@ -1,7 +1,8 @@
+import { ModeToggle } from "@donaldgifford/design-system/shell/mode-toggle";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
-import { refreshMermaidTheme } from "@/lib/mermaid-theme";
+import { refreshMermaidTheme } from "@/lib/diagram-theme";
 import {
   DEFAULT_THEME,
   newSubmissionId,
@@ -10,7 +11,6 @@ import {
   type ReviewDocument,
 } from "@/review/api";
 import { useAppearance } from "@/lib/appearance";
-import { AppearanceControls } from "@/components/appearance-controls";
 import { ReviewButton } from "@/review/controls";
 import { DocumentReview } from "@/review/document-review";
 import { emptyDraft, type Draft } from "@/review/draft";
@@ -156,10 +156,7 @@ export function ReviewApp({ client }: { client: ReviewClient }) {
           <span className="text-[14px] text-fg-muted">· review</span>
         </span>
         <div className="ml-auto flex items-center gap-2 text-[13px]">
-          <AppearanceControls
-            mode={appearance.mode}
-            onToggleMode={appearance.toggleMode}
-          />
+          <ModeToggle mode={appearance.mode} onToggle={appearance.toggleMode} />
           <ReviewButton
             onClick={() => {
               if (

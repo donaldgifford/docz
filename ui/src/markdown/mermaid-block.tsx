@@ -7,7 +7,7 @@ import {
   mermaidThemeGeneration,
   refreshMermaidTheme,
   subscribeMermaidTheme,
-} from "@/lib/mermaid-theme";
+} from "@/lib/diagram-theme";
 import { mermaidLayout } from "@/lib/mermaidLayout";
 import { oklchToHex } from "@/theme/oklch";
 

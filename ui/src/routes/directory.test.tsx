@@ -23,6 +23,11 @@ const API_CONTRACT_UPDATED_AT = "2026-07-06T15:30:00Z";
 const PAGE_UPDATED_AT = "2026-08-30T17:04:00Z";
 
 /** The card a hit is drawn in, found by its title's link. */
+/** The directory's hit rows: the page's own list, not the sidebar's. */
+function hitRows(): HTMLElement[] {
+  return within(screen.getByRole("main")).getAllByRole("listitem");
+}
+
 function rowOf(title: string | RegExp): HTMLElement {
   const row = screen.getByRole("link", { name: title }).closest("li");
   if (row === null) {
@@ -404,7 +409,7 @@ describe("directory route", () => {
     const router = mountAt("/");
 
     await screen.findByText("Synthetic doc 0");
-    expect(screen.getAllByRole("listitem")).toHaveLength(25);
+    expect(hitRows()).toHaveLength(25);
     expect(screen.getByTestId("results-count")).toHaveTextContent(
       "showing 25 of 60",
     );
@@ -414,11 +419,11 @@ describe("directory route", () => {
       expect(router.state.location.search).toBe("?offset=25");
     });
     await screen.findByText("Synthetic doc 49");
-    expect(screen.getAllByRole("listitem")).toHaveLength(50);
+    expect(hitRows()).toHaveLength(50);
 
     await user.click(screen.getByRole("button", { name: /load more/i }));
     await screen.findByText("Synthetic doc 59");
-    expect(screen.getAllByRole("listitem")).toHaveLength(60);
+    expect(hitRows()).toHaveLength(60);
     // Whole set shown — nothing left to load.
     expect(
       screen.queryByRole("button", { name: /load more/i }),
@@ -467,13 +472,11 @@ describe("directory route", () => {
     mountAt("/");
 
     await screen.findByText("Synthetic doc 0");
-    const before = screen
-      .getAllByRole("listitem")
-      .map((row) => row.textContent);
+    const before = hitRows().map((row) => row.textContent);
 
     await user.click(screen.getByRole("button", { name: /load more/i }));
     await screen.findByText("Synthetic doc 49");
-    const after = screen.getAllByRole("listitem").map((row) => row.textContent);
+    const after = hitRows().map((row) => row.textContent);
 
     expect(after.slice(0, before.length)).toEqual(before);
   });
@@ -483,7 +486,7 @@ describe("directory route", () => {
     mountAt("/?offset=25");
 
     await screen.findByText("Synthetic doc 49");
-    expect(screen.getAllByRole("listitem")).toHaveLength(50);
+    expect(hitRows()).toHaveLength(50);
     expect(screen.getByText("Synthetic doc 0")).toBeInTheDocument();
   });
 

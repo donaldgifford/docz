@@ -179,8 +179,6 @@ export function Component() {
 
   return (
     <RepoFrame
-      owner={owner}
-      name={repo}
       crumbs={[
         { label: repoId, to: `/${repoId}` },
         { label: docType?.name ?? type },

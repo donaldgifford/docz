@@ -83,7 +83,7 @@ describe("axe: core views", () => {
     await expectNoAxeViolations();
   });
 
-  it("topbar with nav pins", { timeout: AXE_TIMEOUT }, async () => {
+  it("sidebar with nav pins", { timeout: AXE_TIMEOUT }, async () => {
     window.__DOCZ_CONFIG__ = {
       nav: [{ label: "RFCs", href: "/donaldgifford/docz-api/rfc" }],
     };
@@ -130,7 +130,7 @@ describe("axe: core views", () => {
       { level: 1, name: "Local development against a real docz-api" },
       { timeout: 10_000 },
     );
-    // RepoNav's pages tree, active branch auto-expanded — wait for a
+    // The sidebar's pages tree, active branch auto-expanded — wait for a
     // tree link so the sweep covers it (IMPL-0005 Phase 3).
     await screen.findAllByRole(
       "link",

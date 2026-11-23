@@ -167,8 +167,6 @@ export function Component() {
 
   return (
     <RepoFrame
-      owner={owner}
-      name={repo}
       crumbs={[{ label: repoId, to: `/${repoId}` }, { label: "changelog" }]}
       rail={<TocList toc={rendered.data?.toc ?? []} />}
     >

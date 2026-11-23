@@ -36,15 +36,22 @@
 @import "@donaldgifford/design-system/parts/blocks/segmented-control.css";
 @import "@donaldgifford/design-system/parts/blocks/stepper.css";
 @import "@donaldgifford/design-system/parts/blocks/time.css";
-@import "@donaldgifford/design-system/parts/components/avatar.css";
 @import "@donaldgifford/design-system/parts/components/badge.css";
+@import "@donaldgifford/design-system/parts/components/breadcrumb.css";
 @import "@donaldgifford/design-system/parts/components/button.css";
 @import "@donaldgifford/design-system/parts/components/card.css";
 @import "@donaldgifford/design-system/parts/components/command.css";
 @import "@donaldgifford/design-system/parts/components/dropdown-menu.css";
 @import "@donaldgifford/design-system/parts/components/input.css";
 @import "@donaldgifford/design-system/parts/components/popover.css";
+@import "@donaldgifford/design-system/parts/components/separator.css";
+@import "@donaldgifford/design-system/parts/components/sidebar.css";
 @import "@donaldgifford/design-system/parts/components/skeleton.css";
+@import "@donaldgifford/design-system/parts/shell/mode-toggle.css";
+@import "@donaldgifford/design-system/parts/shell/search-trigger.css";
+@import "@donaldgifford/design-system/parts/shell/sidebar.css";
+@import "@donaldgifford/design-system/parts/shell/sidebar-tree.css";
+@import "@donaldgifford/design-system/parts/shell/top-bar.css";
 
 /* docz's 58 token names, in two files (DESIGN-0028 §4). shell.css
  * aliases the 32 whose value is the package's, so chrome that still

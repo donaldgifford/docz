@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
@@ -37,12 +37,15 @@ describe("repo home", () => {
     const tocLink = screen.getByRole("link", { name: "Start here" });
     expect(tocLink).toHaveAttribute("href", "#start-here");
 
-    // The shared repo nav frames the page (drawer + desktop copies).
-    expect(
-      screen.getAllByRole("navigation", {
-        name: "donaldgifford/docz-api navigation",
-      }).length,
-    ).toBeGreaterThan(0);
+    // The repository's groups join the sidebar on its routes.
+    const nav = within(
+      screen.getByRole("navigation", { name: "docz navigation" }),
+    );
+    expect(await nav.findByText("donaldgifford/docz-api")).toBeInTheDocument();
+    expect(nav.getByRole("link", { name: "Home" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
   });
 
   it("falls back to the generated home when index.md is absent", async () => {

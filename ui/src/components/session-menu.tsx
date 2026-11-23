@@ -1,17 +1,24 @@
+import { SidebarMenuButton } from "@donaldgifford/design-system/components/sidebar";
+import { AvatarMark } from "@donaldgifford/design-system/shell/sidebar";
+import { IconLogin2 } from "@tabler/icons-react";
 import { lazy, Suspense } from "react";
-import { Link, useLocation } from "react-router";
+import { Link } from "react-router";
 
 import { useGetSession } from "@/api/__generated__/docz-api";
-import { classifySession } from "@/lib/session";
+import { classifySession, type SessionState } from "@/lib/session";
 
 /*
- * Session-aware topbar chrome (DESIGN-0001 auth, IMPL-0001 Phase 5;
- * classification per DESIGN-0003). classifySession drives the render:
+ * The session's place at the foot of the shell's sidebar (DESIGN-0028
+ * §6; classification per DESIGN-0003). classifySession drives it:
  * pending → inert placeholder, signed-out (a real 401, the ONLY route
- * to "Sign in") → the login link, anonymous (none-mode) → nothing,
- * unavailable (503 or any other failure) → the same inert placeholder
- * — never the login link, the state is unknown, not logged out —
- * and signed-in → the account menu (account-menu.tsx).
+ * to "Sign in") → the login link, anonymous (none-mode) → no footer at
+ * all, unavailable (503 or any other failure) → the same inert
+ * placeholder — never the login link, the state is unknown, not logged
+ * out — and signed-in → the account menu (account-menu.tsx).
+ *
+ * AppShell reads the state through useSessionState and leaves the
+ * footer out for an anonymous session, so the sidebar draws no empty
+ * foot.
  *
  * The account menu is the design system's DropdownMenu, and with it
  * comes Base UI's menu and positioning, about 30 KB gzipped. Only a
@@ -27,69 +34,61 @@ const AccountMenu = lazy(async () => ({
 /** How often an errored session query re-probes (outage-only). */
 const SESSION_RETRY_MS = 30_000;
 
-/** Same footprint as the avatar so the topbar doesn't shift. */
-function InertPlaceholder({ testid }: { testid: string }) {
-  return (
-    <span
-      aria-hidden
-      data-testid={testid}
-      className="grid size-6 place-items-center rounded-lg bg-muted text-xs text-muted-foreground"
-    >
-      ·
-    </span>
-  );
-}
-
-export function SessionMenu() {
-  const location = useLocation();
-
-  // Recovery from `unavailable` (DESIGN-0003 OQ-2a): SessionMenu
-  // mounts once in AppShell and never unmounts, and the client sets
-  // refetchOnWindowFocus: false — without a nudge, an exhausted-
-  // retries failure would pin the placeholder until a full reload.
-  // Re-poll gently only while the query is errored; a healthy query
-  // never polls.
+/**
+ * The session as the shell shows it. Recovery from `unavailable`
+ * (DESIGN-0003 OQ-2a): the shell mounts once and never unmounts, and
+ * the client sets refetchOnWindowFocus: false — without a nudge, an
+ * exhausted-retries failure would pin the placeholder until a full
+ * reload. Re-poll gently only while the query is errored; a healthy
+ * query never polls.
+ */
+export function useSessionState(): SessionState {
   const sessionQuery = useGetSession({
     query: {
       refetchInterval: (query) =>
         query.state.status === "error" ? SESSION_RETRY_MS : false,
     },
   });
+  return classifySession(sessionQuery);
+}
 
-  const state = classifySession(sessionQuery);
+/** The avatar's footprint, so the footer does not shift when it lands. */
+function InertPlaceholder({ testid }: { testid: string }) {
+  return (
+    <div aria-hidden data-testid={testid} className="flex h-12 items-center">
+      <AvatarMark initials="·" className="bg-muted text-muted-foreground" />
+    </div>
+  );
+}
 
-  if (state.kind === "pending") {
-    return <InertPlaceholder testid="session-pending" />;
-  }
+export function SessionMenu({ state }: { state: SessionState }) {
   if (state.kind === "anonymous") {
     // Auth is disabled (AUTH_PROVIDERS=none) — no identity, no sign-in,
     // no chrome at all.
     return null;
   }
+  if (state.kind === "pending") {
+    return <InertPlaceholder testid="session-pending" />;
+  }
   if (state.kind === "unavailable") {
     // Visually identical to pending (OQ-4a): the outage story belongs
-    // to route surfaces; the topbar's job is just to not lie.
+    // to route surfaces; the footer's job is just to not lie.
     return <InertPlaceholder testid="session-unavailable" />;
   }
   if (state.kind === "signed-out") {
-    // On /login the page itself is the sign-in affordance — a topbar
-    // link pointing at the page you're already on is noise.
-    if (location.pathname === "/login") {
-      return null;
-    }
     return (
-      <Link
-        to="/login"
-        className="text-muted-foreground hover:text-foreground"
-        data-testid="topbar-sign-in"
+      <SidebarMenuButton
+        tooltip="Sign in"
+        render={<Link to="/login" data-testid="session-sign-in" />}
       >
-        Sign in
-      </Link>
+        <IconLogin2 aria-hidden />
+        <span>Sign in</span>
+      </SidebarMenuButton>
     );
   }
 
   return (
-    // Still pending as far as the topbar shows: the session is known,
+    // Still pending as far as the footer shows: the session is known,
     // its menu is on the way.
     <Suspense fallback={<InertPlaceholder testid="session-pending" />}>
       <AccountMenu session={state.session} />

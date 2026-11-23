@@ -201,13 +201,12 @@ describe("command palette", () => {
     ).toBe(true);
   });
 
-  it("opens from the topbar search affordance", async () => {
+  it("opens from the top bar's search trigger", async () => {
     const user = userEvent.setup();
     mountAt("/repos");
-    await screen.findByText("docz");
 
     await user.click(
-      screen.getByRole("button", { name: /Search docs, rfcs, authors/ }),
+      await screen.findByRole("button", { name: "Search documents" }),
     );
     expect(await findPalette()).toBeInTheDocument();
   });

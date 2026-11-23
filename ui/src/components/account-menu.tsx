@@ -1,8 +1,4 @@
 import {
-  Avatar,
-  AvatarFallback,
-} from "@donaldgifford/design-system/components/avatar";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
@@ -11,6 +7,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@donaldgifford/design-system/components/dropdown-menu";
+import {
+  SidebarMenuButton,
+  useSidebar,
+} from "@donaldgifford/design-system/components/sidebar";
+import {
+  AvatarMark,
+  ShellSidebarIdentity,
+} from "@donaldgifford/design-system/shell/sidebar";
+import { initialsOf } from "@donaldgifford/design-system/shell/top-bar";
 import { IconLogout } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
@@ -20,16 +25,18 @@ import { useLogout } from "@/api/__generated__/docz-api";
 import type { Session } from "@/api/__generated__/docz-api.schemas";
 
 /*
- * The signed-in half of the session chrome (DESIGN-0028 §7): the
- * avatar, which opens the design system's DropdownMenu with the
- * identity (GitHub `login`, OIDC `email`) and sign-out. The menu's
- * keyboard, focus, and dismissal are the package's. session-menu.tsx
- * loads this module only for a signed-in session.
+ * The signed-in half of the session chrome (DESIGN-0028 §6): the
+ * identity at the foot of the sidebar (GitHub `login`, OIDC `email`),
+ * which opens the design system's DropdownMenu with sign-out. On the
+ * icon rail it is the initials alone. The menu's keyboard, focus, and
+ * dismissal are the package's. session-menu.tsx loads this module only
+ * for a signed-in session.
  */
 
 export function AccountMenu({ session }: { session: Session }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { isMobile } = useSidebar();
   const logout = useLogout({
     mutation: {
       // Settled, not success: even a failed POST (say the cookie
@@ -45,19 +52,27 @@ export function AccountMenu({ session }: { session: Session }) {
   });
 
   const identity = session.login ?? session.email ?? session.subject;
-  const initial = identity.charAt(0).toUpperCase() || "?";
+  const provider = `via ${session.provider}`;
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
+      <SidebarMenuButton
+        size="lg"
         aria-label={`Account: ${identity}`}
-        className="cursor-pointer rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        render={<DropdownMenuTrigger />}
       >
-        <Avatar size="sm">
-          <AvatarFallback>{initial}</AvatarFallback>
-        </Avatar>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-52">
+        <ShellSidebarIdentity
+          mark={<AvatarMark initials={initialsOf(session.login, identity)} />}
+          title={identity}
+          subtitle={provider}
+        />
+      </SidebarMenuButton>
+      <DropdownMenuContent
+        // Beside the sidebar; over it in the sheet, which has no beside.
+        side={isMobile ? "top" : "right"}
+        align="end"
+        className="min-w-52"
+      >
         <DropdownMenuGroup>
           {/* An identity is spelled as it is, so the label's capitals
               and tracking are off. */}
@@ -65,9 +80,7 @@ export function AccountMenu({ session }: { session: Session }) {
             <span className="truncate text-sm font-medium text-foreground">
               {identity}
             </span>
-            <span className="font-mono text-xs font-normal">
-              via {session.provider}
-            </span>
+            <span className="font-mono text-xs font-normal">{provider}</span>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

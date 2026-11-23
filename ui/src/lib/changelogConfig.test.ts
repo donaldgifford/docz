@@ -4,7 +4,7 @@ import { changelogBasename, changelogConfig } from "@/lib/changelogConfig";
 
 /*
  * The config_snapshot is untyped repo-owner YAML round-tripped to JSON
- * — every wrong shape must read as "no changelog", because the RepoNav
+ * — every wrong shape must read as "no changelog", because the sidebar
  * row and the changelog route both gate on this.
  */
 describe("changelogConfig", () => {

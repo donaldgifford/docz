@@ -153,8 +153,6 @@ export function Component() {
 
   return (
     <RepoFrame
-      owner={owner}
-      name={repo}
       crumbs={[
         { label: repoId, to: `/${repoId}` },
         { label: "pages" },

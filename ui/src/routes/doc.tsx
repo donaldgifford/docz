@@ -85,8 +85,6 @@ function FilenameFallback({
     const repoId = `${owner}/${repo}`;
     return (
       <RepoFrame
-        owner={owner}
-        name={repo}
         crumbs={[
           { label: repoId, to: `/${repoId}` },
           { label: type, to: `/${repoId}/${type}` },
@@ -237,17 +235,16 @@ export function Component() {
   }
   const repoId = `${owner}/${repo}`;
 
-  // Reader inside the three-column portal (Phase 3): RepoNav left,
-  // article center, ToC + doc info right. While the doc loads, crumbs
-  // fall back to the (possibly aliased) route params.
+  // Reader inside the repository's frame: the article, with its outline
+  // to the right; the repository's navigation is the shell's sidebar.
+  // While the doc loads, crumbs fall back to the (possibly aliased)
+  // route params.
   if (
     doc === undefined ||
     (fragment === undefined && rendered.data === undefined)
   ) {
     return (
       <RepoFrame
-        owner={owner}
-        name={repo}
         crumbs={[
           { label: repoId, to: `/${repoId}` },
           { label: type, to: `/${repoId}/${type}` },
@@ -263,8 +260,6 @@ export function Component() {
 
   return (
     <RepoFrame
-      owner={owner}
-      name={repo}
       crumbs={[
         { label: repoId, to: `/${repoId}` },
         { label: doc.type, to: `/${repoId}/${doc.type}` },

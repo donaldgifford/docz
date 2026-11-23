@@ -21,7 +21,7 @@ import {
  * throw unmounted the tree to a blank page (INV-0006 F9).
  *
  * The placement is the part worth pinning: the boundary must sit BELOW
- * AppShell so the topbar survives the crash. On the root route it would
+ * AppShell so the frame survives the crash. On the root route it would
  * replace AppShell itself, and a user stranded on a panel with no
  * navigation is the failure this exists to fix.
  */
@@ -60,13 +60,15 @@ describe("route error boundary", () => {
     expect(screen.getByText(BOOM_MESSAGE)).toBeInTheDocument();
   });
 
-  it("keeps the topbar, so the user is not stranded", async () => {
+  it("keeps the frame, so the user is not stranded", async () => {
     mountAt(BOOM_PATH);
     await screen.findByText("Something went wrong");
 
-    const nav = within(screen.getByRole("navigation"));
+    const nav = within(
+      screen.getByRole("navigation", { name: "docz navigation" }),
+    );
     expect(nav.getByRole("link", { name: "Directory" })).toBeInTheDocument();
-    expect(nav.getByRole("link", { name: "Repos" })).toBeInTheDocument();
+    expect(nav.getByRole("link", { name: "Repositories" })).toBeInTheDocument();
   });
 
   it("offers a link home as the only recovery affordance", async () => {
@@ -159,7 +161,7 @@ describe("route error boundary", () => {
 });
 
 describe("the boundary's placement", () => {
-  it("would lose the topbar if it owned the root route", async () => {
+  it("would lose the frame if it owned the root route", async () => {
     // Not a hypothetical: DESIGN-0006 Component 9 describes putting the
     // errorElement on `path: "/"` and expecting it to render inside
     // AppShell. It does not — a boundary replaces the element of the

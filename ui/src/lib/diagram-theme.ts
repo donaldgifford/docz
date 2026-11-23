@@ -6,8 +6,14 @@
  * every mounted block renders again.
  *
  * It lives apart from src/markdown/mermaid-block.tsx so the site's
- * topbar, which is in the eager bundle, can signal a redraw without
+ * shell, which is in the eager bundle, can signal a redraw without
  * importing the markdown pipeline (scripts/bundle-budget.ts).
+ *
+ * The file is not named for mermaid on purpose. The bundler can emit
+ * it as a chunk of its own, named for the module and preloaded on
+ * every page, and e2e/rendering.spec.ts fails a diagram-free page on
+ * any request whose URL says "mermaid": that is how it catches the
+ * library loading where it should not.
  */
 
 let generation = 0;

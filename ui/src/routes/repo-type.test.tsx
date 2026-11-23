@@ -83,12 +83,20 @@ describe("repo type page", () => {
       await screen.findByRole("link", { name: "RUNBOOK-0001" }),
     ).toHaveAttribute("href", "/donaldgifford/docz-site/runbook/RUNBOOK-0001");
 
-    // The repo nav lists the type beside the others, with its document.
-    const nav = screen.getAllByRole("navigation", {
-      name: "donaldgifford/docz-site navigation",
-    })[0];
-    expect(nav).toHaveTextContent(/runbook\s*1/);
-    expect(nav).toHaveTextContent("RUNBOOK-0001 · Rotate the session secret");
+    // The sidebar lists the type beside the others, open on its
+    // routes, with its document.
+    const nav = within(
+      screen.getByRole("navigation", { name: "docz navigation" }),
+    );
+    expect(await nav.findByRole("link", { name: "runbook" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      await nav.findByRole("link", {
+        name: "RUNBOOK-0001 · Rotate the session secret",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("shows the docz-create empty state for a type with zero docs", async () => {

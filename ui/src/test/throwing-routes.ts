@@ -58,5 +58,7 @@ export function routesWithThrow(): RouteObject[] {
         },
       ],
     },
+    // The pages outside the frame, as they are.
+    ...routes.slice(1),
   ];
 }

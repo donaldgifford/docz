@@ -12,6 +12,10 @@ import { server } from "@/test/server";
 Element.prototype.scrollIntoView = () => {
   /* layout no-op */
 };
+// Base UI waits for a closing panel's animations before it unmounts it
+// (the sidebar tree's branches, the scroll area in its popover); jsdom
+// runs none.
+Element.prototype.getAnimations = () => [];
 globalThis.ResizeObserver = class {
   observe() {
     /* layout no-op */
