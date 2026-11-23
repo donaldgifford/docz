@@ -27,6 +27,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(inv)* Record design-system#32's answer and 0.5.0 in INV-0036
 - *(inv)* Add the 0.5.0 release note's three cautions to INV-0036
 - *(inv)* Add design-system 0.6.0 to INV-0036
+- *(design)* Add DESIGN-0028 and IMPL-0033 for the design-system adoption
 
 ## [2.6.2] - 2026-11-05
 
