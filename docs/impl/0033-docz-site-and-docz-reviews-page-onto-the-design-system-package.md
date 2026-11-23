@@ -303,41 +303,41 @@ there.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `ui/scripts/gen-charcoal.ts`: read `tokens.json` from
+- [x] `ui/scripts/gen-charcoal.ts`: read `tokens.json` from
   `ui/node_modules`, take the dark set, resolve references, and convert
   through `oklch.ts`.
-- [ ] The derivation table in the script: the 32 names taken from the
+- [x] The derivation table in the script: the 32 names taken from the
   package, the nine that follow by rule (`link` is the accent,
   `st-draft` is `warn`, `st-deprecated` is `fg-muted`, and the rest), and
   the two accent tints at 10% and 30%.
-- [ ] Read docz's own tokens from `docz-tokens.css`'s dark block, and
+- [x] Read docz's own tokens from `docz-tokens.css`'s dark block, and
   fail on any of the 58 names left without a value or given two.
-- [ ] Write the token block into a template that keeps the hand-written
+- [x] Write the token block into a template that keeps the hand-written
   font block and header prose, with a "generated, do not edit" line and
   the package version in the header.
-- [ ] `just gen-charcoal` at the root, failing with the
+- [x] `just gen-charcoal` at the root, failing with the
   `just ui install` hint when `node_modules` is missing, as
   `just vendor-mermaid` does.
-- [ ] `gen-charcoal:check` in `ui/package.json` and `ui.just`,
+- [x] `gen-charcoal:check` in `ui/package.json` and `ui.just`,
   regenerating to a temporary file and failing on a difference; add it
   to `just ui ci` and to the `ui` job in `ci.yml`.
-- [ ] A Go test in `pkg/theme` that reads the version from
+- [x] A Go test in `pkg/theme` that reads the version from
   `charcoal.css`'s header and holds it to the one `ui/bun.lock` pins,
   after `TestVendoredMermaid`.
-- [ ] `ci.yml`: add `ui/bun.lock` to the `go` path filter, and put the
+- [x] `ci.yml`: add `ui/bun.lock` to the `go` path filter, and put the
   new Go test in the job `.github/CLAUDE.md` names for tests that read
   the real tree.
-- [ ] Run the recipe, commit the generated `charcoal.css`, and
+- [x] Run the recipe, commit the generated `charcoal.css`, and
   regenerate the export's goldens with `go test ./... -update`.
-- [ ] Read the golden diff: every changed line is a colour value, and
+- [x] Read the golden diff: every changed line is a colour value, and
   the changes match DESIGN-0028 section 11 (surfaces by a step or two,
   `bad` to `#f7756e`, type and hash colours to the shell's).
-- [ ] Confirm `charcoal` still has one token block, so it stays dark
+- [x] Confirm `charcoal` still has one token block, so it stays dark
   under any `data-mode`.
-- [ ] Unit tests for the generator: the derivation table covers every
+- [x] Unit tests for the generator: the derivation table covers every
   name once, and a missing token in `tokens.json` is an error that names
   it.
-- [ ] `pkg/CLAUDE.md` and `docs/development/build-notes.md`: `charcoal`
+- [x] `pkg/CLAUDE.md` and `docs/development/build-notes.md`: `charcoal`
   is generated, the recipe that writes it, and that a package bump is
   the lockfile, the recipe, and the goldens in one pull request.
 
@@ -355,6 +355,19 @@ there.
 - An exported `charcoal` page before and after differs only in the
   colours listed above.
 - `just ci` passes, including the parity suite and the consumer module.
+
+Measured on 2026-11-23, against 0.6.0. The recipe run twice wrote the
+same bytes. Both checks were made to fail once and reverted: the
+lockfile set to 0.6.1 failed `TestCharcoalMatchesPinnedDesignSystem`
+naming both versions, and a hand edit of `--color-bad` failed
+`gen-charcoal:check` with the diff. 55 of the 58 colours moved.
+
+Two things read differently from the list above. The table's split is 21
+names taken from the package directly, nine by rule, and the two tints
+(32 shared in all), with docz's own 26 beside them. And the golden diff
+is the colour values plus the file's header comment, which a page
+inlines with its theme; the page hashes in the CLI contract's
+`export-html-*.json` fixtures moved for the same reason.
 
 <!--docz:criteria:end-->
 <!--docz:phase:end-->

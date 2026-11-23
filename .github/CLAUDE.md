@@ -49,6 +49,8 @@ bare-semver test says so.
   both halves; `ui-e2e` also runs on the `go` filter, since its docz-review
   spec drives a docz it builds. The `go` filter includes
   `ui/e2e/fixtures/review-**`, which `cmd/review_fixture_test.go` reads, and
+  `ui/bun.lock`, which `pkg/theme` and `pkg/export/html` hold `charcoal.css`
+  and the vendored mermaid to (so a lockfile bump runs the Go tests), and
   the `plugin` job runs on `plugins/**`, `.claude-plugin/**`, and
   `ui/review/**`. **Revisit the filter
   the moment a Go change can break the UI other than through the spec** — an
@@ -66,9 +68,10 @@ bare-semver test says so.
   and `ci.yml` itself. **Widen it when a Go job starts reading a new
   path.** Every push to `main` runs them unfiltered. One job, **Docs and
   repository checks**, runs on every PR: `just validate` plus `go test
-  ./pkg/doczcore/repo/... ./test/archive/...`, because those two read the
+  ./pkg/doczcore/repo/... ./test/archive/... ./pkg/theme/...`, because they read the
   real tree (the migration test runs over `docs/`, `test/archive` scans every
-  tracked file and `.docz.yaml`), so a docs-only PR can break them. Add any
+  tracked file and `.docz.yaml`, and `pkg/theme` reads `ui/bun.lock`), so a PR
+  that skips Test Go can break them. Add any
   new test that reads the real tree to that job. CodeQL runs on PRs only for
   Go or `ui/` changes, and the licence check only for `go.mod`/`go.sum`. No
   check is required on `main`, so a skipped job never blocks a merge. Every

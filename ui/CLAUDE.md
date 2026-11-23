@@ -52,6 +52,18 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   drift gate. A theme added to `pkg/theme` reaches every list in the UI
   (the server's `DOCZ_THEME` check, `defaultTheme()`, the review e2e
   matrix) and the document stylesheet through these files alone
+- `just gen-charcoal` (at the ROOT, not `just ui`) — writes
+  `../pkg/theme/tokens/charcoal.css` from the installed design system's
+  `tokens.json` dark set (`scripts/gen-charcoal.ts`, IMPL-0033 Phase 3).
+  The table of where each of the 58 names comes from is
+  `src/theme/charcoal.ts` (pure, unit-tested; the script is the file
+  I/O), the header prose and font block are
+  `scripts/charcoal.template.css`, and docz's own 26 come from the dark
+  block of `src/theme/docz-tokens.css`: change a value there and
+  `charcoal.css` changes with it. `just ui gen-charcoal-check` is the
+  drift gate (regenerates to a temporary file, diffs, rewrites nothing).
+  A bump of the package is the lockfile, the recipe, and
+  `go test ./... -update` in one pull request
 - `just local-up` / `just local-down` — build + run the site container
   (`deploy/compose.local.yaml`, :8090) joined to the docz-api local
   stack's network; re-run `local-up` after changes to rebuild/recreate
