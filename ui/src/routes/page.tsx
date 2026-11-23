@@ -143,7 +143,7 @@ export function Component() {
         </DocSurface>
         <div
           data-testid="page-meta"
-          className="mt-10 border-t border-border-hairline pt-3 font-mono text-[12px] text-fg-muted"
+          className="mt-10 border-t border-border pt-3 font-mono text-[12px] text-muted-foreground"
         >
           {sourceInputs?.base ?? page.path} · {page.git_sha.slice(0, 7)}
         </div>
@@ -160,14 +160,7 @@ export function Component() {
         { label: "pages" },
         ...splat.split("/").map((segment) => ({ label: segment })),
       ]}
-      rail={
-        <>
-          <div className="mb-3 border-b border-border-hairline pb-2 text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
-            On this page
-          </div>
-          <TocList toc={rendered.data?.toc ?? []} />
-        </>
-      }
+      rail={<TocList toc={rendered.data?.toc ?? []} />}
     >
       {content}
     </RepoFrame>

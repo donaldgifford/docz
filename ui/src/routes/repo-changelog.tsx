@@ -26,7 +26,7 @@ import { useRenderedSource } from "@/markdown/useRenderedMarkdown";
  */
 
 const TITLE_CLASS =
-  "mb-4 font-serif text-[clamp(1.7rem,4vw,2.3rem)] leading-[1.15] font-bold text-fg-primary";
+  "mb-4 font-serif text-[clamp(1.7rem,4vw,2.3rem)] leading-[1.15] font-bold text-foreground";
 
 /**
  * The repo serves no changelog: either the `changelog:` block is not
@@ -38,11 +38,11 @@ function QuietPanel({ file }: { file: string | undefined }) {
   return (
     <div>
       <h1 className={TITLE_CLASS}>Changelog</h1>
-      <p className="text-[14px] text-fg-tertiary">
+      <p className="text-[14px] text-muted-foreground">
         {file === undefined ? (
           <>
             This repository doesn&rsquo;t serve a changelog — no enabled{" "}
-            <code className="font-mono text-[0.85em] text-brand">
+            <code className="font-mono text-[0.85em] text-primary">
               changelog:
             </code>{" "}
             block in its docz.yaml.
@@ -50,7 +50,7 @@ function QuietPanel({ file }: { file: string | undefined }) {
         ) : (
           <>
             The configured changelog{" "}
-            <code className="font-mono text-[0.85em] text-brand">{file}</code>{" "}
+            <code className="font-mono text-[0.85em] text-primary">{file}</code>{" "}
             is absent at HEAD.
           </>
         )}
@@ -63,8 +63,8 @@ function EmptyPanel({ file }: { file: string }) {
   return (
     <div>
       <h1 className={TITLE_CLASS}>Changelog</h1>
-      <p className="text-[14px] text-fg-tertiary">
-        <code className="font-mono text-[0.85em] text-brand">{file}</code> is
+      <p className="text-[14px] text-muted-foreground">
+        <code className="font-mono text-[0.85em] text-primary">{file}</code> is
         empty at HEAD.
       </p>
     </div>
@@ -170,14 +170,7 @@ export function Component() {
       owner={owner}
       name={repo}
       crumbs={[{ label: repoId, to: `/${repoId}` }, { label: "changelog" }]}
-      rail={
-        <>
-          <div className="mb-3 border-b border-border-hairline pb-2 text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
-            On this page
-          </div>
-          <TocList toc={rendered.data?.toc ?? []} />
-        </>
-      }
+      rail={<TocList toc={rendered.data?.toc ?? []} />}
     >
       {content}
     </RepoFrame>

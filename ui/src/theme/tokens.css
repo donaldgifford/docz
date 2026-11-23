@@ -19,6 +19,8 @@
 
 /* One line per package part imported under src/, in order.
  * parts.test.ts holds this list to the imports, both ways. */
+@import "@donaldgifford/design-system/parts/blocks/details-grid.css";
+@import "@donaldgifford/design-system/parts/blocks/disclosure.css";
 @import "@donaldgifford/design-system/parts/blocks/empty-state.css";
 @import "@donaldgifford/design-system/parts/blocks/error-state.css";
 @import "@donaldgifford/design-system/parts/blocks/filter-bar.css";
@@ -28,8 +30,10 @@
 @import "@donaldgifford/design-system/parts/blocks/load-more.css";
 @import "@donaldgifford/design-system/parts/blocks/marked.css";
 @import "@donaldgifford/design-system/parts/blocks/option-rows.css";
+@import "@donaldgifford/design-system/parts/blocks/outline.css";
 @import "@donaldgifford/design-system/parts/blocks/page-header.css";
 @import "@donaldgifford/design-system/parts/blocks/segmented-control.css";
+@import "@donaldgifford/design-system/parts/blocks/stepper.css";
 @import "@donaldgifford/design-system/parts/blocks/time.css";
 @import "@donaldgifford/design-system/parts/components/avatar.css";
 @import "@donaldgifford/design-system/parts/components/badge.css";

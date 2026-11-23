@@ -8,6 +8,8 @@ import {
 } from "@/api/__generated__/docz-api";
 import { NotFoundError, SessionRequiredError } from "@/api/fetcher";
 import { StatusPill } from "@/components/badges";
+import { Disclosure } from "@donaldgifford/design-system/blocks/disclosure";
+
 import { DocMetaTable } from "@/components/doc-meta-table";
 import { DocPane } from "@/components/doc-pane";
 import { LifecycleRail, TocList, type DocFormat } from "@/components/doc-rail";
@@ -120,34 +122,34 @@ function DocHeader({ doc }: { doc: Document }) {
   const updated = doc.updated_at === "" ? "—" : doc.updated_at.slice(0, 10);
 
   return (
-    <header className="mb-9 border-b border-border-hairline pb-8">
+    <header className="mb-9 border-b border-border pb-8">
       {/* Id line: DESIGN / 0009, with the fading rule from the mockup */}
-      <div className="mb-4 flex items-center gap-3 font-mono text-[14px] tracking-[0.04em] text-brand after:h-px after:flex-1 after:bg-gradient-to-r after:from-brand-border after:to-transparent after:content-['']">
+      <div className="mb-4 flex items-center gap-3 font-mono text-[14px] tracking-[0.04em] text-primary after:h-px after:flex-1 after:bg-gradient-to-r after:from-primary/40 after:to-transparent after:content-['']">
         <span>{parts ? `${parts[0]} / ${parts[1]}` : doc.doc_id}</span>
       </div>
 
-      <h1 className="font-serif text-[clamp(1.9rem,4.5vw,2.6rem)] leading-[1.14] font-bold text-fg-primary">
+      <h1 className="font-serif text-[clamp(1.9rem,4.5vw,2.6rem)] leading-[1.14] font-bold text-foreground">
         {doc.title}
       </h1>
 
-      <div className="mt-4 flex flex-wrap items-center gap-[14px] font-mono text-[13px] text-fg-tertiary">
+      <div className="mt-4 flex flex-wrap items-center gap-[14px] font-mono text-[13px] text-muted-foreground">
         {doc.status !== "" && (
           <>
             <StatusPill status={doc.status} />
-            <span className="text-fg-muted">·</span>
+            <span className="text-muted-foreground">·</span>
           </>
         )}
         <span>{doc.author === "" ? "unassigned" : doc.author}</span>
-        <span className="text-fg-muted">·</span>
+        <span className="text-muted-foreground">·</span>
         <span>updated {updated}</span>
         {doc.confluence_url !== "" && (
           <>
-            <span className="text-fg-muted">·</span>
+            <span className="text-muted-foreground">·</span>
             <a
               href={doc.confluence_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-brand hover:underline"
+              className="text-primary hover:underline"
             >
               View in Confluence
             </a>
@@ -272,12 +274,7 @@ export function Component() {
         // ToC-first rail (IMPL-0002 Phase 5) for the site's own render.
         // A fragment has its own tabs, so it takes no rail.
         rendered.data === undefined ? undefined : (
-          <section className="mb-8">
-            <div className="mb-3 border-b border-border-hairline pb-2 text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
-              On this page
-            </div>
-            <TocList toc={rendered.data.toc} />
-          </section>
+          <TocList toc={rendered.data.toc} />
         )
       }
     >
@@ -289,7 +286,7 @@ export function Component() {
             href={doc.confluence_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-brand hover:underline"
+            className="text-primary hover:underline"
           >
             View in Confluence
           </a>
@@ -309,21 +306,20 @@ export function Component() {
         <>
           <p
             data-testid="doc-fallback-note"
-            className="mb-4 text-[12px] text-fg-muted"
+            className="mb-4 text-[12px] text-muted-foreground"
           >
             Shown in the site&apos;s own rendering: the document&apos;s page did
             not load.
           </p>
           {/* Narrow viewports: ToC as a disclosure above the article
               (the right rail hides below the frame's 1181px breakpoint). */}
-          <details className="mb-6 rounded-sm border border-border-hairline px-4 py-3 min-[1181px]:hidden">
-            <summary className="cursor-pointer text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
-              On this page
-            </summary>
-            <div className="pt-3">
-              <TocList toc={rendered.data.toc} />
-            </div>
-          </details>
+          <Disclosure
+            className="mb-6 min-[1181px]:hidden"
+            label="On this page"
+            value={`${String(rendered.data.toc.length)} sections`}
+          >
+            <TocList toc={rendered.data.toc} label="Sections" />
+          </Disclosure>
         </>
       )}
 
@@ -342,7 +338,7 @@ export function Component() {
           role="region"
           aria-label="raw markdown"
           tabIndex={0}
-          className="overflow-x-auto border border-border-default bg-code-bg p-5 font-mono text-[13.5px] leading-[1.55] whitespace-pre-wrap text-fg-secondary rounded-sm"
+          className="overflow-x-auto border border-border bg-code-bg p-5 font-mono text-[13.5px] leading-[1.55] whitespace-pre-wrap text-foreground rounded-sm"
         >
           {doc.raw_md ?? ""}
         </pre>

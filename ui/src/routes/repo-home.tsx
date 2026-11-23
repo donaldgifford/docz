@@ -171,14 +171,7 @@ export function Component() {
       owner={owner}
       name={repo}
       crumbs={[{ label: repoId }]}
-      rail={
-        <>
-          <div className="mb-3 border-b border-border pb-2 text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
-            On this page
-          </div>
-          <TocList toc={rendered.data?.toc ?? []} />
-        </>
-      }
+      rail={<TocList toc={rendered.data?.toc ?? []} />}
     >
       {content}
     </RepoFrame>
