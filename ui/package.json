@@ -31,6 +31,7 @@
     "gen-themes:check": "scripts/gen-themes-check.sh"
   },
   "dependencies": {
+    "@donaldgifford/design-system": "0.6.0",
     "@fontsource-variable/ibm-plex-sans": "5.3.0",
     "@fontsource-variable/jetbrains-mono": "5.3.0",
     "@fontsource-variable/source-serif-4": "^5.3.0",

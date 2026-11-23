@@ -138,11 +138,11 @@ nothing imports it yet.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Confirm the version to pin (question 2 below) and read its release
+- [x] Confirm the version to pin (question 2 below) and read its release
   notes since 0.6.0 for anything that changes DESIGN-0028.
-- [ ] Add `@donaldgifford/design-system` to `ui/package.json`, pinned
+- [x] Add `@donaldgifford/design-system` to `ui/package.json`, pinned
   exactly with no caret, and commit `ui/bun.lock`.
-- [ ] Commit `ui/.npmrc` with the `@donaldgifford` registry line and
+- [x] Commit `ui/.npmrc` with the `@donaldgifford` registry line and
   `_authToken=${NPM_TOKEN}`. Confirm trufflehog passes on it.
 - [ ] `just ui install`: fail before running Bun when `NPM_TOKEN` is
   unset, printing the `NPM_TOKEN=$(gh auth token)` line and the
