@@ -77,11 +77,73 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 
 - `vite.config.ts` — react + tailwind plugins, `@/` → `src/` alias, dev
   proxy (same-origin in prod; docz-api sends no CORS headers)
-- Routing: `src/app/router.tsx` (`createBrowserRouter`, library mode)
-  wraps everything in `src/app/AppShell.tsx` (topbar + `<Outlet/>`).
+- Routing: `src/app/router.tsx` (`createBrowserRouter`, library mode).
+  Every route renders inside `src/app/AppShell.tsx`, the frame, except
+  `/login` and `/oauth/consent`, which sit in a second top-level route
+  with its own error boundary and draw a card on the bare page: neither
+  has a session to show navigation for. The frame's route stays FIRST in
+  `routes` (`src/test/throwing-routes.ts` grafts onto `routes[0]`).
   Route modules live in `src/routes/*` and export a named `Component`;
   register new routes with `lazy: () => import("@/routes/<name>")` so
   each stays its own chunk.
+- **The frame** (`src/app/AppShell.tsx`, DESIGN-0028 §6) is the design
+  system's: `SidebarProvider`, `ShellSidebar`, and beside it
+  `TopBarLayout` over the `Outlet`.
+  The sidebar holds the docz mark (a link home), `Browse` (Directory,
+  Repositories), `Pinned` (the deployment's nav links, absent when
+  there are none), on a repository's routes that repository's groups,
+  and the session at its foot. The top bar holds `SidebarTrigger`, the
+  route's breadcrumbs, `SearchTrigger` (opens the palette), and
+  `ModeToggle` (driven by `useAppearance`).
+  - The column beside the sidebar is a plain `div`, NOT the package's
+    `SidebarInset`: that is a `<main>`, and every route brings its own.
+  - The package keeps the sidebar's open state and a tree's open
+    branches in React state only: no cookie, no `localStorage`. A
+    reload opens the sidebar again, and `ui/server` has nothing of it
+    to forward or log. ⌘B / Ctrl+B, the icon rail, and the sheet below
+    768px come with `SidebarProvider`.
+  - **Breadcrumbs are the route's, drawn in the shell's bar.** AppShell
+    puts the element at the bar's start in `TopBarSlotContext`
+    (`components/top-bar-slot.ts`) and `RepoBreadcrumbs` portals the
+    package's `Breadcrumb` into it; outside the frame the context is
+    null and it draws nothing. Only the LAST crumb is the
+    `BreadcrumbPage` (`aria-current="page"`); below `md` it is the only
+    one shown.
+  - **The repository's groups** (`components/repo-sidebar.tsx`) are a
+    `lazy()` chunk: they draw on a repository's routes only and from its
+    data, and the tree under them brings Base UI's popover, collapsible,
+    and scroll area. AppShell reads `owner`, `repo`, `type`, `docId`,
+    and the pages splat from the deepest match and hands them down; the
+    component is keyed by repository. Its rows are
+    `ShellSidebarTreeItem`s: its own group (Home, Changelog), `Pages`
+    (`lib/pageTree.ts` builds the tree; `useTreeOpen` takes the current
+    page and every directory above it), and `Documents`, one row per
+    type with its `TypeDot`, its count as the badge, and a link to the
+    type's index. A closed branch is not in the DOM, so a type's
+    `TypeDocuments` mounts, and `listDocs` fires, when its row opens or
+    the icon rail's popover does; while it loads the branch holds an
+    `InlineLoading` in a `ShellSidebarTreeNote` (a list item, which a
+    bare paragraph is not). Facets omit zero-hit types, so a missing
+    `typeCounts` key after facts load means 0, which disables the caret.
+    A repository docz-api 404s gets no groups.
+  - The app's own rows (`NavRow` in AppShell) are the plain
+    `SidebarMenuButton`, so the tree's parts stay out of the eager
+    graph. A pin has no icon and leads with its first letter, which is
+    what the icon rail shows.
+  - **A type's colour is not the frame's** (DESIGN-0028 question 3). It
+    is on the type row's dot, on a `Dot` or `Badge` docz hands a `tone`,
+    and inside the document. The mark, the breadcrumbs, and the active
+    row are the package's colours on every route; there is no
+    `--type-accent`.
+  - In a test, find the sidebar as the navigation named
+    `docz navigation` and query `within` it: the route beside it has
+    links and list items of its own. The repository's groups arrive
+    after a lazy import (`findByRole("link", { name: "Home" })`). A
+    type's caret is the button `<type>, show contents`; a directory with
+    no page is the button `<name>/`; a count sits beside the link, in
+    the row, not in the link's name. `src/test/setup.ts` stubs
+    `Element.prototype.getAnimations`, which Base UI calls before it
+    unmounts a closing panel.
 - Fonts are self-hosted `@fontsource` imports in `src/main.tsx` —
   never add a third-party font URL (mockup.html may use CDN links; it
   ships nowhere). **IBM Plex Sans Variable** (`--font-sans`) sets the
@@ -124,7 +186,12 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   colour module resolves them at runtime through `var()`), and NOT
   `inline`, so a utility compiles to `var(--color-bg-raised)` and
   resolves where it is used, against the shell in chrome and against the
-  document's theme inside `.docz-page`.
+  document's theme inside `.docz-page`. Two of docz's names are NOT registered: `code-bg`
+  (the package maps `bg-code-bg` to its own `--code-bg`, which follows
+  the page, and a docz entry would take that utility and paint it dark
+  in both modes) and `st-superseded` (a superseded status is the
+  package's `ignored` badge). Both stay in `docz-tokens.css` for
+  `charcoal`, and `shell.test.ts` holds both halves.
   **`accent` is the package's name.** `bg-accent`, `text-accent`, and
   `border-accent` compile to its hover surface wherever they are written
   (its map is inline), so docz's brand colour is the `brand` utility:
@@ -168,26 +235,28 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   `oklch(...)`**, not hex: anything that hands one to a library (mermaid's
   theme does) converts it with `oklchToHex` first, and a spec that
   compares a token to a painted colour paints it onto a canvas and reads
-  the pixel. Code stays dark in both modes.
-  There is no theme selector and no `docz:theme`: the topbar's
-  `AppearanceControls` is the light/dark toggle alone
-  (`useAppearance(refreshMermaidTheme)`, the mode and nothing else; the
-  review page wears the same shell and toggle). A document's theme is on
+  the pixel. Code the site renders follows the page (see the markdown
+  pipeline); code inside a document fragment is `pkg/theme`'s and stays
+  dark.
+  There is no theme selector and no `docz:theme`: the top bar's
+  `ModeToggle` (the package's `shell/mode-toggle`) is the light/dark
+  toggle alone (`useAppearance(refreshMermaidTheme)`, the mode and
+  nothing else; the review page wears the same toggle). A document's theme is on
   its own `.docz-page` (`DocSurface`, `DocPane`), never on `<html>`.
   `src/lib/theme.ts`'s `defaultTheme()` is the theme documents render in:
   runtime `__DOCZ_CONFIG__.theme` (from `DOCZ_THEME`) → build-time
   `VITE_THEME` → `paper`, each validated against the generated `THEMES`.
   `server/serve.ts`'s `resolveTheme` checks `DOCZ_THEME` at startup and an
   unknown value is a config error that fails `/readyz`. `refreshMermaidTheme`'s
-  signal lives in `src/lib/mermaid-theme.ts` so the eager bundle never
-  imports `mermaid-block`. No component may carry a literal colour: the
-  header is `bg-bg-raised`, the logo `text-on-brand`, the
-  palette scrim `bg-bg-base/65`. A type's routes set `--type-accent` from
-  `typeColor()` on AppShell's `display: contents` wrapper, and the logo
-  mark, repository badge, breadcrumb leaf, and active sidebar item read
-  it through `--color-accent`; inside a document `accentProperties`
-  sets the `.docz-page`'s `--color-accent` alone, so it resolves against
-  the document theme's own `--color-t-*`. The site's e2e specs loop over
+  signal lives in `src/lib/diagram-theme.ts` so the eager bundle never
+  imports `mermaid-block`. The file is NOT named for mermaid: the
+  bundler can emit it as a preloaded chunk named for the module, and
+  `e2e/rendering.spec.ts` fails a diagram-free page on any request
+  whose URL says "mermaid". No component may carry a literal colour.
+  A type's colour reaches the chrome only where docz hands it over as a
+  `tone` (see the frame); inside a document `accentProperties` sets the
+  `.docz-page`'s `--color-accent` alone, so it resolves against the
+  document theme's own `--color-t-*`. The site's e2e specs loop over
   `SHELL_MODES`; the review spec crosses them with every theme
   (`e2e/appearances.ts`).
 - **The document pane** (`src/components/doc-pane.tsx`, DESIGN-0026 §7).
@@ -239,16 +308,18 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   a direct dependency pinned to the version the package pins.
   A heading through `render` (`<CardTitle render={<h1 />}>`) trips
   `jsx-a11y/heading-has-content`, since the children arrive through the
-  part; disable that one line with the reason. Before IMPL-0033 Phase 7
-  the routes still sit in docz's own top bar and `max-w-[940px]` column,
-  so `PageHeader` takes `className="px-0"` there.
+  part; disable that one line with the reason. A route outside
+  `RepoFrame` keeps its own `max-w-[940px]` column inside the frame, so
+  `PageHeader` takes `className="px-0"` there.
   The directory's filters are `FilterChip`s inside one `FilterBar`
   (`components/directory-controls.tsx`): a type is a `pressed` chip, the
   repository a `repo = …` chip opening `OptionItem` rows in a `Popover`,
   and "Clear" and the count are the bar's own. A part that brings Base
   UI's menu, popover, or dialog costs 15 to 30 KB gz: keep it behind a
   route or a `lazy()` boundary, and run `just ui bundle-budget` after
-  adding one to anything AppShell imports. `ListRow` puts `trailing`
+  adding one to anything AppShell imports. Three chunks are lazy for
+  that reason: the palette, the account menu, and the repository's
+  sidebar groups. `ListRow` puts `trailing`
   above its stretched link, so a badge or a time there is not part of
   the link.
 - `tsconfig.json` is solution-style → `tsconfig.app.json` (browser code,
@@ -288,10 +359,13 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   kinds) → capture-code-meta (fence meta → `metastring` property) →
   remark-rehype allowDangerousHtml → rehype-raw → **rehype-sanitize
   with `schema.ts`** → double-clobber collapse → rehype-slug + ToC
-  collector → Shiki core highlighter, tokyo-night run through
-  `theme-contrast.ts` (every token color failing 4.5:1 on `code-bg`
-  is nudged toward white — the comment family is ~2.5:1 raw; the test
-  pins `CODE_BG` to tokens.css), slim lazy grammar set, chrome
+  collector → Shiki core highlighter with `github-light` and
+  `github-dark` at once (`themes: { light, dark }`,
+  `defaultColor: false`, DESIGN-0028 §9), each run ONCE through
+  `theme-contrast.ts` against its mode's `CODE_BG` (every token color
+  failing 4.5:1 is nudged toward the far end of the scale; the test
+  pins the pair to the package's `--code-bg` through
+  `shellToken()`), slim lazy grammar set, chrome
   transformer stamping data-language/data-caption → wrap-codeblock
   (div.codeblock header chrome; skips mermaid) → wrap-table
   (div.table-wrap, overflow-x scroll; className unforgeable
@@ -458,15 +532,20 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   read — keep it that way (open-redirect guard), and never stash
   anything but a same-origin path. Test setup clears session/local
   storage after each test — a leaked stash arms RestoreAfterLogin in
-  unrelated tests. Topbar identity is `SessionMenu`
-  (`src/components/session-menu.tsx`): getSession-driven (fixtures
-  answer with a deterministic `donaldgifford` github identity). The
-  signed-in half is `account-menu.tsx`, the design system's
-  `DropdownMenu` behind the avatar, and a lazy chunk of its own: Base
-  UI's menu and positioning are about 30 KB gz, which only a signed-in
-  session needs, so the placeholder holds its place while it loads. A
-  test finds the trigger with `findByRole` and Sign out as a
-  `menuitem`. Logout runs `onSettled` —
+  unrelated tests. The session sits at the sidebar's foot:
+  `SessionMenu` (`src/components/session-menu.tsx`), drawn from
+  `useSessionState()`, which AppShell calls so it can leave the footer
+  out altogether for an anonymous session (fixtures answer with a
+  deterministic `donaldgifford` github identity). The signed-in half is
+  `account-menu.tsx`: a `SidebarMenuButton` holding the identity
+  (`ShellSidebarIdentity`, initials on the icon rail) that opens the
+  design system's `DropdownMenu`, beside the sidebar and above it in
+  the sheet. It is a lazy chunk of its own: Base UI's menu is about
+  30 KB gz, which only a signed-in session needs, so the placeholder
+  holds its place while it loads. A test finds the trigger with
+  `findByRole` (`Account: <identity>`) and Sign out as a `menuitem`.
+  The sign-in link's test id is `session-sign-in`; `/login` is outside
+  the frame, so it never shows there. Logout runs `onSettled` —
   navigate to `/login` BEFORE `queryClient.clear()`, or the page being
   left refetches everything under the dead session.
 - Server observability (DESIGN-0006, IMPL-0007): every signal shares
@@ -555,11 +634,12 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - The route error boundary (`src/app/route-error.tsx`) sits on a
   PATHLESS layout route directly below `AppShell`, NOT on the root
   route. A boundary replaces the element of the route that owns it, so
-  a root-level one swaps out AppShell and takes the topbar with it —
+  a root-level one swaps out AppShell and takes the frame with it —
   stranding the user on a panel with no navigation, which is the exact
   failure it exists to fix. `route-error.test.tsx` pins both, including
-  that the root placement loses the topbar, so the extra nesting level
-  can't be refactored away as redundant. It CATCHES AND DISPLAYS only:
+  that the root placement loses the frame, so the extra nesting level
+  can't be refactored away as redundant. The pages outside the frame
+  have the same boundary on their own pathless route. It CATCHES AND DISPLAYS only:
   no `window.onerror`, no `unhandledrejection`, no beacon (a test
   verifies their absence). A link home is the ONLY affordance — a retry
   would re-render the same crashed route and throw again. Panel chrome
@@ -575,8 +655,8 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   failure are `unavailable` → SessionMenu keeps an inert placeholder
   (`session-unavailable` testid, visually identical to pending) and
   the session query re-polls ~30 s via an error-gated
-  `refetchInterval` (it never unmounts and focus-refetch is off — a
-  healthy query must never poll). `anonymous` renders NO auth chrome
+  `refetchInterval` in `useSessionState()` (the shell never unmounts
+  and focus-refetch is off — a healthy query must never poll). `anonymous` renders NO auth chrome
   anywhere and `/login` swaps to the auth-disabled panel (buttons
   render immediately; swap only on confirmed anonymous). None-mode is
   detected from the session response alone — no config, no storage.
@@ -588,8 +668,8 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   dropped — into `__DOCZ_CONFIG__.nav`. `src/lib/navLinks.ts`
   re-validates (both-ends rule); an injected array is authoritative
   even when it validates empty, then `VITE_NAV_LINKS`, then no pins.
-  AppShell renders pins between Repos and SessionMenu (one nav row =
-  small-viewport parity). `build:msw` bakes an RFCs pin so e2e and
+  AppShell renders pins as the sidebar's `Pinned` group, under
+  `Browse`; with none the group is absent. `build:msw` bakes an RFCs pin so e2e and
   dev-msw exercise the surface; the deployable build stays pin-free.
   Chart value `config.navLinks` (toJson; env omitted when empty).
   `docs` is a curated type: `--color-t-docs` (contrast-checked) +
@@ -674,19 +754,14 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   "rows 0..offset+PAGE_SIZE shown"; the query grows `limit` from 0 so
   deep links render identical rows.
 - Repo pages share `RepoFrame` (`src/components/repo-frame.tsx`): the
-  three-column grid (sticky RepoNav · content · 190px rail, collapsing
-  at 1181px/861px) plus RepoBreadcrumbs — home, type pages, AND the
-  reader all mount inside it. Counts everywhere come from
-  `useRepoFacts` (repo-filtered limit-0 facet query) so numbers agree.
-  RepoNav's per-type doc lists are collapsible drawers: the route's
-  `:type` auto-expands, the caret button peeks without navigating, and
-  listDocs only fires for open drawers. Facets omit zero-hit types —
-  a missing typeCounts key after facts load means 0, which also
-  disables the caret. In-group rows (type drawers, pages tree) share
-  the left rail from `src/components/nav-rail.ts` — the group draws a
-  hairline, each row a 2px border over it, active rows color it in.
-  Both files import from there, never from each other (RepoNav renders
-  the pages section, so the other direction is a cycle). The repo home is the ONLY surface rendering an
+  content and, from 1181px, a 190px rail to its right, with the route's
+  breadcrumbs portalled into the top bar — home, changelog, pages, type
+  pages, AND the reader all mount inside it. It takes `crumbs` and
+  `rail` and nothing about the repository: the repository's navigation
+  is the shell's sidebar (see the frame). Its `max-w-[1062px]` is the
+  content's 784px measure plus the rail and the gap. Counts everywhere
+  come from `useRepoFacts` (repo-filtered limit-0 facet query) so
+  numbers agree. The repo home is the ONLY surface rendering an
   h1 inside `.doc-prose` (the reader strips body h1s) — its style
   lives in tokens.css; don't remove it as "unused".
   URL `{type}` resolves by name/id_prefix/alias via
@@ -699,7 +774,7 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - Repo changelog (spec 1.2.0, IMPL-0003 Phase 1):
   `/:owner/:repo/changelog` is a RESERVED static segment — it outranks
   `:type`, so a doc type literally named "changelog" is reachable only
-  via its id_prefix/alias URL. The RepoNav row under Home gates on
+  via its id_prefix/alias URL. The sidebar's row under Home gates on
   `changelogConfig()` (`src/lib/changelogConfig.ts`) reading getRepo's
   UNTYPED `config_snapshot` defensively — any wrong shape means "no
   row", zero extra requests — and hover/focus-prefetches
@@ -731,8 +806,8 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   builders interpolate path params RAW — always pass
   `encodeURIComponent(path)` (one segment, the spec-blessed spelling;
   prefetch in `usePrefetchPage` must match or cache keys diverge).
-  Discovery: RepoNav's Pages tree (`repo-nav-pages.tsx`, mounted only
-  on an apiConfig hit), palette + directory render `source: "page"`
+  Discovery: the sidebar's Pages group (`repo-sidebar.tsx`, mounted
+  only on an apiConfig hit), palette + directory render `source: "page"`
   hits keyed/linked by published path with a neutral mono marker
   (doc-only columns "—"; the directory count line appends
   "· X docs · Y pages" ONLY when pages matched, so non-opted
@@ -749,8 +824,8 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   `CommandDialog` with `CommandFilters`, `CommandFooter`, and `preview`
   (DESIGN-0028 §7). It is a lazy chunk. AppShell mounts
   `command-palette-lazy.tsx`, which holds the ⌘K and `/` shortcuts and
-  fetches the chunk shortly after the shell mounts and on the search
-  button's hover, so cmdk and the dialog are never in the eager graph.
+  fetches the chunk shortly after the shell mounts and on the top
+  bar's `SearchTrigger`'s hover, so cmdk and the dialog are never in the eager graph.
   A test waits for the dialog AND for its input to have focus: a key
   pressed before the dialog hands focus over goes to the page behind.
   State is palette-local, never the URL. cmdk normalizes item values —
@@ -923,7 +998,12 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
   until IMPL-0033 Phase 4: the design system's parts arrive before
   docz's own leave, and its frame is the first paint, so the budget
   holds that overlap until Phase 9 sets it to the measured total plus
-  6 KB. The script's comment carries the numbers.
+  6 KB. The script's comment carries the numbers. With the frame
+  mounted (Phase 7) the eager set measures 171.6 KB, OVER the 165 KB
+  ceiling: the package's `components/sidebar` imports its sheet and
+  tooltip statically, about 45 KB gz of Base UI that is the first
+  paint. The number is left as it is until that is decided (IMPL-0033
+  Phase 7's note).
   "Eager" = the entry chunk PLUS every modulepreload'd chunk in
   index.html — Rollup splits shared statics out of `index-*.js` as
   the graph shifts, so measuring only the entry file would let an
