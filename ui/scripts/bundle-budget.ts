@@ -13,16 +13,21 @@
  * before first paint just the same. Measuring only the entry file
  * would let an eager import hide in a preloaded chunk.
  *
- * Budget rationale (DESIGN-0028 §12, IMPL-0033 question 4): 165 KB
- * while the site moves onto @donaldgifford/design-system. The eager
- * set was react + router + query + the generated client + docz's own
- * shell and palette, ~124 KB against a budget of 130. The package's
- * parts arrive phase by phase before docz's own leave, and its frame
- * (sidebar, top bar, the Base UI primitives under them) is the first
- * paint, so it cannot be lazy: a spike measured 156.6 KB with the frame
- * mounted beside the old shell. 165 KB holds through that overlap.
- * IMPL-0033 Phase 9 measures the final set and sets the budget to that
- * total plus 6 KB.
+ * Budget rationale (DESIGN-0028 §12 and question 1, IMPL-0033 Phase
+ * 9): the eager set measured 171.6 KB gzipped on 2026-11-23 with the
+ * move onto @donaldgifford/design-system finished, and the budget is
+ * that total plus 6 KB, 177.6 KB.
+ *
+ * Before the package the eager set was react + router + query + the
+ * generated client + docz's own shell and palette, ~124 KB against a
+ * budget of 130. The package's frame (sidebar, top bar, and the Base
+ * UI primitives under them) is the first paint, so it cannot be lazy.
+ * About 45 KB of the total is the package's components/sidebar, which
+ * imports its sheet and tooltip statically; the palette, the account
+ * menu, and a repository's sidebar groups are lazy chunks so that
+ * their popover, menu, and dialog stay out of this set. If the package
+ * puts its sheet behind a lazy boundary, measure again and lower the
+ * number.
  *
  * What the budget guards has not changed, and each is far larger than
  * the headroom: the markdown pipeline, a Shiki grammar, mermaid, or the
@@ -32,7 +37,8 @@
 import { readFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 
-const BUDGET_GZIP_BYTES = 165 * 1024;
+// 171.6 KB measured, plus 6 KB of headroom.
+const BUDGET_GZIP_BYTES = Math.round(177.6 * 1024);
 
 function read(path: string): Buffer {
   try {
