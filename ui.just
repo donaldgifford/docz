@@ -15,8 +15,21 @@ set working-directory := "ui"
 default:
     @just --list ui
 
-# Install dependencies
+# Install dependencies. @donaldgifford/design-system comes from GitHub
+# Packages, which wants a token even for a public package; ui/.npmrc reads
+# it from NPM_TOKEN, so the token lives in the environment and in no file.
 install:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "${NPM_TOKEN:-}" ]; then
+      echo "✗ NPM_TOKEN is unset: ui/.npmrc needs it to fetch @donaldgifford/design-system" >&2
+      echo "  from GitHub Packages. Use a GitHub token with the read:packages scope:" >&2
+      echo "" >&2
+      echo "    NPM_TOKEN=\$(gh auth token) just ui install" >&2
+      echo "" >&2
+      echo "  (gh auth refresh --scopes read:packages adds the scope to gh's token.)" >&2
+      exit 1
+    fi
     bun install
 
 # Vite dev server, proxying /api,/auth,/openapi.yaml to local docz-api

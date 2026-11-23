@@ -144,7 +144,7 @@ nothing imports it yet.
   exactly with no caret, and commit `ui/bun.lock`.
 - [x] Commit `ui/.npmrc` with the `@donaldgifford` registry line and
   `_authToken=${NPM_TOKEN}`. Confirm trufflehog passes on it.
-- [ ] `just ui install`: fail before running Bun when `NPM_TOKEN` is
+- [x] `just ui install`: fail before running Bun when `NPM_TOKEN` is
   unset, printing the `NPM_TOKEN=$(gh auth token)` line and the
   `read:packages` scope it needs.
 - [ ] Grant the docz repository read access to the package in the
