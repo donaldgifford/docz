@@ -90,7 +90,7 @@ export function Component() {
   return (
     <main className="mx-auto max-w-[940px] px-5">
       <header className="pt-10 pb-6">
-        <div className="font-mono text-[13.5px] tracking-[0.05em] text-accent">
+        <div className="font-mono text-[13.5px] tracking-[0.05em] text-brand">
           / docz <span className="text-fg-muted">/</span> repositories
         </div>
         <h1 className="mt-2 mb-1 text-[clamp(1.6rem,4vw,2rem)] font-semibold tracking-[-0.01em] text-fg-primary">
@@ -99,9 +99,9 @@ export function Component() {
         <p className="text-[14px] text-fg-tertiary">
           Every repo registered with docz-api. Each renders its own homepage
           from the{" "}
-          <code className="font-mono text-[0.85em] text-accent">index.md</code>{" "}
+          <code className="font-mono text-[0.85em] text-brand">index.md</code>{" "}
           its{" "}
-          <code className="font-mono text-[0.85em] text-accent">docz.yaml</code>{" "}
+          <code className="font-mono text-[0.85em] text-brand">docz.yaml</code>{" "}
           points at, plus a section per configured doc type.
         </p>
       </header>

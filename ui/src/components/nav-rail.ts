@@ -17,7 +17,7 @@ export const NAV_GROUP_RAIL = "ml-[0.45rem] border-l border-border-hairline";
 export function navRowClass(isActive: boolean, extra = ""): string {
   return `-ml-px block min-w-0 overflow-hidden border-l-2 py-[0.17rem] pr-[0.45rem] text-[12.5px] text-ellipsis whitespace-nowrap ${extra} ${
     isActive
-      ? "border-accent bg-(--color-accent-bg) text-accent"
+      ? "border-brand bg-brand-bg text-brand"
       : "border-transparent text-fg-muted hover:text-fg-primary"
   }`;
 }

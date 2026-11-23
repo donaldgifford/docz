@@ -72,7 +72,7 @@ function DocsTable({
                   to={`/${repoId}/${docType.name}/${doc.doc_id}`}
                   onMouseEnter={prefetch}
                   onFocus={prefetch}
-                  className="font-mono text-[13px] text-accent hover:underline"
+                  className="font-mono text-[13px] text-brand hover:underline"
                 >
                   {doc.doc_id}
                 </Link>

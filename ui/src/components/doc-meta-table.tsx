@@ -49,7 +49,7 @@ function FormatButton({
       onClick={onClick}
       className={`border px-2 py-[2px] ${
         active
-          ? "border-(--color-accent-border) bg-(--color-accent-bg) text-accent"
+          ? "border-brand-border bg-brand-bg text-brand"
           : "border-border-default text-fg-tertiary hover:text-fg-primary"
       }`}
     >
@@ -116,7 +116,7 @@ export function DocMetaTable({
           <MetaRow label="Repo">
             <Link
               to={`/${doc.repo}`}
-              className="text-accent underline [text-underline-offset:3px] decoration-(--color-accent-border) hover:decoration-(--color-accent)"
+              className="text-brand underline [text-underline-offset:3px] decoration-brand-border hover:decoration-brand"
             >
               {doc.repo}
             </Link>

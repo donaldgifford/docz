@@ -48,7 +48,7 @@ function ConsentCard({ children }: { children: React.ReactNode }) {
   return (
     <main className="mx-auto flex max-w-[480px] flex-col px-5 pt-[12vh]">
       <div className="border border-border-default bg-bg-raised px-8 py-8 rounded-sm">
-        <div className="mb-1 font-mono text-[13.5px] tracking-[0.05em] text-accent">
+        <div className="mb-1 font-mono text-[13.5px] tracking-[0.05em] text-brand">
           / docz <span className="text-fg-muted">/</span> authorize
         </div>
         {children}
@@ -74,7 +74,7 @@ function ScopeList({ authorization }: { authorization: OAuthAuthorization }) {
                 : "border-border-hairline text-fg-muted line-through"
             }`}
           >
-            <span className="font-mono text-[12.5px] text-accent">{scope}</span>
+            <span className="font-mono text-[12.5px] text-brand">{scope}</span>
             <span className="mx-2 text-fg-muted">·</span>
             {describeScope(scope)}
             {!given && (
@@ -167,7 +167,7 @@ export function Component() {
             rel="noreferrer"
             target="_blank"
             data-testid="consent-client-link"
-            className="text-accent underline decoration-(--color-accent-border) underline-offset-4"
+            className="text-brand underline decoration-brand-border underline-offset-4"
           >
             {authorization.client_name}
           </a>
@@ -203,7 +203,7 @@ export function Component() {
           onClick={() => {
             submit("allow");
           }}
-          className="flex-1 border border-(--color-accent-border) bg-(--color-accent-bg) px-4 py-[0.55rem] font-mono text-[14px] text-accent hover:border-accent disabled:opacity-60"
+          className="flex-1 border border-brand-border bg-brand-bg px-4 py-[0.55rem] font-mono text-[14px] text-brand hover:border-brand disabled:opacity-60"
         >
           Allow
         </button>

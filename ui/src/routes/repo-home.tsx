@@ -49,7 +49,7 @@ function GeneratedHome({ detail }: { detail: RepoDetail }) {
         {detail.repo.split("/").at(-1) ?? detail.repo}
       </h1>
       <p className="mb-8 text-[14px] text-fg-tertiary">
-        No <code className="font-mono text-[0.85em] text-accent">index.md</code>{" "}
+        No <code className="font-mono text-[0.85em] text-brand">index.md</code>{" "}
         configured in docz.yaml.
       </p>
 
@@ -68,7 +68,7 @@ function GeneratedHome({ detail }: { detail: RepoDetail }) {
             </h2>
             <Link
               to={`/${detail.repo}/${docType.name}`}
-              className="font-mono text-[13.5px] text-accent hover:underline"
+              className="font-mono text-[13.5px] text-brand hover:underline"
             >
               browse {docType.dir}/ →
             </Link>

@@ -228,14 +228,14 @@ values, and looks exactly as it did.
   `src/`, `index.html`, and `review.html`.
 - [x] Confirm the stylesheet's size against INV-0036's numbers, so a
   missing `source(none)` is caught here.
-- [ ] `ui/src/theme/docz-tokens.css`: docz's 26 own tokens, a light
+- [x] `ui/src/theme/docz-tokens.css`: docz's 26 own tokens, a light
   block at `:root` and a dark block under `.dark`, moved out of
   `shell.css` unchanged in value.
-- [ ] Point the shell's 32 shared names at the package's tokens in
+- [x] Point the shell's 32 shared names at the package's tokens in
   `shell.css` and the `@theme` block (`bg-base` at `--background`, and
   the rest of DESIGN-0028's section 4 table), so chrome that has not
   moved yet keeps working. These aliases are removed in Phase 9.
-- [ ] Rename the `accent` utility to `brand` across `ui/src`: `accent`,
+- [x] Rename the `accent` utility to `brand` across `ui/src`: `accent`,
   `accent-dim`, `accent-bg`, `accent-border`, and `on-accent`, in the 47
   utilities and the 17 `var()` reads. Register
   `--color-brand: var(--color-accent)` so `pkg/theme`'s variable keeps
@@ -243,7 +243,7 @@ values, and looks exactly as it did.
 - [ ] Add a test that fails on `bg-accent`, `text-accent`, or
   `border-accent` anywhere under `ui/src`, since each now compiles to the
   package's hover surface.
-- [ ] Remove the radius wipe (`--radius-*: initial`) and confirm docz's
+- [x] Remove the radius wipe (`--radius-*: initial`) and confirm docz's
   own controls still render at `rounded-sm`.
 - [x] `appearance.ts`: `writeMode()` toggles `dark` on `<html>` from the
   stored mode or the system, and a media-query listener updates the
@@ -251,11 +251,11 @@ values, and looks exactly as it did.
 - [x] Test `applyStoredMode()` and the toggle: `.dark` and `data-mode`
   agree for stored light, stored dark, and system-follow in both
   directions.
-- [ ] `contrast.test.ts`: follow `var()` into the package's `tokens.css`
+- [x] `contrast.test.ts`: follow `var()` into the package's `tokens.css`
   through `oklch.ts`, and fail when a token resolves to nothing, so a
   lost mapping can never pass silently.
 - [x] `src/test/setup.ts`: add the `window.matchMedia` stub.
-- [ ] Keep the fonts as they are: the three `@fontsource-variable`
+- [x] Keep the fonts as they are: the three `@fontsource-variable`
   imports in `main.tsx`, and no import of the package's `fonts.css`.
 - [ ] `ui/CLAUDE.md`: rewrite the `tokens.css`, radius, and shell
   paragraphs for the new head of the stylesheet.

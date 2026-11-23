@@ -1,0 +1,79 @@
+/*
+ * docz's own tokens (DESIGN-0028 §4): the 26 names the design system has
+ * no value for. Two surface and border steps, three text steps,
+ * accent-dim, st-superseded, the five alert backgrounds, the thirteen
+ * type colours, and code-bg. Light at :root, dark under .dark, the
+ * class appearance.ts sets beside data-mode.
+ *
+ * This is the one hand-written source for them. The chrome reads the
+ * type and alert colours from here, and scripts/gen-charcoal.ts reads
+ * the dark block for pkg/theme's charcoal theme. The other 32 of the
+ * shell's 58 names take their value from the package (shell.css).
+ *
+ * Each value is fitted to 4.5:1 on the package's surfaces, which
+ * contrast.test.ts holds in both modes: the type and status colours
+ * keep the hues of the directory's filter chips, each lightened (dark)
+ * or darkened (light) along its own hue. adm-*-bg is each alert's label
+ * colour at 10% over the page, kept as hex for that test. code-bg is
+ * dark in both modes, as in pkg/theme.
+ *
+ * Inside a document none of this applies: page.css sets the same names
+ * on .docz-page from the document's own theme.
+ */
+:root {
+  --color-bg-hover: #e8eaed;
+  --color-border-hairline: #e8eaed;
+  --color-fg-secondary: #333840;
+  --color-fg-tertiary: #464e58;
+  --color-fg-prose: #262a31;
+  --color-accent-dim: #3a4c6d;
+  --color-st-superseded: #7757a9;
+  --color-adm-note-bg: #e1e7f2;
+  --color-adm-tip-bg: #e0e9e4;
+  --color-adm-important-bg: #e9e7f1;
+  --color-adm-warning-bg: #ebe6e1;
+  --color-adm-caution-bg: #eee2e3;
+  --color-t-rfc: #4164b1;
+  --color-t-adr: #8a5f0a;
+  --color-t-design: #057080;
+  --color-t-impl: #a44d05;
+  --color-t-investigation: #7856ac;
+  --color-t-mandate: #b43958;
+  --color-t-guide: #497103;
+  --color-t-principle: #0a6e97;
+  --color-t-policy: #7756a9;
+  --color-t-framework: #057366;
+  --color-t-working: #a44d05;
+  --color-t-runbook: #b13082;
+  --color-t-docs: #5e668a;
+  --color-code-bg: #101215;
+}
+
+.dark {
+  --color-bg-hover: #2d3137;
+  --color-border-hairline: #262a31;
+  --color-fg-secondary: #c6cbd2;
+  --color-fg-tertiary: #abb2bb;
+  --color-fg-prose: #d3d8de;
+  --color-accent-dim: #1963b3;
+  --color-st-superseded: #ab8be3;
+  --color-adm-note-bg: #212733;
+  --color-adm-tip-bg: #1b2921;
+  --color-adm-important-bg: #262430;
+  --color-adm-warning-bg: #2a261c;
+  --color-adm-caution-bg: #2d2224;
+  --color-t-rfc: #7aa2f7;
+  --color-t-adr: #e0af68;
+  --color-t-design: #2ac3de;
+  --color-t-impl: #ff9e64;
+  --color-t-investigation: #a887e3;
+  --color-t-mandate: #f7768e;
+  --color-t-guide: #9ece6a;
+  --color-t-principle: #7dcfff;
+  --color-t-policy: #bb9af7;
+  --color-t-framework: #73daca;
+  --color-t-working: #ff9e64;
+  --color-t-runbook: #ff79c6;
+  --color-t-docs: #c0caf5;
+  --color-code-bg: #101215;
+}

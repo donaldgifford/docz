@@ -23,7 +23,7 @@ export function Snippet({ snippet }: { snippet: string }) {
     } else if (part !== "") {
       nodes.push(
         depth > 0 ? (
-          <mark key={index} className="bg-transparent font-medium text-accent">
+          <mark key={index} className="bg-transparent font-medium text-brand">
             {part}
           </mark>
         ) : (

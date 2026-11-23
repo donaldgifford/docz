@@ -6,7 +6,7 @@ export function Component() {
       <h1 className="font-mono text-fg-secondary">404 — nothing here</h1>
       <p className="text-fg-tertiary">
         This path doesn&apos;t match any route.{" "}
-        <Link to="/" className="text-accent">
+        <Link to="/" className="text-brand">
           Back to the directory
         </Link>
         .

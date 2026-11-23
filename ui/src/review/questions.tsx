@@ -92,7 +92,7 @@ function QuestionCard({
               >
                 {o.letter}. {optionLabel(o.text)}
                 {o.recommended && (
-                  <span className="ml-2 text-accent">recommended</span>
+                  <span className="ml-2 text-brand">recommended</span>
                 )}
               </ReviewButton>
             ))}

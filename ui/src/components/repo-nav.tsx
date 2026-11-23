@@ -32,7 +32,7 @@ const FIVE_MINUTES = 5 * 60_000;
 function navItemClass({ isActive }: { isActive: boolean }): string {
   return `flex min-w-0 flex-1 justify-between gap-3 px-[0.45rem] py-[0.28rem] ${
     isActive
-      ? "bg-(--color-accent-bg) text-accent"
+      ? "bg-brand-bg text-brand"
       : "text-fg-tertiary hover:bg-bg-raised hover:text-fg-primary"
   }`;
 }
@@ -155,7 +155,7 @@ export function RepoNav({ owner, name }: { owner: string; name: string }) {
       <div className="mb-4 flex items-center gap-[0.55rem]">
         <span
           aria-hidden
-          className="grid size-[22px] flex-none place-items-center border border-border-default bg-bg-elevated text-[12px] text-accent rounded-sm"
+          className="grid size-[22px] flex-none place-items-center border border-border-default bg-bg-elevated text-[12px] text-brand rounded-sm"
         >
           {name.charAt(0).toUpperCase()}
         </span>

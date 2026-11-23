@@ -62,7 +62,7 @@ function QuietPanel({ file }: { file: string | undefined }) {
         {file === undefined ? (
           <>
             This repository doesn&rsquo;t serve a changelog — no enabled{" "}
-            <code className="font-mono text-[0.85em] text-accent">
+            <code className="font-mono text-[0.85em] text-brand">
               changelog:
             </code>{" "}
             block in its docz.yaml.
@@ -70,7 +70,7 @@ function QuietPanel({ file }: { file: string | undefined }) {
         ) : (
           <>
             The configured changelog{" "}
-            <code className="font-mono text-[0.85em] text-accent">{file}</code>{" "}
+            <code className="font-mono text-[0.85em] text-brand">{file}</code>{" "}
             is absent at HEAD.
           </>
         )}
@@ -84,7 +84,7 @@ function EmptyPanel({ file }: { file: string }) {
     <div>
       <h1 className={TITLE_CLASS}>Changelog</h1>
       <p className="text-[14px] text-fg-tertiary">
-        <code className="font-mono text-[0.85em] text-accent">{file}</code> is
+        <code className="font-mono text-[0.85em] text-brand">{file}</code> is
         empty at HEAD.
       </p>
     </div>

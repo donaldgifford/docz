@@ -32,7 +32,7 @@ export function TocList({ toc }: { toc: TocEntry[] }) {
                 entry.depth > 2 ? "pl-6 text-[12.5px]" : "pl-3 text-[13px]"
               } ${
                 isActive
-                  ? "border-accent text-accent"
+                  ? "border-brand text-brand"
                   : "border-transparent text-fg-tertiary hover:text-fg-primary"
               }`}
             >

@@ -84,7 +84,7 @@ const GROUP_CLASS =
   "[&_[cmdk-group-heading]]:px-[0.6rem] [&_[cmdk-group-heading]]:pt-[0.6rem] [&_[cmdk-group-heading]]:pb-[0.3rem] [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[11.5px] [&_[cmdk-group-heading]]:tracking-[0.06em] [&_[cmdk-group-heading]]:text-fg-muted [&_[cmdk-group-heading]]:uppercase";
 
 const ITEM_CLASS =
-  "cursor-pointer border-l-2 border-l-transparent px-[0.6rem] py-2 data-[selected=true]:border-l-accent data-[selected=true]:bg-bg-elevated";
+  "cursor-pointer border-l-2 border-l-transparent px-[0.6rem] py-2 data-[selected=true]:border-l-brand data-[selected=true]:bg-bg-elevated";
 
 function PillButton({
   label,
@@ -102,7 +102,7 @@ function PillButton({
       onClick={onClick}
       className={`mono-chip-y border px-[0.6rem] font-mono text-[12.5px] ${
         active
-          ? "border-(--color-accent-border) bg-(--color-accent-bg) text-accent"
+          ? "border-brand-border bg-brand-bg text-brand"
           : "border-border-default text-fg-tertiary hover:text-fg-secondary"
       }`}
     >
@@ -119,7 +119,7 @@ function PreviewPane({ hit }: { hit: SearchHit | undefined }) {
   }
   return (
     <>
-      <div className="font-mono text-[12.5px] text-accent">
+      <div className="font-mono text-[12.5px] text-brand">
         {hitMarker(hit)} · {hit.repo.split("/").at(-1) ?? hit.repo}
       </div>
       <h3 className="mt-[0.3rem] mb-2 text-[16px] font-semibold text-fg-primary">

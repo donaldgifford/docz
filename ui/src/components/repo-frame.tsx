@@ -30,7 +30,7 @@ export function RepoBreadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
         <Fragment key={`${crumb.label}:${crumb.to ?? ""}`}>
           <span>/</span>
           {crumb.to === undefined ? (
-            <span className="text-accent [overflow-wrap:anywhere]">
+            <span className="text-brand [overflow-wrap:anywhere]">
               {crumb.label}
             </span>
           ) : (

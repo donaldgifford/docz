@@ -47,7 +47,7 @@ const ROW_CARD =
 function DirectoryHero({ repo }: { repo: string | null }) {
   return (
     <header className="pt-10 pb-2">
-      <div className="font-mono text-[13.5px] tracking-[0.05em] text-accent">
+      <div className="font-mono text-[13.5px] tracking-[0.05em] text-brand">
         / docz <span className="text-fg-muted">/</span> {repo ?? "all repos"}
       </div>
       <h1 className="mt-2 mb-1 text-[clamp(1.6rem,4vw,2rem)] font-semibold tracking-[-0.01em] text-fg-primary">

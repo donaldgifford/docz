@@ -148,7 +148,7 @@ export function ReviewApp({ client }: { client: ReviewClient }) {
         <span className="flex items-center gap-[0.55rem]">
           <span
             aria-hidden
-            className="grid size-[20px] place-items-center rounded-sm bg-accent font-mono text-[12px] font-bold text-(--color-on-accent)"
+            className="grid size-[20px] place-items-center rounded-sm bg-brand font-mono text-[12px] font-bold text-on-brand"
           >
             D
           </span>

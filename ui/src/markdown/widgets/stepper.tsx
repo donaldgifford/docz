@@ -118,7 +118,7 @@ export function pill(on: boolean): string {
   return [
     "border px-2.5 py-1 text-[13px] disabled:opacity-60",
     on
-      ? "border-accent bg-accent text-(--color-on-accent)"
+      ? "border-brand bg-brand text-on-brand"
       : "border-border-default bg-bg-raised text-fg-primary hover:bg-bg-hover",
   ].join(" ");
 }

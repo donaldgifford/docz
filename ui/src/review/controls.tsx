@@ -14,8 +14,8 @@ export function ReviewButton({
 }) {
   const look = {
     plain: "border-border-default text-fg-secondary hover:bg-bg-hover",
-    primary: "border-accent-border bg-accent-bg text-accent hover:bg-bg-hover",
-    selected: "border-accent-border bg-bg-active text-fg-primary",
+    primary: "border-brand-border bg-brand-bg text-brand hover:bg-bg-hover",
+    selected: "border-brand-border bg-bg-active text-fg-primary",
   }[variant];
   return (
     <button

@@ -4,19 +4,12 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { shellLook, shellLookCss } from "@/test/shell-look";
+
 import {
   THEMES as GENERATED_THEMES,
   THEMES_WITH_MODES,
 } from "./__generated__/themes";
-
-// Read the file directly: vitest's CSS stubbing swallows `?raw` imports
-// of .css files (verified — they arrive as ""), and import.meta.url is
-// not a file: URL under jsdom. The node types are referenced per-file;
-// the app tsconfig deliberately stays browser-only.
-const tokensCss = readFileSync(
-  resolve(process.cwd(), "src/theme/tokens.css"),
-  "utf8",
-);
 
 /*
  * The themes (DESIGN-0025 §3, IMPL-0028 Phase 6) live in pkg/theme, and
@@ -26,9 +19,19 @@ const tokensCss = readFileSync(
  * theme with them one for light and one for dark. Paper's
  * prefers-color-scheme block repeats the dark values, which pkg/theme's
  * theme_test.go holds equal, so it is not checked twice here.
- * The shell (DESIGN-0026 §2) is checked in both modes, and tokens.css's
- * @theme values, its dark set (shell.test.ts), as the source Tailwind
- * reads.
+ *
+ * The shell is checked in both modes too. Its values are no longer hex
+ * in a stylesheet (DESIGN-0028 §13): 32 of its names are aliases onto
+ * the design system's oklch tokens and 26 are docz's own. shellLookCss()
+ * follows every var() into the package's tokens.css through oklch.ts and
+ * writes the look as the hex block this test parses. It throws on a
+ * token that resolves to nothing, so a lost mapping fails here and is
+ * never skipped.
+ *
+ * The files are read with node:fs: vitest's CSS stubbing swallows `?raw`
+ * imports of .css files (verified, they arrive as ""), and
+ * import.meta.url is not a file: URL under jsdom. The node types are
+ * referenced per file; the app tsconfig deliberately stays browser-only.
  */
 const themeDir = resolve(process.cwd(), "../pkg/theme/tokens");
 
@@ -42,15 +45,13 @@ function block(css: string, selector: string): string {
   return css.slice(start, end);
 }
 
-const shellCss = readFileSync(
-  resolve(process.cwd(), "src/theme/shell.css"),
-  "utf8",
-);
+const SHELL_MODES = ["light", "dark"] as const;
 
 const THEMES: [string, string][] = [
-  ["tokens.css", tokensCss],
-  ["shell light", block(shellCss, ":root")],
-  ["shell dark", block(shellCss, ':root[data-mode="dark"]')],
+  ...SHELL_MODES.map((mode): [string, string] => [
+    `shell ${mode}`,
+    shellLookCss(mode),
+  ]),
   ...GENERATED_THEMES.flatMap((name): [string, string][] => {
     const css = readFileSync(resolve(themeDir, `${name}.css`), "utf8");
     const root = `:root[data-theme="${name}"]`;
@@ -101,6 +102,32 @@ function contrastRatio(a: string, b: string): number {
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return ((hi ?? 0) + 0.05) / ((lo ?? 0) + 0.05);
 }
+
+/*
+ * No shell token is skipped. Every one of docz's 58 names resolves in
+ * both modes, 56 to a hex this file's parser reads and the two accent
+ * tints to an rgba() the tint check reads. Before the resolver, a name
+ * whose value became a var() simply dropped out of the regular
+ * expression and its pairs stopped being checked.
+ */
+describe.each(SHELL_MODES)("shell %s resolves every token", (mode) => {
+  const look = shellLook(mode);
+
+  it("has all 58 names", () => {
+    expect(look.size).toBe(58);
+  });
+
+  it("gives every name a hex, or an rgba() for the two tints", () => {
+    const hex = [...look].filter(([, value]) => /^#[0-9a-f]{6}$/.test(value));
+    const tints = [...look].filter(([, value]) => value.startsWith("rgba("));
+    expect(tints.map(([name]) => name).sort()).toEqual([
+      "accent-bg",
+      "accent-border",
+    ]);
+    expect(hex.length + tints.length).toBe(look.size);
+    expect(parseTokens(shellLookCss(mode)).size).toBe(hex.length);
+  });
+});
 
 describe.each(THEMES)("%s text token contrast", (_, css) => {
   const tokens = parseTokens(css);
@@ -234,9 +261,7 @@ function mix(hex: string, bg: string, alpha: number): string {
   );
 }
 
-const SHELL_LOOKS = THEMES.filter(
-  ([name]) => name === "tokens.css" || name.startsWith("shell "),
-);
+const SHELL_LOOKS = THEMES.filter(([name]) => name.startsWith("shell "));
 
 describe.each(SHELL_LOOKS)("%s type accent tint contrast", (_, css) => {
   const tokens = parseTokens(css);

@@ -121,7 +121,7 @@ function DocHeader({ doc }: { doc: Document }) {
   return (
     <header className="mb-9 border-b border-border-hairline pb-8">
       {/* Id line: DESIGN / 0009, with the fading rule from the mockup */}
-      <div className="mb-4 flex items-center gap-3 font-mono text-[14px] tracking-[0.04em] text-accent after:h-px after:flex-1 after:bg-gradient-to-r after:from-(--color-accent-border) after:to-transparent after:content-['']">
+      <div className="mb-4 flex items-center gap-3 font-mono text-[14px] tracking-[0.04em] text-brand after:h-px after:flex-1 after:bg-gradient-to-r after:from-brand-border after:to-transparent after:content-['']">
         <span>{parts ? `${parts[0]} / ${parts[1]}` : doc.doc_id}</span>
       </div>
 
@@ -146,7 +146,7 @@ function DocHeader({ doc }: { doc: Document }) {
               href={doc.confluence_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-accent hover:underline"
+              className="text-brand hover:underline"
             >
               View in Confluence
             </a>
@@ -288,7 +288,7 @@ export function Component() {
             href={doc.confluence_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-accent hover:underline"
+            className="text-brand hover:underline"
           >
             View in Confluence
           </a>

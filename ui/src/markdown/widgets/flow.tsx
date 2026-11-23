@@ -39,7 +39,7 @@ export function Flow({ data }: { data: FlowData }) {
                 className={[
                   "min-w-24 border px-3 py-2 text-left text-[13px] font-semibold",
                   on
-                    ? "border-accent bg-accent text-(--color-on-accent)"
+                    ? "border-brand bg-brand text-on-brand"
                     : gate
                       ? "border-2 border-(--color-ok) bg-bg-raised text-fg-primary"
                       : "border-border-default bg-bg-raised text-fg-primary",
