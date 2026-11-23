@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { SHELL_MODES, useShellMode } from "./appearances";
+import { arrived, SHELL_MODES, useShellMode } from "./appearances";
 
 /*
  * Full-rule axe in a real browser — including color-contrast, which
@@ -102,11 +102,11 @@ for (const appearance of SHELL_MODES) {
       await expectNoBlockingViolations(page);
 
       await type.click();
+      const popover = page.getByRole("dialog", { name: "design" });
       await expect(
-        page
-          .getByRole("dialog", { name: "design" })
-          .getByRole("link", { name: /^DESIGN-0001/ }),
+        popover.getByRole("link", { name: /^DESIGN-0001/ }),
       ).toBeVisible();
+      await arrived(popover);
       await expectNoBlockingViolations(page);
     });
 

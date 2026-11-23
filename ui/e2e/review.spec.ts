@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 import { THEMES } from "../src/theme/__generated__/themes";
-import { SHELL_MODES } from "./appearances";
+import { arrived, SHELL_MODES } from "./appearances";
 
 /*
  * docz-review's page in a real browser (DESIGN-0024 section 7: the
@@ -345,11 +345,7 @@ for (const each of SETTINGS) {
         name: "Discard this draft and approve?",
       });
       await expect(dialog).toBeVisible();
-      // The dialog fades in, and axe reads a half-faded dialog as low
-      // contrast, so the check waits for it to arrive.
-      await dialog.evaluate((el) =>
-        Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)),
-      );
+      await arrived(dialog);
       const results = await new AxeBuilder({ page }).analyze();
       expect(
         results.violations

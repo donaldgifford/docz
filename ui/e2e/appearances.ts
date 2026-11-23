@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 /*
  * The looks the site's specs loop over: docz-site's shell has one look in
@@ -26,4 +26,16 @@ export async function useShellMode(
   await page.addInitScript((mode) => {
     window.localStorage.setItem("docz:mode", mode);
   }, shell.mode);
+}
+
+/**
+ * arrived waits for an overlay's opening animations to finish. A
+ * dialog or a popover fades in, and axe reads one caught half-faded as
+ * low contrast on every line in it, so a spec waits here before it
+ * runs axe over an open overlay.
+ */
+export async function arrived(overlay: Locator): Promise<void> {
+  await overlay.evaluate((el) =>
+    Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)),
+  );
 }

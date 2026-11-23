@@ -96,8 +96,8 @@ test("the review page draws each widget at its document line", async ({
 }) => {
   await page.goto(REVIEW);
   await page
-    .getByRole("navigation", { name: "Documents" })
-    .getByRole("button", { name: /^DESIGN-0004/ })
+    .getByRole("tablist", { name: "Documents" })
+    .getByRole("tab", { name: /^DESIGN-0004/ })
     .click();
   await expect(
     page.getByRole("heading", { level: 1, name: "Widget blocks", exact: true }),
