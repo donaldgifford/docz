@@ -54,6 +54,10 @@ jobs:
               - 'ui/src/mocks/content/**'
               - 'ui/src/mocks/__generated__/fragments.json'
               - 'ui/src/mocks/__generated__/hostile-fragments.json'
+              # pkg/theme and pkg/export/html hold charcoal.css and the
+              # vendored mermaid to the versions this lockfile pins, so a
+              # pull request that only bumps one has to run them.
+              - 'ui/bun.lock'
               - 'justfile'
               - '*.just'
               - '.golangci.yml'
@@ -210,8 +214,9 @@ jobs:
     # than fixtures: pkg/doczcore/repo's migration test runs InsertRegions
     # over this repository's docs/, and test/archive scans every tracked
     # file and reads .docz.yaml. A docs-only PR can break either one, and
-    # it skips Test Go, so they run here. Both are quick, and so is the
-    # docz build validate needs.
+    # it skips Test Go, so they run here. pkg/theme reads ui/bun.lock, to
+    # hold the generated charcoal.css to the design system it pins. All
+    # are quick, and so is the docz build validate needs.
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'graft') }}
     runs-on: ubuntu-latest
     steps:
@@ -230,7 +235,7 @@ jobs:
         run: just validate
 
       - name: Run the tests that read the real tree
-        run: go test ./pkg/doczcore/repo/... ./test/archive/...
+        run: go test ./pkg/doczcore/repo/... ./test/archive/... ./pkg/theme/...
 
   security:
     name: Security Scan
@@ -453,6 +458,12 @@ jobs:
 
       - name: Theme list drift check
         run: just ui gen-themes-check
+
+      # pkg/theme's charcoal.css is generated from the design system in
+      # node_modules, which only this job has: it holds the bytes, and
+      # TestCharcoalMatchesPinnedDesignSystem holds the version in Go.
+      - name: Generated charcoal theme drift check
+        run: just ui gen-charcoal-check
 
       # The four docz-review binaries, with the host's run from an empty
       # directory: the page and a lazy chunk must come from the binary.

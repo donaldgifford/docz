@@ -3,6 +3,8 @@ package theme
 import (
 	"errors"
 	"maps"
+	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -249,5 +251,70 @@ func TestRuntime(t *testing.T) {
 
 	if !strings.Contains(Runtime(), "window.docz =") {
 		t.Error("Runtime() does not define window.docz")
+	}
+}
+
+// designSystem is the npm package charcoal.css is generated from.
+const designSystem = "@donaldgifford/design-system"
+
+// TestCharcoalMatchesPinnedDesignSystem holds the design-system version
+// recorded in charcoal.css's header to the one ui/bun.lock pins, as
+// TestVendoredMermaid does for mermaid in pkg/export/html. charcoal.css is
+// generated from that package (just gen-charcoal, DESIGN-0028 section 11),
+// so a lockfile bump without the recipe fails here. This is the Go job's
+// half of two checks: it has no node_modules, so it can hold the version
+// but not the bytes, which just ui gen-charcoal-check holds in the ui job.
+func TestCharcoalMatchesPinnedDesignSystem(t *testing.T) {
+	t.Parallel()
+
+	lock, err := os.ReadFile(filepath.Join("..", "..", "ui", "bun.lock"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	name := regexp.QuoteMeta(designSystem)
+
+	pinned := regexp.MustCompile(`"` + name + `": \["` + name + `@([^"]+)"`).FindSubmatch(lock)
+	if pinned == nil {
+		t.Fatalf("ui/bun.lock pins no %s", designSystem)
+	}
+
+	header, _, found := strings.Cut(charcoalTokens, "*/")
+	if !found {
+		t.Fatal("charcoal.css has no header comment")
+	}
+
+	if !strings.Contains(header, "GENERATED") {
+		t.Error("charcoal.css's header does not say it is generated")
+	}
+
+	recorded := regexp.MustCompile(name + ` ([0-9][^\s]*?)\.?\s`).FindStringSubmatch(header)
+	if recorded == nil {
+		t.Fatalf("charcoal.css's header records no %s version", designSystem)
+	}
+
+	if recorded[1] != string(pinned[1]) {
+		t.Errorf(
+			"charcoal.css was generated from %s %s, ui/bun.lock pins %s; run just gen-charcoal, then go test ./... -update",
+			designSystem, recorded[1], pinned[1],
+		)
+	}
+}
+
+// TestCharcoalIsOneBlock holds charcoal to one token block with no mode
+// selector, so it stays dark under any data-mode (DESIGN-0028 question 4).
+func TestCharcoalIsOneBlock(t *testing.T) {
+	t.Parallel()
+
+	css := commentRE.ReplaceAllString(charcoalTokens, "")
+
+	if n := strings.Count(css, `:root[data-theme="charcoal"]`); n != 1 {
+		t.Errorf("charcoal.css has %d token blocks, want 1", n)
+	}
+
+	for _, selector := range []string{"[data-mode", "@media"} {
+		if strings.Contains(css, selector) {
+			t.Errorf("charcoal.css selects on %s; it is dark in every mode", selector)
+		}
 	}
 }
