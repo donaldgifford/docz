@@ -89,11 +89,14 @@ describe("route error boundary", () => {
     await screen.findByText("Something went wrong");
 
     await userEvent.click(screen.getByRole("link", { name: "go home" }));
-    expect(router.state.location.pathname).toBe("/");
-    // The destination is a lazy route, so the panel is still mounted for
-    // a tick after the location changes — assert on the settled state,
-    // not on the instant after the click. (CI caught this as a flake
-    // that a fast local machine hid.)
+    // The destination is a lazy route: the location changes once its
+    // module has loaded, and the panel is still mounted until then —
+    // assert on the settled state, not on the instant after the click.
+    // (CI caught the panel half of this as a flake that a fast local
+    // machine hid; the directory's module growing caught the other.)
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe("/");
+    });
     await waitFor(() => {
       expect(
         screen.queryByText("Something went wrong"),

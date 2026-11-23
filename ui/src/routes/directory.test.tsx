@@ -7,7 +7,6 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 
 import { routes } from "@/app/router";
-import { formatUpdatedStamp } from "@/lib/updatedAt";
 import { server } from "@/test/server";
 
 import type { SearchHit } from "@/api/__generated__/docz-api.schemas";
@@ -22,6 +21,15 @@ const API_CONTRACT_TITLE = "OpenAPI contract for docz-api and the docz-site";
 const API_CONTRACT_UPDATED_AT = "2026-07-06T15:30:00Z";
 /** The docz-site repo's onboard stamp, shared by all its page hits. */
 const PAGE_UPDATED_AT = "2026-08-30T17:04:00Z";
+
+/** The card a hit is drawn in, found by its title's link. */
+function rowOf(title: string | RegExp): HTMLElement {
+  const row = screen.getByRole("link", { name: title }).closest("li");
+  if (row === null) {
+    throw new Error(`no hit row for ${String(title)}`);
+  }
+  return row;
+}
 
 /** A search handler over `total` synthetic docs honoring offset/limit. */
 function syntheticSearchHandler(total: number) {
@@ -87,25 +95,22 @@ describe("directory route", () => {
 
     // The repo rides the id line ("DESIGN-0001 / docz-site"), so it is
     // still on every row after the date took the right-hand column.
-    expect(screen.getAllByText("docz-site").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ \/ docz-site$/).length).toBeGreaterThan(0);
 
     // Spec 1.5.0 dates BOTH record kinds, so no row is left undated.
-    // Formatted in the runner's own zone, as in the browser — the
-    // format itself is pinned in updatedAt.test.ts.
-    const dated = screen.getByRole("link", {
-      name: new RegExp(API_CONTRACT_TITLE),
-    });
-    const stamp = formatUpdatedStamp(API_CONTRACT_UPDATED_AT);
-    expect(stamp).toBeDefined();
-    expect(within(dated).getByText(stamp?.date ?? "")).toBeInTheDocument();
-    expect(within(dated).getByText(stamp?.time ?? "")).toBeInTheDocument();
+    // How a stamp reads is the design system's Time; that the row
+    // carries the hit's own `updated_at` is docz's.
+    expect(rowOf(API_CONTRACT_TITLE).querySelector("time")).toHaveAttribute(
+      "datetime",
+      API_CONTRACT_UPDATED_AT,
+    );
 
     // A page hit carries the repo's onboard stamp rather than the em
     // dash it showed before 1.5.0.
-    const page = screen.getByRole("link", { name: /Markdown rendering/ });
-    const pageStamp = formatUpdatedStamp(PAGE_UPDATED_AT);
-    expect(pageStamp).toBeDefined();
-    expect(within(page).getByText(pageStamp?.date ?? "")).toBeInTheDocument();
+    expect(rowOf(/Markdown rendering/).querySelector("time")).toHaveAttribute(
+      "datetime",
+      PAGE_UPDATED_AT,
+    );
     expect(screen.queryAllByText("—")).toHaveLength(0);
 
     // Rows link straight into the reader.
@@ -127,7 +132,11 @@ describe("directory route", () => {
       "href",
       "/donaldgifford/docz-site/pages/guides/local-dev.md",
     );
-    expect(within(row).getByText("page")).toBeInTheDocument();
+    expect(
+      within(rowOf(/Local development against a real docz-api/)).getByText(
+        "page / docz-site",
+      ),
+    ).toBeInTheDocument();
 
     // The count line splits by source when pages are present (OQ-3a).
     expect(screen.getByTestId("results-count")).toHaveTextContent(
@@ -251,16 +260,16 @@ describe("directory route", () => {
     expect(screen.getByRole("button", { name: "impl" })).toBeInTheDocument();
 
     // Picker menu lists per-repo counts and the cross-repo total.
-    await user.click(screen.getByRole("button", { name: /repo:/ }));
+    await user.click(screen.getByRole("button", { name: "repo = all" }));
     // Repo counts span docs AND pages — they describe result rows.
     expect(
-      screen.getByRole("button", { name: "all repos 12" }),
+      screen.getByRole("button", { name: /^all repos\s*12$/ }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "donaldgifford/docz-site 9" }),
+      screen.getByRole("button", { name: /^donaldgifford\/docz-site\s*9$/ }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "donaldgifford/docz-api 3" }),
+      screen.getByRole("button", { name: /^donaldgifford\/docz-api\s*3$/ }),
     ).toBeInTheDocument();
   });
 
@@ -304,10 +313,23 @@ describe("directory route", () => {
     const router = mountAt("/");
     await screen.findByText(SITE_DESIGN_TITLE);
 
-    await user.click(screen.getByRole("button", { name: /repo:/ }));
+    await user.click(screen.getByRole("button", { name: "repo = all" }));
     await user.click(
-      screen.getByRole("button", { name: "donaldgifford/docz-api 3" }),
+      await screen.findByRole("button", {
+        name: /^donaldgifford\/docz-api\s*3$/,
+      }),
     );
+
+    // One pick scopes the directory and closes the picker; the chip
+    // then names the repo in force.
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: /all repos/ }),
+      ).not.toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole("button", { name: "repo = donaldgifford/docz-api" }),
+    ).toBeInTheDocument();
 
     await waitFor(() => {
       expect(router.state.location.search).toBe(
@@ -320,33 +342,55 @@ describe("directory route", () => {
     expect(screen.getByText(API_DESIGN_TITLE)).toBeInTheDocument();
   });
 
-  it("closes the picker with Escape and restores trigger focus", async () => {
-    const user = userEvent.setup();
-    mountAt("/");
-    await screen.findByText(SITE_DESIGN_TITLE);
+  it("draws a hit's snippet with its match marked and its markup as text", async () => {
+    const payload = '<img src="x" onerror="alert(1)">';
+    const hit: SearchHit = {
+      source: "doc",
+      repo: "acme/docs",
+      doc_id: "RFC-0001",
+      type: "rfc",
+      title: "A hostile body",
+      status: "Draft",
+      author: "",
+      created: "",
+      updated_at: "2026-02-01T12:00:00Z",
+      path: "",
+      snippet: `the <em>match</em> and ${payload}`,
+    };
+    server.use(
+      http.get("*/api/v1/search", () =>
+        HttpResponse.json({
+          hits: [hit],
+          estimated_total_hits: 1,
+          facets: { repo: { "acme/docs": 1 }, type: { rfc: 1 } },
+        }),
+      ),
+    );
+    mountAt("/?q=match");
 
-    const trigger = screen.getByRole("button", { name: /repo:/ });
-    await user.click(trigger);
-    expect(
-      screen.getByRole("button", { name: /all repos/ }),
-    ).toBeInTheDocument();
-
-    await user.keyboard("{Escape}");
-    expect(
-      screen.queryByRole("button", { name: /all repos/ }),
-    ).not.toBeInTheDocument();
-    expect(trigger).toHaveFocus();
-    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await screen.findByText("A hostile body");
+    const row = rowOf("A hostile body");
+    expect(await within(row).findByText("match")).toHaveProperty(
+      "tagName",
+      "MARK",
+    );
+    expect(row.querySelector("img")).toBeNull();
+    expect(row).toHaveTextContent(payload);
   });
 
-  it("clear filters resets to the empty state", async () => {
+  it("offers Clear only while a filter is set, and it resets them all", async () => {
     const user = userEvent.setup();
     const router = mountAt("/?type=impl&q=phased");
     await screen.findByText(SITE_IMPL_TITLE);
 
-    await user.click(screen.getByRole("button", { name: /clear filters/ }));
+    await user.click(screen.getByRole("button", { name: "Clear" }));
     await waitFor(() => {
       expect(router.state.location.search).toBe("");
+    });
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: "Clear" }),
+      ).not.toBeInTheDocument();
     });
     expect(await screen.findByText(SITE_DESIGN_TITLE)).toBeInTheDocument();
     expect(

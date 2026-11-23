@@ -21,18 +21,23 @@
  * parts.test.ts holds this list to the imports, both ways. */
 @import "@donaldgifford/design-system/parts/blocks/empty-state.css";
 @import "@donaldgifford/design-system/parts/blocks/error-state.css";
+@import "@donaldgifford/design-system/parts/blocks/filter-bar.css";
 @import "@donaldgifford/design-system/parts/blocks/filter-chip.css";
 @import "@donaldgifford/design-system/parts/blocks/inline-state.css";
 @import "@donaldgifford/design-system/parts/blocks/list-row.css";
 @import "@donaldgifford/design-system/parts/blocks/load-more.css";
 @import "@donaldgifford/design-system/parts/blocks/marked.css";
+@import "@donaldgifford/design-system/parts/blocks/option-rows.css";
 @import "@donaldgifford/design-system/parts/blocks/page-header.css";
+@import "@donaldgifford/design-system/parts/blocks/time.css";
 @import "@donaldgifford/design-system/parts/components/avatar.css";
 @import "@donaldgifford/design-system/parts/components/badge.css";
 @import "@donaldgifford/design-system/parts/components/button.css";
 @import "@donaldgifford/design-system/parts/components/card.css";
 @import "@donaldgifford/design-system/parts/components/command.css";
 @import "@donaldgifford/design-system/parts/components/dropdown-menu.css";
+@import "@donaldgifford/design-system/parts/components/input.css";
+@import "@donaldgifford/design-system/parts/components/popover.css";
 @import "@donaldgifford/design-system/parts/components/skeleton.css";
 
 /* docz's 58 token names, in two files (DESIGN-0028 §4). shell.css
