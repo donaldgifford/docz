@@ -10,7 +10,7 @@
       "source": "docs/design/0001-token-refresh-flow.md",
       "path": "design/0001-token-refresh-flow.html",
       "action": "wrote",
-      "hash": "sha256:e9ba15e836c279cdf71158be8158eedef29f0a0fb0a931ebf97d33436f3b488c",
+      "hash": "sha256:9ce68a02e37f9c52aec5a451a8d16b34886aacafd96304997df6d6317fa6d9bc",
       "unresolved_links": [],
       "problems": []
     },
@@ -20,7 +20,7 @@
       "source": "docs/design/0002-wiki-nav-generation.md",
       "path": "design/0002-wiki-nav-generation.html",
       "action": "wrote",
-      "hash": "sha256:7bbc32e48c678bf5497cfce796ecf35000bd60357cf5a2d117d3e827a89a1015",
+      "hash": "sha256:435adf3f20cd0c0451b35f441be0a8acf1c7e1fd17599acc3773c3162f5fdc2e",
       "unresolved_links": [
         {
           "href": "0006-custom-document-type-support.md",
@@ -36,7 +36,7 @@
       "source": "",
       "path": "index.html",
       "action": "wrote",
-      "hash": "sha256:8b1af791ba72afd5b14d86671b872f0675110349dc7ba419b9adb674ca904b05",
+      "hash": "sha256:58a370637b3bb238f830c57cf436144581c37b940f0f8fafec0bde0540c958ef",
       "unresolved_links": [],
       "problems": []
     }

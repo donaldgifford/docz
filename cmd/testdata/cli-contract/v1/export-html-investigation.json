@@ -10,7 +10,7 @@
       "source": "docs/investigation/0001-evaluate-message-queue-options.md",
       "path": "investigation/0001-evaluate-message-queue-options.html",
       "action": "wrote",
-      "hash": "sha256:39f72c16f5b605d012bda26686a4ca995b080a356dadb3104ea3946c18e8a5ec",
+      "hash": "sha256:4a9ccd983c26e0ad15bcbb3b2ee42dc745ed5af77b9175fa69e12fc00fddaa8b",
       "unresolved_links": [],
       "problems": []
     },
@@ -20,7 +20,7 @@
       "source": "docs/investigation/0002-why-the-nightly-rebuild-flakes.md",
       "path": "investigation/0002-why-the-nightly-rebuild-flakes.html",
       "action": "wrote",
-      "hash": "sha256:373cb148632ac6733d7631882a22e79ba57791c72ca6e418e12b4bc6383aabe0",
+      "hash": "sha256:cfa269598c1c3e0aa42bbab620e5333cad4700747939f4c041666ea7fc007664",
       "unresolved_links": [],
       "problems": []
     },
@@ -30,7 +30,7 @@
       "source": "",
       "path": "index.html",
       "action": "wrote",
-      "hash": "sha256:ed67fc250436592c5da2a71c3ad40d0221c56063c6cdac0388cf74272ad6ebc4",
+      "hash": "sha256:d708dcfaf8906a9f6dfe1d376da787bb273d9c8e7b993fdf1fce7f921b083349",
       "unresolved_links": [],
       "problems": []
     }

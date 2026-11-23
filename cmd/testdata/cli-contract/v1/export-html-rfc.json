@@ -10,7 +10,7 @@
       "source": "docs/rfc/0001-switch-the-ingest-queue-to-nats.md",
       "path": "rfc/0001-switch-the-ingest-queue-to-nats.html",
       "action": "wrote",
-      "hash": "sha256:e2c536e88893f7e8e14eb4e9319a2706071e8c18b78ff2fd7db9bac113dd81da",
+      "hash": "sha256:efde820f2ff6b4d960bc890f00967ddd0764024c472d447c455a8a8694358e17",
       "unresolved_links": [],
       "problems": []
     },
@@ -20,7 +20,7 @@
       "source": "docs/rfc/0002-adopt-semantic-versioning-for-the-docs-corpus.md",
       "path": "rfc/0002-adopt-semantic-versioning-for-the-docs-corpus.html",
       "action": "wrote",
-      "hash": "sha256:98c8c34343b61f0fb05908f5201096bb100b51b97ae63580d85b70c1f8eb8008",
+      "hash": "sha256:bf7e6dec9edaba8104eb06e830ea9cdec1cb041c763cb2b2e38ad21c104d8145",
       "unresolved_links": [
         {
           "href": "../adr/0002-api-first-refactor.md",
@@ -36,7 +36,7 @@
       "source": "",
       "path": "index.html",
       "action": "wrote",
-      "hash": "sha256:627b7e702f30ebb83a5c59ae255d7e6311b4cf49223207071058ee75b8e3ba3a",
+      "hash": "sha256:75ba849f90e42eeabec996beae0a5700ec06d52e841e507f954bb7db457bff04",
       "unresolved_links": [],
       "problems": []
     }

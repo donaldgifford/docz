@@ -10,7 +10,7 @@
       "source": "docs/adr/0001-keep-frameworks-in-a-register.md",
       "path": "adr/0001-keep-frameworks-in-a-register.html",
       "action": "wrote",
-      "hash": "sha256:a706cb014422f04a5b56e3c76acd5f2187707aec712f8d69ed428657ad46cb6f",
+      "hash": "sha256:ff1c8fff1ad511726d8ba9050cedf00a16d832055514ff35ad3105d14dce5752",
       "unresolved_links": [],
       "problems": []
     },
@@ -20,7 +20,7 @@
       "source": "docs/frameworks/0001-adopt-the-internal-auth-framework.md",
       "path": "frameworks/0001-adopt-the-internal-auth-framework.html",
       "action": "wrote",
-      "hash": "sha256:d9e762cea01e79d71b865054471992d32a75fe237d520f55122912161d3b436e",
+      "hash": "sha256:da8bbbb213bf7c6fa9a49fdbae8597456b995681049296f9ef36b2147133cfb1",
       "unresolved_links": [],
       "problems": []
     },
@@ -30,7 +30,7 @@
       "source": "docs/frameworks/0002-retire-the-legacy-job-runner.md",
       "path": "frameworks/0002-retire-the-legacy-job-runner.html",
       "action": "wrote",
-      "hash": "sha256:a19967cc79771e6a902b429caec5da33d042410a45f1bc1c6addd265ed2c100d",
+      "hash": "sha256:b05eb82dfe673e551c1a5926ccefb2ae4a6395981f285e69f77db0eb867f4fd7",
       "unresolved_links": [],
       "problems": []
     },
@@ -40,7 +40,7 @@
       "source": "",
       "path": "index.html",
       "action": "wrote",
-      "hash": "sha256:e34b0bcb91597fdca9006a87fb37958f6143b75880842029cb696d13c5a20354",
+      "hash": "sha256:5e1beb94607601966d87eea7190b56aad8174a4924653c69ba64b6f59c47210c",
       "unresolved_links": [],
       "problems": []
     }
