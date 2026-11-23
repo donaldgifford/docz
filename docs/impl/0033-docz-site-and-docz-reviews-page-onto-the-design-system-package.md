@@ -149,10 +149,10 @@ nothing imports it yet.
   `read:packages` scope it needs.
 - [ ] Grant the docz repository read access to the package in the
   package's "Manage Actions access" settings.
-- [ ] `ci.yml`: add `packages: read` and
+- [x] `ci.yml`: add `packages: read` and
   `NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}` to the install step of the
   `ui`, `ui-e2e`, and `plugin` jobs.
-- [ ] `release.yml` and `prerelease.yml`: the same on the "Install ui
+- [x] `release.yml` and `prerelease.yml`: the same on the "Install ui
   dependencies" step of the docz-review build.
 - [ ] `Dockerfile.ui`: copy `.npmrc` beside `package.json` and
   `bun.lock`, and run the install with

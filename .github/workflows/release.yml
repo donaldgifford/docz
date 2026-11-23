@@ -80,6 +80,10 @@ jobs:
       - name: Install ui dependencies
         working-directory: ui
         run: bun install --frozen-lockfile
+        env:
+          # ui/.npmrc reads it: @donaldgifford/design-system is on GitHub
+          # Packages (packages: read).
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # build:review typechecks the whole ui project, generated clients
       # included.
