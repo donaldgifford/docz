@@ -39,6 +39,7 @@ nav:
         - 'DESIGN-0026: docz-site''s shell in repo-guardian''s look, and the reader''s documents as docz-html pages': design/0026-docz-sites-shell-in-repo-guardians-look-and-the-readers.md
         - 'DESIGN-0027: docz view and docz-review-rex: a terminal renderer for docz documents and a Rex client for docz-review': design/0027-docz-view-and-docz-review-rex-a-terminal-renderer-for-docz.md
         - 'DESIGN-0028: docz-site and docz-review''s page on the shared design-system package': design/0028-docz-site-and-docz-reviews-page-on-the-shared-design-system.md
+        - 'DESIGN-0029: Projects: nested .docz.yaml files in one repository': design/0029-projects-nested-doczyaml-files-in-one-repository.md
     - Implementation Plans:
         - Overview: impl/README.md
         - 'IMPL-0001: docz CLI Implementation': impl/0001-docz-cli-implementation.md
