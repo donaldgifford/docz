@@ -1,8 +1,7 @@
-import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router";
+import { lazy, Suspense } from "react";
+import { Link, useLocation } from "react-router";
 
-import { useGetSession, useLogout } from "@/api/__generated__/docz-api";
+import { useGetSession } from "@/api/__generated__/docz-api";
 import { classifySession } from "@/lib/session";
 
 /*
@@ -12,11 +11,18 @@ import { classifySession } from "@/lib/session";
  * to "Sign in") → the login link, anonymous (none-mode) → nothing,
  * unavailable (503 or any other failure) → the same inert placeholder
  * — never the login link, the state is unknown, not logged out —
- * and signed-in → avatar disclosure with the identity (GitHub
- * `login`, OIDC `email`) and sign-out. Deliberately a disclosure, not
- * role="menu" — one action doesn't warrant roving focus, and axe
- * flags half-implemented menu semantics.
+ * and signed-in → the account menu (account-menu.tsx).
+ *
+ * The account menu is the design system's DropdownMenu, and with it
+ * comes Base UI's menu and positioning, about 30 KB gzipped. Only a
+ * signed-in session draws it, and only once the session probe has
+ * answered, so it is a chunk of its own and the placeholder holds its
+ * place while it loads (scripts/bundle-budget.ts).
  */
+
+const AccountMenu = lazy(async () => ({
+  default: (await import("@/components/account-menu")).AccountMenu,
+}));
 
 /** How often an errored session query re-probes (outage-only). */
 const SESSION_RETRY_MS = 30_000;
@@ -27,7 +33,7 @@ function InertPlaceholder({ testid }: { testid: string }) {
     <span
       aria-hidden
       data-testid={testid}
-      className="grid size-[26px] place-items-center border border-border-default bg-bg-elevated text-[12px] text-fg-secondary rounded-sm"
+      className="grid size-6 place-items-center rounded-lg bg-muted text-xs text-muted-foreground"
     >
       ·
     </span>
@@ -35,12 +41,7 @@ function InertPlaceholder({ testid }: { testid: string }) {
 }
 
 export function SessionMenu() {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const navigate = useNavigate();
   const location = useLocation();
-  const queryClient = useQueryClient();
 
   // Recovery from `unavailable` (DESIGN-0003 OQ-2a): SessionMenu
   // mounts once in AppShell and never unmounts, and the client sets
@@ -54,38 +55,6 @@ export function SessionMenu() {
         query.state.status === "error" ? SESSION_RETRY_MS : false,
     },
   });
-  const logout = useLogout({
-    mutation: {
-      // Settled, not success: even a failed POST (say the cookie
-      // already expired) must not strand stale per-session data — the
-      // design's invariant is "nothing fetched under the old session
-      // outlives it". Navigate BEFORE clearing so the page being left
-      // doesn't refetch everything into the fresh cache.
-      onSettled: async () => {
-        await navigate("/login");
-        queryClient.clear();
-      },
-    },
-  });
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    function closeOnOutsidePress(event: PointerEvent) {
-      if (
-        event.target instanceof Node &&
-        rootRef.current?.contains(event.target) === true
-      ) {
-        return;
-      }
-      setOpen(false);
-    }
-    document.addEventListener("pointerdown", closeOnOutsidePress);
-    return () => {
-      document.removeEventListener("pointerdown", closeOnOutsidePress);
-    };
-  }, [open]);
 
   const state = classifySession(sessionQuery);
 
@@ -111,7 +80,7 @@ export function SessionMenu() {
     return (
       <Link
         to="/login"
-        className="text-fg-tertiary hover:text-fg-primary"
+        className="text-muted-foreground hover:text-foreground"
         data-testid="topbar-sign-in"
       >
         Sign in
@@ -119,62 +88,11 @@ export function SessionMenu() {
     );
   }
 
-  const { session } = state;
-  const identity = session.login ?? session.email ?? session.subject;
-  const initial = identity.charAt(0).toUpperCase() || "?";
-
   return (
-    // Keyboard path: Escape dismisses the open panel and hands focus
-    // back to the trigger (pointer users get pointerdown-outside above).
-    // The div only catches Escape bubbling from the interactive children
-    // — the rule's documented event-delegation exception.
-    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
-    <div
-      ref={rootRef}
-      className="relative"
-      onKeyDown={(event) => {
-        if (event.key === "Escape" && open) {
-          event.stopPropagation();
-          setOpen(false);
-          triggerRef.current?.focus();
-        }
-      }}
-    >
-      <button
-        ref={triggerRef}
-        type="button"
-        aria-haspopup="true"
-        aria-expanded={open}
-        aria-label={`Account: ${identity}`}
-        onClick={() => {
-          setOpen((wasOpen) => !wasOpen);
-        }}
-        className="grid size-[26px] cursor-pointer place-items-center border border-border-default bg-bg-elevated text-[12px] text-fg-secondary hover:border-border-strong hover:text-fg-primary rounded-sm"
-      >
-        {initial}
-      </button>
-      {open && (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-50 min-w-[200px] border border-border-default bg-bg-raised py-2 rounded-sm">
-          <div className="px-4 pb-2">
-            <div className="truncate text-[14px] text-fg-primary">
-              {identity}
-            </div>
-            <div className="font-mono text-[12px] text-fg-muted">
-              via {session.provider}
-            </div>
-          </div>
-          <button
-            type="button"
-            disabled={logout.isPending}
-            onClick={() => {
-              logout.mutate();
-            }}
-            className="w-full cursor-pointer border-t border-border-default px-4 pt-2 text-left font-mono text-[13.5px] text-fg-secondary hover:text-fg-primary disabled:cursor-default disabled:text-fg-muted"
-          >
-            {logout.isPending ? "Signing out…" : "Sign out"}
-          </button>
-        </div>
-      )}
-    </div>
+    // Still pending as far as the topbar shows: the session is known,
+    // its menu is on the way.
+    <Suspense fallback={<InertPlaceholder testid="session-pending" />}>
+      <AccountMenu session={state.session} />
+    </Suspense>
   );
 }

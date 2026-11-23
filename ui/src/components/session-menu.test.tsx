@@ -25,6 +25,13 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+/*
+ * The menu is the design system's DropdownMenu, whose keyboard and
+ * dismissal are its own tests'. These hold docz's part: which of the
+ * session's states draws what, the identity shown, and that signing
+ * out leaves nothing of the old session behind.
+ */
+
 describe("session menu", () => {
   it("shows the GitHub login and signs out through /login", async () => {
     let signedIn = true;
@@ -51,9 +58,9 @@ describe("session menu", () => {
     await user.click(
       await screen.findByRole("button", { name: "Account: donaldgifford" }),
     );
-    expect(screen.getByText("via github")).toBeInTheDocument();
+    expect(await screen.findByText("via github")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Sign out" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Sign out" }));
 
     expect(
       await screen.findByRole("link", { name: "Continue with GitHub" }),
@@ -196,21 +203,5 @@ describe("session menu", () => {
     expect(
       await screen.findByRole("button", { name: "Account: donaldgifford" }),
     ).toBeInTheDocument();
-  });
-
-  it("closes on Escape and hands focus back to the trigger", async () => {
-    // fixture session: donaldgifford
-    mountAt("/repos");
-    const user = userEvent.setup();
-
-    const trigger = await screen.findByRole("button", {
-      name: "Account: donaldgifford",
-    });
-    await user.click(trigger);
-    expect(trigger).toHaveAttribute("aria-expanded", "true");
-
-    await user.keyboard("{Escape}");
-    expect(trigger).toHaveAttribute("aria-expanded", "false");
-    expect(trigger).toHaveFocus();
   });
 });

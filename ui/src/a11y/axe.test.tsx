@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { createMemoryRouter, MemoryRouter, RouterProvider } from "react-router";
@@ -225,7 +225,7 @@ describe("axe: core views", () => {
         { timeout: 10_000 },
       ),
     );
-    await screen.findByRole("button", { name: "Sign out" });
+    await screen.findByRole("menuitem", { name: "Sign out" });
     await expectNoAxeViolations();
   });
 
@@ -233,7 +233,13 @@ describe("axe: core views", () => {
     mountAt("/");
     await screen.findByTestId("results-count", undefined, { timeout: 10_000 });
     await userEvent.keyboard("/");
-    await screen.findByRole("dialog", undefined, { timeout: 10_000 });
+    const dialog = await screen.findByRole(
+      "dialog",
+      { name: "Search documents" },
+      { timeout: 10_000 },
+    );
+    // Swept with its hits in it: the rows, the filters, and the preview.
+    await within(dialog).findByText(/docz-site — \d+ matches/);
     await expectNoAxeViolations();
   });
 

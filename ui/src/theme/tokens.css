@@ -25,9 +25,11 @@
 @import "@donaldgifford/design-system/parts/blocks/list-row.css";
 @import "@donaldgifford/design-system/parts/blocks/load-more.css";
 @import "@donaldgifford/design-system/parts/blocks/page-header.css";
+@import "@donaldgifford/design-system/parts/components/avatar.css";
 @import "@donaldgifford/design-system/parts/components/badge.css";
 @import "@donaldgifford/design-system/parts/components/button.css";
 @import "@donaldgifford/design-system/parts/components/card.css";
+@import "@donaldgifford/design-system/parts/components/dropdown-menu.css";
 @import "@donaldgifford/design-system/parts/components/skeleton.css";
 
 /* docz's 58 token names, in two files (DESIGN-0028 §4). shell.css
