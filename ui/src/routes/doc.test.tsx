@@ -191,10 +191,12 @@ describe("metadata table omission", () => {
       screen.queryByText("fixture-sha-design-0001".slice(0, 7)),
     ).not.toBeInTheDocument();
 
-    const group = screen.getByRole("group", { name: "Document format" });
-    const html = within(group).getByRole("button", { name: "html" });
-    expect(html).toHaveAttribute("aria-pressed", "true");
-    await userEvent.click(within(group).getByRole("button", { name: "md" }));
+    const formats = screen.getByRole("tablist", { name: "Document format" });
+    expect(within(formats).getByRole("tab", { name: "html" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await userEvent.click(within(formats).getByRole("tab", { name: "md" }));
     expect(
       screen.getByRole("region", { name: "raw markdown" }),
     ).toBeInTheDocument();

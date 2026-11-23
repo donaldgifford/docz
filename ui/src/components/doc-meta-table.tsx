@@ -1,3 +1,8 @@
+import {
+  SegmentedControl,
+  type SegmentOption,
+} from "@donaldgifford/design-system/blocks/segmented-control";
+import { buttonVariants } from "@donaldgifford/design-system/components/button";
 import { Link } from "react-router";
 
 import { getGetDocUrl } from "@/api/__generated__/docz-api";
@@ -15,46 +20,30 @@ import type { ReactNode } from "react";
  * exposes today. Relationship rows, tags, and lifecycle dates slot in
  * here when the DESIGN-0001 additive API asks land. Empty-string
  * fields are omitted — "" means unset in the docz-api contract.
+ *
+ * The format switch is the design system's SegmentedControl
+ * (DESIGN-0028 §7): two views of one document. `json` is not a third
+ * view but a link out to the API's own answer, so it sits beside it.
  */
+
+const FORMATS: readonly SegmentOption<DocFormat>[] = [
+  { value: "html", label: "html" },
+  { value: "md", label: "md" },
+];
 
 function MetaRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <tr className="border-b border-border-hairline last:border-b-0">
+    <tr className="border-b border-border last:border-b-0">
       <th
         scope="row"
-        className="w-[110px] py-[7px] pr-4 pl-3 text-left align-top font-mono text-[11px] font-medium tracking-[0.1em] text-fg-muted uppercase"
+        className="w-[110px] py-[7px] pr-4 pl-3 text-left align-top font-mono text-[11px] font-medium tracking-[0.1em] text-muted-foreground uppercase"
       >
         {label}
       </th>
-      <td className="min-w-0 py-[7px] pr-3 text-[13.5px] break-words text-fg-primary">
+      <td className="min-w-0 py-[7px] pr-3 text-[13.5px] break-words text-foreground">
         {children}
       </td>
     </tr>
-  );
-}
-
-function FormatButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: string;
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={`border px-2 py-[2px] ${
-        active
-          ? "border-brand-border bg-brand-bg text-brand"
-          : "border-border-default text-fg-tertiary hover:text-fg-primary"
-      }`}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -73,33 +62,19 @@ export function DocMetaTable({
   return (
     <div className="mb-6">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <span className="text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
+        <span className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
           Metadata
         </span>
-        <div
-          role="group"
-          aria-label="Document format"
-          className="flex items-center gap-1 font-mono text-[12px]"
-        >
-          <FormatButton
-            active={format === "html"}
-            onClick={() => {
-              onFormatChange("html");
-            }}
-          >
-            html
-          </FormatButton>
-          <FormatButton
-            active={format === "md"}
-            onClick={() => {
-              onFormatChange("md");
-            }}
-          >
-            md
-          </FormatButton>
+        <div className="flex items-center gap-2 font-mono">
+          <SegmentedControl
+            label="Document format"
+            options={FORMATS}
+            value={format}
+            onValueChange={onFormatChange}
+          />
           <a
             href={jsonUrl}
-            className="border border-border-default px-2 py-[2px] text-fg-tertiary hover:text-fg-primary rounded-sm"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
           >
             json
           </a>
@@ -107,7 +82,7 @@ export function DocMetaTable({
       </div>
       <table
         aria-label="Document metadata"
-        className="w-full border-collapse border border-border-hairline bg-bg-raised"
+        className="w-full border-collapse border border-border bg-card"
       >
         <tbody>
           <MetaRow label="Type">
@@ -116,7 +91,7 @@ export function DocMetaTable({
           <MetaRow label="Repo">
             <Link
               to={`/${doc.repo}`}
-              className="text-brand underline [text-underline-offset:3px] decoration-brand-border hover:decoration-brand"
+              className="text-primary underline underline-offset-3 decoration-primary/40 hover:decoration-primary"
             >
               {doc.repo}
             </Link>
