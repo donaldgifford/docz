@@ -242,6 +242,15 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   part; disable that one line with the reason. Before IMPL-0033 Phase 7
   the routes still sit in docz's own top bar and `max-w-[940px]` column,
   so `PageHeader` takes `className="px-0"` there.
+  The directory's filters are `FilterChip`s inside one `FilterBar`
+  (`components/directory-controls.tsx`): a type is a `pressed` chip, the
+  repository a `repo = …` chip opening `OptionItem` rows in a `Popover`,
+  and "Clear" and the count are the bar's own. A part that brings Base
+  UI's menu, popover, or dialog costs 15 to 30 KB gz: keep it behind a
+  route or a `lazy()` boundary, and run `just ui bundle-budget` after
+  adding one to anything AppShell imports. `ListRow` puts `trailing`
+  above its stretched link, so a badge or a time there is not part of
+  the link.
 - `tsconfig.json` is solution-style → `tsconfig.app.json` (browser code,
   strict + `noUncheckedIndexedAccess`) + `tsconfig.node.json` (config
   files). New config files at the repo root go in `tsconfig.node.json`'s
@@ -451,8 +460,13 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   storage after each test — a leaked stash arms RestoreAfterLogin in
   unrelated tests. Topbar identity is `SessionMenu`
   (`src/components/session-menu.tsx`): getSession-driven (fixtures
-  answer with a deterministic `donaldgifford` github identity), avatar
-  is a disclosure (not `role="menu"`), and logout runs `onSettled` —
+  answer with a deterministic `donaldgifford` github identity). The
+  signed-in half is `account-menu.tsx`, the design system's
+  `DropdownMenu` behind the avatar, and a lazy chunk of its own: Base
+  UI's menu and positioning are about 30 KB gz, which only a signed-in
+  session needs, so the placeholder holds its place while it loads. A
+  test finds the trigger with `findByRole` and Sign out as a
+  `menuitem`. Logout runs `onSettled` —
   navigate to `/login` BEFORE `queryClient.clear()`, or the page being
   left refetches everything under the dead session.
 - Server observability (DESIGN-0006, IMPL-0007): every signal shares
@@ -627,13 +641,12 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   authored date. `updated_at` is INGEST-observed, not commit time: one
   reconcile is one transaction, so every doc an ingest touches shares
   the stamp to the microsecond and a fresh DB restamps a repo at
-  onboard. `src/lib/updatedAt.ts` holds `formatUpdatedStamp` (splits
-  RFC3339 into the two lines; locale pinned en-US, zone is the
-  reader's, `timeZone` arg for tests) and `formatRelativeTime` for
-  surfaces wanting relative. KEEP `formatUpdatedStamp`'s `Number.isNaN`
-  guard — it is what makes a deployment on a pre-1.5.0 docz-api render
-  "—" instead of "Invalid Date", since the type promises a string the
-  old API simply omits. Fixtures: docs forward their own stamp and
+  onboard. A stamp is drawn by the design
+  system's `Time` (`style="stacked"` on a directory row), which reads
+  "—" for one that is missing or unparseable, so a deployment on a
+  pre-1.5.0 docz-api still renders. How a stamp reads is the package's
+  to test; a docz test asserts the `<time datetime>` instead.
+  Fixtures: docs forward their own stamp and
   `created`; pages take `PAGE_INGESTED_AT[repo]`, one value per repo
   because that is genuinely how onboard stamps behave.
 - Faceted controls exclude their own dimension via separate limit-0
@@ -713,8 +726,15 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   dot-only segments rejected, and a stored payload without `kind`
   resets the store. Fixture pages live in `DEMO_PAGES` (docz-site
   only; docz-api stays non-opted for the gate tests).
-- Palette (`src/components/command-palette.tsx`, mounted in AppShell):
-  state is palette-local, never the URL. cmdk normalizes item values —
+- Palette (`src/components/command-palette.tsx`): the design system's
+  `CommandDialog` with `CommandFilters`, `CommandFooter`, and `preview`
+  (DESIGN-0028 §7). It is a lazy chunk. AppShell mounts
+  `command-palette-lazy.tsx`, which holds the ⌘K and `/` shortcuts and
+  fetches the chunk shortly after the shell mounts and on the search
+  button's hover, so cmdk and the dialog are never in the eager graph.
+  A test waits for the dialog AND for its input to have focus: a key
+  pressed before the dialog hands focus over goes to the page behind.
+  State is palette-local, never the URL. cmdk normalizes item values —
   keys are lowercased and navigation resolves through a unified
   `entries` list (recents get a `recent:` value prefix so the same doc
   in the results below keeps its own key). The empty query leads with
@@ -722,9 +742,14 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   `docz:recent-docs`, cap 8, coordinates+title ONLY — never tokens;
   reads are segment-validated and malformed payloads reset the store;
   the reader records entries on successful load). The highlighted hit
-  prefetches getDoc. Snippets render ONLY through
-  `src/components/snippet.tsx` (splits on literal <em> markers, emits
-  <mark>, everything else stays text) — never parse snippet HTML.
+  prefetches getDoc. A hit is a `ListRow` inside cmdk's item with NO
+  link of its own: the item is a `role="option"`, and a link inside one
+  fails axe's `nested-interactive`, so a click and Enter both go
+  through `onSelect`. Snippets render ONLY through the package's
+  `blocks/marked` (splits on literal <em> markers, emits <mark>,
+  everything else stays text), in the palette and on the directory —
+  never parse snippet HTML. `src/components/snippet.xss.test.tsx` is
+  docz's gate on that part, over `mocks/content/xss-payloads.json`.
   jsdom setup stubs scrollIntoView/ResizeObserver for cmdk.
 
 ## docz-review (`src/review/`, DESIGN-0024, IMPL-0027)

@@ -466,35 +466,43 @@ The palette, the menus, and the directory's filters are the package's.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `command-palette.tsx` on `CommandDialog`, with `CommandFilters`
+- [x] `command-palette.tsx` on `CommandDialog`, with `CommandFilters`
   for the type filter, `CommandFooter` for the key hints, and `preview`
   for the hit preview. Keep recent documents and the query behaviour.
 - [ ] A palette hit as a `ListRow` with `render` (a router link) and
   `onClick` (close the palette), with a test that following the link
   closes it.
-- [ ] Keep the palette's body out of the eager graph where
+  **Deferred** - human required: the hit is a `ListRow` selected through
+  cmdk, and a click or Enter closes the palette and navigates, but it
+  carries no link. A link inside cmdk's `role="option"` item fails axe's
+  `nested-interactive` rule, so the link needs a decision: a change in
+  the package, or leaving the hit as it is.
+- [x] Keep the palette's body out of the eager graph where
   `CommandDialog` allows, and note in the pull request what could not be
   made lazy.
-- [ ] `session-menu.tsx` as a `DropdownMenu`, still in the top bar until
+- [x] `session-menu.tsx` as a `DropdownMenu`, still in the top bar until
   Phase 7. Sign-out navigates to `/login` before it clears the query
   client.
-- [ ] `directory-controls.tsx`: `FilterBar`, the type chips as
+- [x] `directory-controls.tsx`: `FilterBar`, the type chips as
   `FilterChip` with `pressed`, and the repository picker as `OptionRows`
   in a `Popover`. One click still changes a type filter.
-- [ ] The directory's hit rows as `ListRow` with `eyebrow`, `detail`,
+- [x] The directory's hit rows as `ListRow` with `eyebrow`, `detail`,
   and `render`, the snippet through `blocks/marked`, and the time as
   `Time` with `style="stacked"`. Retire `snippet.tsx` if nothing else
   uses it.
-- [ ] Confirm `blocks/marked` escapes what it highlights: a hit whose
+- [x] Confirm `blocks/marked` escapes what it highlights: a hit whose
   snippet holds markup renders as text. Add the payloads from
   `mocks/content/xss-payloads.json` as a test.
-- [ ] `DocMetaTable`'s format buttons as `SegmentedControl`.
-- [ ] Rewrite `command-palette.test.tsx` and `session-menu.test.tsx`
+- [x] `DocMetaTable`'s format buttons as `SegmentedControl`.
+- [x] Rewrite `command-palette.test.tsx` and `session-menu.test.tsx`
   against the new parts, asserting docz's behaviour and not the
   package's.
 - [ ] Check keyboard use by hand in both modes: open, move, select, and
   close the palette; the menu; the popover.
-- [ ] Move the classes in the files touched here to the package's
+  **Deferred** - human required: a person at the keyboard, for the
+  palette, the account menu, and the repository popover. The unit and
+  e2e suites drive the same keys.
+- [x] Move the classes in the files touched here to the package's
   names, and record the eager JavaScript size.
 
 <!--docz:tasks:end-->
@@ -509,6 +517,51 @@ The palette, the menus, and the directory's filters are the package's.
 - The XSS suites pass, with the snippet payloads added.
 - `mvp.spec.ts` passes with only selector changes.
 - The eager JavaScript is under 165 KB.
+
+Measured on 2026-11-23. The eager JavaScript is 125.7 KB gzipped, against
+140.6 KB after Phase 4, with 21 parts imported. The unit suite (1,562
+tests) and the e2e suite (84, with full-rule axe in both modes) pass,
+and `mvp.spec.ts` needed no change at all.
+
+What is lazy, and what could not be:
+
+- The palette is a chunk of its own (`command-palette.tsx`: cmdk, the
+  package's dialog and command parts, the search queries). What stays
+  eager is `command-palette-lazy.tsx`: the `⌘K` and `/` listener and the
+  dynamic import. The chunk is fetched 1.5 seconds after the shell
+  mounts and on the search button's hover or focus, so the first `⌘K`
+  finds it loaded.
+- The account menu is a chunk of its own too (`account-menu.tsx`).
+  `DropdownMenu` brings Base UI's menu and positioning, about 30 KB
+  gzipped, and with it in the top bar the eager total was 171.7 KB, over
+  the budget. Only a signed-in session draws it, so `session-menu.tsx`
+  keeps the session's states eager and loads the menu behind the
+  placeholder.
+- Nothing asked for could not be made lazy. `CommandDialog` itself is
+  inside the lazy chunk.
+
+Four things differ from the list above:
+
+- A palette hit is a `ListRow` inside cmdk's item with no link of its
+  own, so the second task is open. cmdk's item is a `role="option"`, and
+  a link inside one fails axe's `nested-interactive` rule (serious) in
+  the jsdom sweep, and would in the browser's. A click and Enter both
+  select the item, which closes the palette and navigates once, as on
+  `main`; a test holds that. What is lost against the design is a real
+  link on a hit (open in a new tab). This needs a decision: a change in
+  the package (a `CommandItem` that renders as the link, say), or
+  leaving it as it is.
+- `lib/updatedAt.ts` is deleted with `snippet.tsx`: `Time` replaced its
+  only caller. `snippet.test.tsx` became `snippet.xss.test.tsx`, which
+  runs `blocks/marked` over every payload in
+  `mocks/content/xss-payloads.json`, outside the match and inside it.
+- A directory row now shows the hit's snippet under its title, as the
+  task asks; on `main` only the palette showed one. The status badge and
+  the time sit in `ListRow`'s `trailing`, which is above the stretched
+  link, so a click on them does not follow the row. That is the
+  package's behaviour and is noted for its Phase 6 report.
+- The filter bar's reset reads "Clear", the package's wording, and the
+  repository picker's trigger reads `repo = all`.
 
 <!--docz:criteria:end-->
 <!--docz:phase:end-->
