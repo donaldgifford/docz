@@ -12,8 +12,11 @@ SPA, no SSR. The authoritative docs:
   design decisions 1–11 (stack, routes, reader pipeline, colors, auth)
 - `docs/impl/0001-docz-site-mvp-phased-build-of-the-reader-directory-and-repo.md`
   — the phased build plan being executed (check off tasks as completed)
-- `mockup.html` — visual source of truth (demo content; excluded from
-  formatting, don't treat its text as project naming)
+- The design system's Storybook,
+  <https://donaldgifford.github.io/design-system/>: the visual reference
+  for the chrome (DESIGN-0028). `mockup.html` and `design/` are the
+  mockups the first shell and the adoption were drawn from; they stay as
+  records and lead nothing (demo content, excluded from formatting).
 - `docs/input.md` — historical exploratory design; input only
 
 ## Commands
@@ -165,16 +168,15 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   wght-italic imports.
   Prose sizing is dialed in on the specimen page, not in the abstract:
   body 19px/1.78 on a 66ch measure, headings in em so the hierarchy
-  scales with the body, chrome one step above the mockup's original
-  10–13.5px scale.
-- Bordered mono chips MUST use `.mono-chip-y` (tokens.css) for their
-  vertical padding and MUST NOT carry a `py-*` utility beside it —
-  Tailwind's utilities layer would win. An inline box is as tall as the
-  font's ascent+descent, and a mono's capitals sit high in it (the
-  values were measured on Monaspace Neon, the mono before DESIGN-0026),
-  so symmetric padding renders every chip visibly high. The class holds the compensating
-  difference; `.doc-prose code` carries its own copy with descender
-  clearance. Verify by measuring, not by eye.
+  scales with the body. The chrome's type scale is the design
+  system's.
+- The chrome's chips are the design system's `Badge`; there is no
+  `.mono-chip-y` any more. The one bordered mono chip docz still draws
+  is inline code in prose (`.doc-prose code`), whose vertical padding is
+  lopsided on purpose: an inline box is as tall as the font's
+  ascent+descent, and a mono's capitals sit high in it, so symmetric
+  padding renders the chip visibly high (tokens.css's MONO_CHIP_OFFSET
+  note has the measurements). Verify by measuring, not by eye.
 - `src/theme/tokens.css` — the single global stylesheet (DESIGN-0028
   §3). Don't add other CSS entrypoints. Its head is
   `@import "@donaldgifford/design-system/core.css" source(none)`, then
@@ -188,20 +190,31 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   `@fontsource-variable` imports in `main.tsx`; the package's
   `fonts.css` is not imported, and docz's `--font-sans`/`--font-mono`
   (the variable builds) override the package's theme entries.
-  Two vocabularies live here until IMPL-0033 Phase 9. The package's
-  (`bg-card`, `text-muted-foreground`, `border-border`) come from
-  `core.css`'s `@theme inline` map. docz's (`bg-bg-raised`,
-  `text-fg-tertiary`, `text-t-rfc`) are `pkg/theme`'s public token names,
-  registered in `@theme static`: `static` so every token is emitted (the
-  colour module resolves them at runtime through `var()`), and NOT
-  `inline`, so a utility compiles to `var(--color-bg-raised)` and
-  resolves where it is used, against the shell in chrome and against the
-  document's theme inside `.docz-page`. Two of docz's names are NOT registered: `code-bg`
-  (the package maps `bg-code-bg` to its own `--code-bg`, which follows
-  the page, and a docz entry would take that utility and paint it dark
-  in both modes) and `st-superseded` (a superseded status is the
-  package's `ignored` badge). Both stay in `docz-tokens.css` for
-  `charcoal`, and `shell.test.ts` holds both halves.
+  What is left in it after IMPL-0033 Phase 9: the imports, docz's
+  three font stacks, the document-scoped utility names, the prose rules,
+  and a few behaviours (smooth scrolling, the scrollbar gutter, the
+  review page's highlight and changed-region badge). The page's
+  surface, text, selection, focus ring, and body size are `core.css`'s.
+  **Two vocabularies, one place each.** The chrome is written in the
+  package's names (`bg-card`, `text-muted-foreground`, `border`), from
+  `core.css`'s `@theme inline` map. `pkg/theme`'s names (`bg-bg-raised`,
+  `text-fg-tertiary`, `text-t-rfc`, `bg-brand`) are DOCUMENT-SCOPED:
+  for markup inside a `.docz-page`, where `page.css` gives each the
+  document theme's value. They are registered `@theme inline` with the
+  name as its own value (`--color-bg-raised: var(--color-bg-raised)`),
+  so a utility compiles to the variable and the name has no value at
+  `:root`. Tailwind does emit that self-reference at `:root` for a name
+  a rule reads; it is a cycle, which CSS treats as no value. So a
+  document-scoped utility written in chrome paints nothing, and
+  `vocabulary.test.ts` fails on one outside `src/markdown`,
+  `doc-pane.tsx`, `doc-surface.tsx`, and `review/regions.tsx`. There is
+  NO alias from a docz name to a package token anywhere in a
+  stylesheet: `shell.css` is gone, and the only table mapping the two is
+  `src/theme/charcoal.ts`'s. Four of `pkg/theme`'s names are not
+  registered, because the name is the package's utility and a docz entry
+  would take it from the chrome: `accent`, `code-bg`, `border-strong`,
+  and `st-superseded` (the package's `ignored` badge). The same test
+  holds that.
   **`accent` is the package's name.** `bg-accent`, `text-accent`, and
   `border-accent` compile to its hover surface wherever they are written
   (its map is inline), so docz's brand colour is the `brand` utility:
@@ -209,7 +222,8 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   `on-brand` (`accent-utility.test.ts` fails on the old three). `brand`
   is registered `@theme inline` against `--color-accent`, which keeps its
   name because it is `pkg/theme`'s public token; inline is what lets a
-  type's routes and a `.docz-page` re-point it. Never add
+  `.docz-page` re-point it. Like the other document-scoped names it has
+  no value in chrome. Never add
   `--color-accent` to a docz `@theme` block: it would take the package's
   utility and paint its hover surface in docz's blue.
   There is no radius of docz's own. The scale is the package's: `sm`,
@@ -218,28 +232,37 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   wipe (`--radius-*: initial`) is gone because it removed `rounded-md`
   and `rounded-lg`, which the package's components use.
 - **The shell and the document theme** (DESIGN-0026, DESIGN-0028). The
-  site's chrome reads the design system's tokens. docz's 58 `--color-*`
-  names sit in two files: `src/theme/shell.css` aliases the 32 whose
-  value is the package's (`bg-base` at `--background`, `accent` at
-  `--primary`, `hash-0..7` at `--category-1..8`; DESIGN-0028 §4 has the
-  table), and `src/theme/docz-tokens.css` holds docz's own 26 (two
-  surface and border steps, three text steps, `accent-dim`,
-  `st-superseded`, the alert backgrounds, the type colours, `code-bg`),
-  light at `:root` and dark under `.dark`. `shell.css` and its aliases go
-  in IMPL-0033 Phase 9; `docz-tokens.css` stays, and
-  `scripts/gen-charcoal.ts` reads its dark block. The mode is on `<html>`
+  site's chrome reads the design system's tokens by their own names.
+  `src/theme/docz-tokens.css` holds the 26 of `pkg/theme`'s 58 names
+  the package has no value for (two surface and border steps, three
+  text steps, `accent-dim`, `st-superseded`, the alert backgrounds, the
+  type colours, `code-bg`), light at `:root` and dark under `.dark`.
+  The chrome reads the type colours from it, and
+  `scripts/gen-charcoal.ts` reads its dark block. The other 32 have the
+  package's value by `src/theme/charcoal.ts`'s derivation table, which
+  writes `pkg/theme`'s charcoal theme and is the one place the two
+  vocabularies are mapped. The mode is on `<html>`
   twice: `data-mode` for `pkg/theme`'s document themes and the `dark`
   class for the package, both written by `appearance.ts`'s one
   `writeMode()`; with nothing stored `data-mode` stays unset and the
   class follows the system through a media-query listener, since the
   package has no `prefers-color-scheme` block.
-  `<html>` carries no `data-theme`. `shell.test.ts` holds the split (32
-  and 26, 58 in all), `tokens.css`'s `@theme` block to both files, and
-  every shared name to the hex the shell carried before the package.
+  `<html>` carries no `data-theme`.
+  Three things read a colour outside a utility. A custom type's colour
+  is `var(--color-hash-N, var(--category-N+1))` (`src/lib/colors.ts`):
+  only a document theme sets `--color-hash-*`, so the reference is the
+  document's inside a `.docz-page` and the package's in chrome. A
+  mermaid diagram is drawn in the SHELL's colours, read from `<html>`:
+  `--card`, `--secondary`, `--border-strong`, `--foreground`, and
+  docz's own `--color-fg-tertiary`. And the review page's highlight
+  and changed-region badge read `pkg/theme`'s names, which resolve
+  because both sit inside the document.
   The type, status, and hash colours keep the filter chips' hues, fitted
   per mode to 4.5:1. `contrast.test.ts` checks both modes through
-  `src/test/shell-look.ts`, which follows every `var()` into the
-  package's `tokens.css` and converts oklch through `src/theme/oklch.ts`;
+  `src/test/shell-look.ts`, which gives the shell's look under
+  `pkg/theme`'s 58 names from the charcoal table, follows every `var()`
+  into the package's `tokens.css`, and converts oklch through
+  `src/theme/oklch.ts`;
   it throws on a token that resolves to nothing, so a lost mapping fails
   and is never skipped. **A token read from computed style is now
   `oklch(...)`**, not hex: anything that hands one to a library (mermaid's
@@ -696,7 +719,7 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   steps are not in the DOM until it opens, so a test clicks it first).
   The header meta row ends in a "View in Confluence" link
   (new tab, `noopener noreferrer`) when spec 1.6.0's `confluence_url` is
-  non-empty, and in nothing otherwise. Gated mockup rows (relationships,
+  non-empty, and in nothing otherwise. Gated rows (relationships,
   tags) slot into the details when the DESIGN-0001 API asks land.
   `TocList` is the package's `Outline` with its `use-active-heading`
   scroll spy (IntersectionObserver over the heading ids; docz passes
@@ -721,9 +744,7 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   otherwise.
 - Directory (`src/routes/directory.tsx`): hit rows are CARDS since the
   DESIGN-0005 dial-in — `DOC-ID / repo` over the title, `StatusPill` in
-  the middle, the updated stamp (date over time) on the right — NOT the
-  mockup's six-column `.doc-row`, which this surface has now diverged
-  from (mockup.html still leads for prose and chrome tokens). Both
+  the middle, the updated stamp (date over time) on the right. Both
   outer columns are two lines so they align with each other. There is
   no type badge anywhere: the doc id already spells the type out and a
   second colored chip fought the status for attention. Type color
@@ -1035,17 +1056,14 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
 - Per-task local gate is `just ci` semantics: test, lint, `tsc -b
   --force`, build, AND `bun run format:check` — formatting misses fail
   CI even when everything else is green.
-- Bundle budget: CI fails if the eager JS tops 165 KB gz
-  (`scripts/bundle-budget.ts`, `just ui bundle-budget`). It was 130 KB
-  until IMPL-0033 Phase 4: the design system's parts arrive before
-  docz's own leave, and its frame is the first paint, so the budget
-  holds that overlap until Phase 9 sets it to the measured total plus
-  6 KB. The script's comment carries the numbers. With the frame
-  mounted (Phase 7) the eager set measures 171.6 KB, OVER the 165 KB
-  ceiling: the package's `components/sidebar` imports its sheet and
-  tooltip statically, about 45 KB gz of Base UI that is the first
-  paint. The number is left as it is until that is decided (IMPL-0033
-  Phase 7's note).
+- Bundle budget: CI fails if the eager JS tops 177.6 KB gz
+  (`scripts/bundle-budget.ts`, `just ui bundle-budget`): the 171.6 KB
+  measured when the move onto the design system finished (IMPL-0033
+  Phase 9), plus 6 KB. It was 130 KB before the package. About 45 KB of
+  the total is the package's `components/sidebar`, which imports its
+  sheet and tooltip statically and is the first paint; if the package
+  puts the sheet behind a lazy boundary, measure again and lower the
+  number. The script's comment carries the numbers.
   "Eager" = the entry chunk PLUS every modulepreload'd chunk in
   index.html — Rollup splits shared statics out of `index-*.js` as
   the graph shifts, so measuring only the entry file would let an

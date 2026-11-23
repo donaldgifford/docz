@@ -909,32 +909,39 @@ are flipped.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Delete `shell.css` and `shell.test.ts`, and the `:root` aliases
+- [x] Delete `shell.css` and `shell.test.ts`, and the `:root` aliases
   Phase 2 added.
-- [ ] Reduce `tokens.css` to the imports, docz's fonts, the
+- [x] Reduce `tokens.css` to the imports, docz's fonts, the
   document-scoped utility names, and the prose and chip rules.
-- [ ] Add the vocabulary test: a document-scoped utility name outside
+- [x] Add the vocabulary test: a document-scoped utility name outside
   `src/markdown`, `doc-pane.tsx`, `doc-surface.tsx`, and the review
   page's document view fails.
-- [ ] Delete the components the package replaced and anything left
+- [x] Delete the components the package replaced and anything left
   unused: confirm with a search for each file's exports.
-- [ ] Remove `cmdk` from `ui/package.json` if only the package imports
+- [x] Remove `cmdk` from `ui/package.json` if only the package imports
   it now, and any other dependency left without an importer.
-- [ ] Measure the eager JavaScript and set the budget to that total
+- [x] Measure the eager JavaScript and set the budget to that total
   plus 6 KB, with the comment in `bundle-budget.ts` stating both
   numbers.
-- [ ] Record the final stylesheet and JavaScript sizes beside
+- [x] Record the final stylesheet and JavaScript sizes beside
   INV-0036's in this document.
-- [ ] `ui/CLAUDE.md`: remove what describes the old shell, including
+- [x] `ui/CLAUDE.md`: remove what describes the old shell, including
   `mockup.html` as "the visual source of truth", and point at the
   package's Storybook instead. `mockup.html` and `ui/design/` stay.
-- [ ] Root `CLAUDE.md`: one line, only if the map changed.
+- [x] Root `CLAUDE.md`: one line, only if the map changed.
 - [ ] Report back on the package's IMPL-0001 Phase 6: which tasks are
   done, and that the export keeps `data-mode` by INV-0036 question 2.
+  **Deferred** - human required: a report on another repository's plan
+  is the author's to post. What it should carry is listed under the
+  measurements below.
 - [ ] Open an issue for the app switcher fast follow, with the mockup's
   section and the runtime setting it needs.
+  **Deferred** - human required: opening an issue is the author's to do.
 - [ ] `docz status set`: DESIGN-0028 to Implemented and this document
   to Completed.
+  **Deferred** - human required: the statuses flip once the branch is
+  merged and the checks deferred to a person in Phases 5, 7, 8, and 9
+  are done. Setting them on the branch would say so before it is true.
 
 <!--docz:tasks:end-->
 
@@ -947,6 +954,92 @@ are flipped.
 - The released site and docz-review binaries are checked once on the
   homelab.
 - `docz validate` passes, and both documents show their final status.
+
+Measured on 2026-11-23. `just ci` and `just ui ci` pass: 1,545 unit
+tests, 98 e2e, the review server's 98, and the four generated-file
+checks, with 35 parts imported. A search of `ui/src` finds no
+`shell.css`, no `:root[data-mode]` block, and no docz-named utility in
+chrome, which `vocabulary.test.ts` now holds.
+
+The sizes, beside INV-0036's:
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
+
+| Artifact | `main` before | INV-0036's spike | Final |
+| --- | --- | --- | --- |
+| Stylesheet | 68.0 KB (16.6 KB gzipped) | 107.9 KB (23.6 KB) with `core.css` | 120.2 KB (25.2 KB) |
+| Eager JavaScript, gzipped | 124.0 KB | 156.6 KB with the frame beside the old shell | 171.6 KB |
+| Bundle budget | 130 KB | | 177.6 KB |
+
+<!-- markdownlint-restore -->
+
+**The budget is 177.6 KB: the measured 171.6 KB plus 6 KB, as this
+phase's rule and DESIGN-0028 question 1 say.** That is 12.6 KB above
+the 165 KB the design expected the frame to fit. About 45 KB of the
+total is the package's `components/sidebar`, which imports its sheet
+and tooltip statically. If the package puts the sheet behind a lazy
+boundary the total falls, and the number should be measured again and
+lowered. This is the decision Phase 7's note left open; taking the
+phase's rule closes it unless the author prefers to wait for the
+package.
+
+What the report on the package's IMPL-0001 Phase 6 should carry:
+
+- docz imports 35 parts by subpath with `core.css` under
+  `source(none)`, and the export keeps `data-mode` by INV-0036
+  question 2.
+- `components/sidebar` imports `Sheet` and `Tooltip` statically, about
+  45 KB gzipped in a consumer's first paint.
+- Under Vite's dev server a consumer needs
+  `use-sync-external-store/shim` and its `with-selector` entry in
+  `optimizeDeps.include`, or any page with a dialog, tabs, a popover,
+  or a menu is blank. The package ships source, so Vite does not
+  pre-bundle Base UI's CommonJS dependency for it.
+- `ListRow` draws `trailing` above its stretched link, so a badge or a
+  time there is not part of the link.
+- A `ListRow` with a link cannot sit inside a `Command` item: the item
+  is an option, and axe fails a link inside one.
+- There is no text step between `foreground` and `muted-foreground`,
+  which docz's own `fg-secondary` and `fg-tertiary` were.
+
+What differs from the list above:
+
+- **The statuses are not flipped.** DESIGN-0028 and this document stay
+  Draft until the branch is merged and a person has done the deferred
+  checks: the keyboard pass (Phase 5), the mockup
+  comparison and the beta on the homelab (Phase 7), a review through
+  the plugin (Phase 8), and the released site and binaries on the
+  homelab (this phase's third criterion).
+- The document-scoped names are registered `@theme inline`, each as
+  its own value, so no stylesheet maps a docz name onto a package
+  token. Tailwind still emits such a name at `:root` as itself where a
+  rule reads it, which is a cycle and so no value.
+- `border-strong` joins `code-bg` and `st-superseded` as a name docz
+  does not register: it is the package's utility too, and the
+  directory's and the repository list's hover borders use it.
+- Three things read a colour outside a utility and were moved by hand.
+  A custom type's colour is `var(--color-hash-N, var(--category-N+1))`,
+  the document's inside a `.docz-page` and the package's in chrome.
+  mermaid's theme reads the package's `--card`, `--secondary`,
+  `--border-strong`, and `--foreground` from `<html>`. The page's
+  surface, text, selection, focus ring, and body size are `core.css`'s,
+  so text with no size of its own in chrome is 14px, where docz's body
+  rule set 16px.
+- `tokens.css` keeps three behaviours the task's list does not name:
+  smooth scrolling, the scrollbar gutter with thin scrollbars, and the
+  review page's highlight and changed-region badge.
+- `shell.test.ts`'s checks that still mean something moved:
+  `vocabulary.test.ts` holds which names are not registered, and
+  `contrast.test.ts` still checks the shell under `pkg/theme`'s 58
+  names in both modes, read through `charcoal.ts`'s derivation table.
+- No component file was left to delete: each was removed in the phase
+  that replaced it, and a search finds no module without an importer.
+  The one unused thing was the `.mono-chip-y` class, which is gone.
+- Root `CLAUDE.md` is unchanged: its map did not change.
+- Phase 8 missed one selector. `widgets.spec.ts` looked for the review
+  page's old document buttons and is fixed here; an axe check over the
+  icon rail's popover now waits for the popover to finish fading in.
 
 <!--docz:criteria:end-->
 <!--docz:phase:end-->
