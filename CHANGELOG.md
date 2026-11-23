@@ -28,6 +28,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(inv)* Add the 0.5.0 release note's three cautions to INV-0036
 - *(inv)* Add design-system 0.6.0 to INV-0036
 - *(design)* Add DESIGN-0028 and IMPL-0033 for the design-system adoption
+- *(inv)* Add INV-0037 on nested .docz.yaml files in one repository
+- *(design)* Add DESIGN-0029 for projects and the repo and site jobs
 
 ## [2.6.2] - 2026-11-05
 
