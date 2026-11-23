@@ -469,14 +469,13 @@ The palette, the menus, and the directory's filters are the package's.
 - [x] `command-palette.tsx` on `CommandDialog`, with `CommandFilters`
   for the type filter, `CommandFooter` for the key hints, and `preview`
   for the hit preview. Keep recent documents and the query behaviour.
-- [ ] A palette hit as a `ListRow` with `render` (a router link) and
+- [x] A palette hit as a `ListRow` with `render` (a router link) and
   `onClick` (close the palette), with a test that following the link
   closes it.
-  **Deferred** - human required: the hit is a `ListRow` selected through
-  cmdk, and a click or Enter closes the palette and navigates, but it
-  carries no link. A link inside cmdk's `role="option"` item fails axe's
-  `nested-interactive` rule, so the link needs a decision: a change in
-  the package, or leaving the hit as it is.
+  Decided 2026-11-23 by the author: the hit stays as built, with no
+  link. It is a `ListRow` selected through cmdk, and a click or Enter
+  closes the palette and navigates. A link inside cmdk's
+  `role="option"` item fails axe's `nested-interactive` rule.
 - [x] Keep the palette's body out of the eager graph where
   `CommandDialog` allows, and note in the pull request what could not be
   made lazy.
@@ -580,13 +579,11 @@ The reader's side columns and the type index are the package's.
   the sort it has today.
 - [x] `TocList` as `blocks/outline` with `hooks/use-active-heading`,
   following the headings the document pane and `DocSurface` render.
-- [ ] Confirm the outline tracks headings inside a fragment after the
+- [x] Confirm the outline tracks headings inside a fragment after the
   runtime switches a tab, since the pane's HTML is not React's.
-  **Deferred** - human required: there is no outline beside a fragment
-  to track. `doc.tsx` gives the document pane no rail, because a
-  fragment has its own tabs, and that is `main`'s behaviour, which the
-  success criteria hold. An outline over the pane's headings would be
-  new: it needs a decision.
+  Decided 2026-11-23 by the author: a fragment gets no outline, so
+  there is none to track. `doc.tsx` gives the document pane no rail,
+  because a fragment has its own tabs, which is `main`'s behaviour.
 - [x] `LifecycleRail` as `blocks/disclosure` holding a `Stepper` with
   `orientation="vertical"` and `size="sm"`.
 - [x] `DocMetaTable` as `DetailsGrid`.
