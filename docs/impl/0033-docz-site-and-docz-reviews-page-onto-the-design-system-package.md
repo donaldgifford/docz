@@ -798,27 +798,32 @@ untouched.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `controls.tsx`, `status.tsx`, and `app.tsx`: `Button`, `Tabs`,
+- [x] `controls.tsx`, `status.tsx`, and `app.tsx`: `Button`, `Tabs`,
   `Badge`, `SegmentedControl`, and `InlineLoading`.
-- [ ] Any confirmation or submit prompt as the package's `Dialog`.
-- [ ] `questions.tsx`, `findings.tsx`, `regions.tsx`, and
+- [x] Any confirmation or submit prompt as the package's `Dialog`.
+- [x] `questions.tsx`, `findings.tsx`, `regions.tsx`, and
   `annotations.tsx`: their buttons and badges on the package's parts,
   with the option cards' behaviour unchanged.
-- [ ] Keep the page's own single-column frame and header, with
+- [x] Keep the page's own single-column frame and header, with
   `shell/mode-toggle` for the mode. Do not import `shell/sidebar`.
-- [ ] Leave `diff.tsx`'s rendering alone and move only its colours'
+- [x] Leave `diff.tsx`'s rendering alone and move only its colours'
   names. Check the diff in light mode against the fix in v2.6.1.
-- [ ] Confirm the document view still renders in the document's theme
+- [x] Confirm the document view still renders in the document's theme
   inside `.docz-page`, across every theme in `e2e/appearances.ts`.
-- [ ] Confirm no sidebar code is in the review bundle by searching
+- [x] Confirm no sidebar code is in the review bundle by searching
   `dist-review` for it.
-- [ ] Run `just ui build-review` and open a compiled binary's page with
+- [x] Run `just ui build-review` and open a compiled binary's page with
   the network off.
-- [ ] Rewrite the affected tests in `src/review` and update
+- [x] Rewrite the affected tests in `src/review` and update
   `review.spec.ts` and `review-server.spec.ts` selectors.
 - [ ] Walk one real review end to end with the plugin: comment, answer
   a question, submit, and confirm the agent receives the feedback.
-- [ ] `plugins/CLAUDE.md` and `ui/CLAUDE.md`: the review page's
+  **Deferred** - human required: a review through the plugin needs a
+  person in a Claude Code session with the released binary and a
+  browser. The same path is covered unattended by
+  `review-server.spec.ts` (the real server and a built docz) and by the
+  plugin's hook tests.
+- [x] `plugins/CLAUDE.md` and `ui/CLAUDE.md`: the review page's
   paragraphs.
 
 <!--docz:tasks:end-->
@@ -832,6 +837,63 @@ untouched.
   produces for the same actions, held by the existing feedback tests.
 - The four binaries build, and a binary serves its page with no network.
 - The plugin job passes.
+
+Measured on 2026-11-23. The unit suite (1,581 tests), the review
+server's suite (98), the plugin's hook tests (13), and the review e2e
+specs (45: every document theme in both shell modes, with full-rule
+axe over the page and over an open dialog) pass, with 35 parts
+imported. The feedback goldens under `src/review/testdata/feedback/`
+are unchanged. `just ui build-review` builds the four binaries and its
+smoke test passes.
+
+How three of the tasks were checked:
+
+- **The binary with no network.** The compiled `darwin_arm64` binary
+  was driven through a whole review (open, answer, the discard dialog,
+  submit, session ended) in a browser that aborted every request to a
+  host other than `127.0.0.1`. The page attempted none, and its
+  stylesheet and fonts came from the binary. That is not the same as
+  unplugging the machine, and no person has opened the page by hand.
+- **The diff in light mode.** `contrast.test.ts` holds the three line
+  pairs to 4.5:1 in both modes in the package's names, which is the
+  test v2.6.1 added. The diff was not looked at in a browser: the fake
+  server has no hook for a second round.
+- **Sidebar code.** No JavaScript file in `dist-review` mentions the
+  sidebar. The stylesheet does (84 times): both pages share
+  `tokens.css`, which imports every part's rules.
+
+What differs from the list above:
+
+- **The dev server was broken, and is fixed here.** Base UI's store
+  imports a CommonJS shim that Vite does not pre-bundle for a file
+  under `node_modules`, so any page with a dialog, tabs, a popover, or
+  a menu was blank under `vite` in dev: the review page with this
+  phase's parts, and the site since the frame mounted in Phase 7. A
+  build was never affected, which is why the preview-based e2e passed.
+  `vite.config.ts` now names the shim's two entries in
+  `optimizeDeps.include`. This is the package's to document for every
+  consumer on Vite, and goes in the report on its IMPL-0001 Phase 6.
+- The documents are the package's `Tabs` and the status is the
+  `SegmentedControl`. The status was a native `<select>`; its segments
+  wrap, because a type can have more statuses than the sidebar's width
+  holds.
+- The two prompts are one `ConfirmDialog`. "Leave without an outcome
+  for the open documents?" and "Discard this draft and approve?" keep
+  their wording as the dialogs' titles, and each gains a sentence
+  saying what is lost.
+- `regions.tsx` has no control and no colour, and is unchanged.
+- Text boxes stay native `textarea` and `input` elements in the
+  package's colours; the design's list for this page has no input
+  part.
+- A removed diff line is `foreground`, where it was one step dimmer
+  than an added one: the package has no text step between `foreground`
+  and `muted-foreground`.
+- A disabled button keeps its pointer, so the `title` that says why it
+  is disabled still shows; the package's `Button` turns the pointer
+  off.
+- The heading locators in both review specs gain `exact: true`. The
+  document's own h1 contains the title, and the real-server spec now
+  sees both at once.
 
 <!--docz:criteria:end-->
 <!--docz:phase:end-->

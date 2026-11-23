@@ -76,7 +76,17 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 ## Architecture
 
 - `vite.config.ts` — react + tailwind plugins, `@/` → `src/` alias, dev
-  proxy (same-origin in prod; docz-api sends no CORS headers)
+  proxy (same-origin in prod; docz-api sends no CORS headers).
+  `optimizeDeps.include` names use-sync-external-store's two shim
+  entries, for the DEV SERVER only: the design system ships TypeScript
+  source, Vite neither pre-bundles that nor discovers what a file under
+  `node_modules` imports, so Base UI arrives as its own ESM and its
+  store (under every dialog, tabs, popover, and menu) imports a
+  CommonJS shim with no named export. Without the two entries the page
+  is blank in dev and fine in a build, so the preview-based e2e never
+  sees it; `e2e/review.spec.ts`, which runs against the review dev
+  server, does. A part that brings another CommonJS dependency needs
+  its entry added there.
 - Routing: `src/app/router.tsx` (`createBrowserRouter`, library mode).
   Every route renders inside `src/app/AppShell.tsx`, the frame, except
   `/login` and `/oauth/consent`, which sit in a second top-level route
@@ -889,9 +899,41 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
   badges; nothing is inserted into the sanitized markdown. Lightning CSS
   warns that it does not know `::highlight` while minifying; the rule
   survives, so the warning is noise.
+- **Controls** (DESIGN-0028 §10, IMPL-0033 Phase 8). The page's
+  controls are the design system's parts, and its review logic is not
+  theirs. `controls.tsx` holds the wrappers: `ReviewButton` (the
+  package's `Button`, outlined unless `primary`; `selected` is the
+  chosen one of a set, and the `role="radio"`, `aria-checked`, or
+  `aria-pressed` stays the caller's; a disabled one keeps its pointer
+  so its `title` still says why), `StateBadge` (a document's state),
+  `ConfirmDialog` (the package's `Dialog`; there is no
+  `window.confirm`), and the field and label classes. The documents
+  are the package's `Tabs` in the `line` form, rendered as the page's
+  `<main>`, with the open document in the one `TabsContent`; the status
+  is a `SegmentedControl` named `Status` whose segments wrap, because a
+  type can have more statuses than the sidebar's 340px holds, and a
+  document with no status gets no segment for it. Text boxes stay
+  native `textarea` and `input` elements in the package's colours.
+  The page's chrome is written in the package's names only
+  (`bg-card`, `text-muted-foreground`, `border`); docz's names are for
+  the document column. A selected control is `bg-muted`, never
+  `bg-accent`, which `accent-utility.test.ts` forbids under `src`. The
+  round diff (`diff.tsx`) keeps its rendering and sits on
+  `bg-background` with `foreground` on a 12% `success` or
+  `destructive` tint and `muted-foreground` for unchanged lines, each
+  pair held to 4.5:1 in both modes by `contrast.test.ts` (v2.6.1's
+  light-mode fix). The page imports nothing from `shell/sidebar`: no
+  JavaScript file in `dist-review` mentions it, though the shared
+  stylesheet carries the sidebar's rules. In a test the documents are
+  the tablist `Documents`, the status the tablist `Status` (the
+  current one reads `Draft (current)`), and a dialog is found by its
+  question; an e2e that runs axe over an open dialog waits for its
+  animations first, or the half-faded dialog reads as low contrast. A
+  heading locator for the document's title needs `exact: true`: the
+  document's own h1 contains the title too.
 - **Appearance** (IMPL-0030 Phase 2, DESIGN-0026 §9). The page wears the
-  site's shell: a topbar with the docz mark, the light/dark toggle, and
-  Done. The document column is a `DocSurface` in the repository's theme:
+  site's shell: its own single-column frame with a header holding the
+  docz mark, the package's `ModeToggle`, and Done. The document column is a `DocSurface` in the repository's theme:
   `docz inspect` reports `.docz.yaml`'s `html.theme` as `theme`, the
   server passes it in the session (`sessionTheme`, the first document's,
   `paper` for a docz too old to say), and `main.tsx` fetches the session
