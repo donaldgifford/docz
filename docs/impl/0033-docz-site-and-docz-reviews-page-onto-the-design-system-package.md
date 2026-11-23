@@ -223,10 +223,10 @@ values, and looks exactly as it did.
 - [x] `ui/src/theme/oklch.ts`: resolve a `{name}` reference and convert
   oklch to sRGB hex, with unit tests for a reference chain, a cycle, an
   unknown name, and the eleven values INV-0036's spike confirmed.
-- [ ] `tokens.css`: replace `@import "tailwindcss"` with the package's
+- [x] `tokens.css`: replace `@import "tailwindcss"` with the package's
   `core.css` under `source(none)`, and add the three `@source` lines for
   `src/`, `index.html`, and `review.html`.
-- [ ] Confirm the stylesheet's size against INV-0036's numbers, so a
+- [x] Confirm the stylesheet's size against INV-0036's numbers, so a
   missing `source(none)` is caught here.
 - [ ] `ui/src/theme/docz-tokens.css`: docz's 26 own tokens, a light
   block at `:root` and a dark block under `.dark`, moved out of

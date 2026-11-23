@@ -1,11 +1,21 @@
 /*
- * Design tokens ported from mockup.html `:root` (the visual source of
- * truth) into Tailwind v4 `@theme`. Token names keep the mockup's
- * prefixes so mockup CSS can be cross-referenced 1:1 when porting
- * sections into components — utilities read e.g. `bg-bg-raised`,
- * `text-fg-tertiary`, `border-border-strong`, `text-t-rfc`.
+ * The one global stylesheet (DESIGN-0028 §3). Its head is the design
+ * system's core.css: Tailwind, the package's tokens in both modes, and
+ * the @theme inline map that turns them into utilities (bg-card,
+ * text-muted-foreground). core.css, not globals.css, which also scans
+ * the whole package and ships five static font files.
+ *
+ * source(none) is required: without it Tailwind takes the whole
+ * directory of any file it sees under node_modules, and the stylesheet
+ * is no smaller than with globals.css. docz's own sources are then
+ * named below. Each package part the site or the review page imports
+ * gets one parts/ line after them, which names that part's file and
+ * everything it imports; docz writes no @source into node_modules.
  */
-@import "tailwindcss";
+@import "@donaldgifford/design-system/core.css" source(none);
+@source "../";
+@source "../../index.html";
+@source "../../review.html";
 
 /* The shell (DESIGN-0026 §2): repo-guardian's look in light and dark,
  * which both the site and the review page wear. Being unlayered, it
