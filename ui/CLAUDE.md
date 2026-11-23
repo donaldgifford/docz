@@ -91,20 +91,72 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   so symmetric padding renders every chip visibly high. The class holds the compensating
   difference; `.doc-prose code` carries its own copy with descender
   clearance. Verify by measuring, not by eye.
-- `src/theme/tokens.css` — the single global stylesheet: Tailwind v4
-  import + `@theme static` tokens ported from `mockup.html` `:root`.
-  Token names keep mockup prefixes, so utilities read `bg-bg-raised`,
-  `text-fg-tertiary`, `text-t-rfc`. Radius scale is wiped except
-  `rounded-sm` (3px, the shell's bordered controls) and `rounded-pill`. Don't add other CSS entrypoints.
-- **The shell and the document theme** (DESIGN-0026). The site's
-  chrome is `src/theme/shell.css`: repo-guardian's tokens, copied in and
-  mapped onto docz's `--color-*` names, light at `:root`, dark under
-  `data-mode="dark"` and again for the system's dark preference with no
-  `data-mode`, with IBM Plex Sans and JetBrains Mono (`@fontsource-variable`).
-  `<html>` carries no `data-theme`; `tokens.css`'s `@theme` values are the
-  shell's dark set (`shell.test.ts` pins it), and the type, status, and
-  hash colours keep the filter chips' hues, fitted per mode to 4.5:1
-  (`contrast.test.ts` checks both modes). Code stays dark in both modes.
+- `src/theme/tokens.css` — the single global stylesheet (DESIGN-0028
+  §3). Don't add other CSS entrypoints. Its head is
+  `@import "@donaldgifford/design-system/core.css" source(none)`, then
+  `@source` lines for `src/`, `index.html`, and `review.html`.
+  `core.css`, never `globals.css` (which scans the whole package and
+  ships five static font files), and `source(none)` is REQUIRED: without
+  it Tailwind takes the whole directory of any file it sees under
+  `node_modules`. Each package part docz imports gets one
+  `@import "@donaldgifford/design-system/parts/…"` line; docz writes no
+  `@source` into `node_modules`. The fonts stay the three
+  `@fontsource-variable` imports in `main.tsx`; the package's
+  `fonts.css` is not imported, and docz's `--font-sans`/`--font-mono`
+  (the variable builds) override the package's theme entries.
+  Two vocabularies live here until IMPL-0033 Phase 9. The package's
+  (`bg-card`, `text-muted-foreground`, `border-border`) come from
+  `core.css`'s `@theme inline` map. docz's (`bg-bg-raised`,
+  `text-fg-tertiary`, `text-t-rfc`) are `pkg/theme`'s public token names,
+  registered in `@theme static`: `static` so every token is emitted (the
+  colour module resolves them at runtime through `var()`), and NOT
+  `inline`, so a utility compiles to `var(--color-bg-raised)` and
+  resolves where it is used, against the shell in chrome and against the
+  document's theme inside `.docz-page`.
+  **`accent` is the package's name.** `bg-accent`, `text-accent`, and
+  `border-accent` compile to its hover surface wherever they are written
+  (its map is inline), so docz's brand colour is the `brand` utility:
+  `bg-brand`, `text-brand`, `brand-dim`, `brand-bg`, `brand-border`,
+  `on-brand` (`accent-utility.test.ts` fails on the old three). `brand`
+  is registered `@theme inline` against `--color-accent`, which keeps its
+  name because it is `pkg/theme`'s public token; inline is what lets a
+  type's routes and a `.docz-page` re-point it. Never add
+  `--color-accent` to a docz `@theme` block: it would take the package's
+  utility and paint its hover surface in docz's blue.
+  There is no radius of docz's own. The scale is the package's: `sm`,
+  `md`, and `lg` are its one 3px corner (docz's bordered controls use
+  `rounded-sm`), and `rounded-pill` is its fully rounded shape. The old
+  wipe (`--radius-*: initial`) is gone because it removed `rounded-md`
+  and `rounded-lg`, which the package's components use.
+- **The shell and the document theme** (DESIGN-0026, DESIGN-0028). The
+  site's chrome reads the design system's tokens. docz's 58 `--color-*`
+  names sit in two files: `src/theme/shell.css` aliases the 32 whose
+  value is the package's (`bg-base` at `--background`, `accent` at
+  `--primary`, `hash-0..7` at `--category-1..8`; DESIGN-0028 §4 has the
+  table), and `src/theme/docz-tokens.css` holds docz's own 26 (two
+  surface and border steps, three text steps, `accent-dim`,
+  `st-superseded`, the alert backgrounds, the type colours, `code-bg`),
+  light at `:root` and dark under `.dark`. `shell.css` and its aliases go
+  in IMPL-0033 Phase 9; `docz-tokens.css` stays, and
+  `scripts/gen-charcoal.ts` reads its dark block. The mode is on `<html>`
+  twice: `data-mode` for `pkg/theme`'s document themes and the `dark`
+  class for the package, both written by `appearance.ts`'s one
+  `writeMode()`; with nothing stored `data-mode` stays unset and the
+  class follows the system through a media-query listener, since the
+  package has no `prefers-color-scheme` block.
+  `<html>` carries no `data-theme`. `shell.test.ts` holds the split (32
+  and 26, 58 in all), `tokens.css`'s `@theme` block to both files, and
+  every shared name to the hex the shell carried before the package.
+  The type, status, and hash colours keep the filter chips' hues, fitted
+  per mode to 4.5:1. `contrast.test.ts` checks both modes through
+  `src/test/shell-look.ts`, which follows every `var()` into the
+  package's `tokens.css` and converts oklch through `src/theme/oklch.ts`;
+  it throws on a token that resolves to nothing, so a lost mapping fails
+  and is never skipped. **A token read from computed style is now
+  `oklch(...)`**, not hex: anything that hands one to a library (mermaid's
+  theme does) converts it with `oklchToHex` first, and a spec that
+  compares a token to a painted colour paints it onto a canvas and reads
+  the pixel. Code stays dark in both modes.
   There is no theme selector and no `docz:theme`: the topbar's
   `AppearanceControls` is the light/dark toggle alone
   (`useAppearance(refreshMermaidTheme)`, the mode and nothing else; the
@@ -117,7 +169,7 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   unknown value is a config error that fails `/readyz`. `refreshMermaidTheme`'s
   signal lives in `src/lib/mermaid-theme.ts` so the eager bundle never
   imports `mermaid-block`. No component may carry a literal colour: the
-  header is `bg-bg-raised`, the logo `text-(--color-on-accent)`, the
+  header is `bg-bg-raised`, the logo `text-on-brand`, the
   palette scrim `bg-bg-base/65`. A type's routes set `--type-accent` from
   `typeColor()` on AppShell's `display: contents` wrapper, and the logo
   mark, repository badge, breadcrumb leaf, and active sidebar item read
@@ -228,8 +280,8 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   the theme sets `useGradient` (`base` does), and `Theme.calculate`
   clears it exactly when the overrides carry `nodeBorder` without
   `useGradient`. `look` is PINNED (`MERMAID_LOOK` = classic): v12
-  defaults to neo, which rounds node corners — diagrams would be the
-  only rounded surface under a wiped radius scale. `layout` is NOT a
+  defaults to neo, which rounds node corners well past the shell's one
+  3px corner. `layout` is NOT a
   constant: `src/lib/mermaidLayout.ts` resolves runtime
   `DOCZ_MERMAID_LAYOUT` → build-time `VITE_MERMAID_LAYOUT` → `elk`,
   closed set `dagre|elk`, validated at BOTH ends like nav pins — the
@@ -682,10 +734,11 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
   BEFORE the first render and seeds the query cache, so the column never
   paints in `paper` first. `<html>` carries no `data-theme`. There is no
   theme selector and no `docz:theme` key.
-  The mode is the reader's: `applyStoredMode()` sets `data-mode` from
-  `docz:mode` (the key exported pages use too) before the first render;
-  with nothing stored `data-mode` stays unset and the theme's
-  `prefers-color-scheme` block applies. `useAppearance(onChange)`
+  The mode is the reader's: `applyStoredMode()` sets `data-mode` and the
+  `dark` class from `docz:mode` (the key exported pages use too) before
+  the first render; with nothing stored `data-mode` stays unset, the
+  theme's `prefers-color-scheme` block applies, and the class follows
+  the system. `useAppearance(onChange)`
   dispatches `docz:mode` and calls `refreshMermaidTheme` after a change
   (never on mount), which re-initializes mermaid from the new tokens and
   redraws every mounted diagram. The toggle always shows: the shell has
@@ -892,9 +945,9 @@ DESIGN-0017, ADR-0004). Publishing and CI's path filters are in
   (IMPL-0028, IMPL-0032); `just ui docker-build` passes the same
   `--build-context`, and `vite.config.ts` lists `../pkg/theme` in
   `server.fs.allow` beside the workspace root. **Both pages wear the
-  shell** (DESIGN-0026): `ui/src/theme/shell.css`, repo-guardian's look in
-  light and dark, with no `data-theme` on `<html>` and no theme selector;
-  `tokens.css`'s `@theme` values are the shell's dark set. **A document's
+  shell** (DESIGN-0026, DESIGN-0028): the design system's tokens through
+  `core.css`, with docz's own in `ui/src/theme/docz-tokens.css`, in light
+  and dark, with no `data-theme` on `<html>` and no theme selector. **A document's
   theme sits on its own `.docz-page`**: the deployment's `DOCZ_THEME` in
   the reader, the repository's `html.theme` (which `docz inspect` reports
   and the session carries, IMPL-0030) in the review page's document

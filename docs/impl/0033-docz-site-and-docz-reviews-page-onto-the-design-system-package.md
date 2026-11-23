@@ -257,7 +257,7 @@ values, and looks exactly as it did.
 - [x] `src/test/setup.ts`: add the `window.matchMedia` stub.
 - [x] Keep the fonts as they are: the three `@fontsource-variable`
   imports in `main.tsx`, and no import of the package's `fonts.css`.
-- [ ] `ui/CLAUDE.md`: rewrite the `tokens.css`, radius, and shell
+- [x] `ui/CLAUDE.md`: rewrite the `tokens.css`, radius, and shell
   paragraphs for the new head of the stylesheet.
 
 <!--docz:tasks:end-->
@@ -273,6 +273,21 @@ values, and looks exactly as it did.
   `main` in both modes, checked by hand and noted in the pull request.
 - The eager JavaScript is within the 130 KB budget, since no package
   component is imported yet.
+
+Measured on the branch: the stylesheet is 75.1 KB (18.7 KB gzipped)
+against 68.3 KB on `main`, with no part imported yet, and ships the same
+34 font files. The eager JavaScript is 124.1 KB against 124.0 KB. Ten
+routes (the directory with and without a query, repositories, a
+repository's home, a type's index, a document, a missing document, the
+changelog, the specimen page, and sign-in) were screenshotted from
+`main`'s build and from the branch's in both modes and compared pixel
+for pixel: all twenty are identical. The check by hand against
+`ui/design/mockup.html` is still owed for the pull request.
+
+One thing the phase's list did not have: mermaid read the shell's tokens
+from computed style, where a shared token is now `oklch(...)`, which its
+colour library cannot parse, so every diagram failed to render. The read
+converts through `oklch.ts`, and the e2e suite is what caught it.
 
 <!--docz:criteria:end-->
 <!--docz:phase:end-->
