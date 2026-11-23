@@ -106,9 +106,9 @@ describe("the shipped layout and look", () => {
   });
 
   it("holds the look at classic", () => {
-    // v12 moved the default to `neo`, which rounds node corners. The
-    // radius scale in tokens.css is wiped, so that would leave diagrams
-    // the only rounded surface on the site. Pinned deliberately.
+    // v12 moved the default to `neo`, which rounds node corners well
+    // past the shell's one 3px corner, so diagrams would be the only
+    // soft surface on the site. Pinned deliberately.
     expect(mermaidInitConfig().look).toBe("classic");
     expect(mermaid.mermaidAPI.getConfig().look).toBe("classic");
   });
@@ -124,6 +124,26 @@ describe("the theme variables", () => {
     const merged = mermaid.mermaidAPI.getSiteConfig().themeVariables as
       Record<string, unknown> | undefined;
     expect(merged?.[key]).toBe(theme[key]);
+  });
+
+  it("hands mermaid hex for a token the design system gives in oklch", () => {
+    // The shell's shared tokens compute to `oklch(...)`, which
+    // mermaid's colour library cannot parse: the render fails and the
+    // figure keeps its source. A document theme's hex passes through.
+    const root = document.documentElement;
+    root.style.setProperty("--color-bg-raised", "oklch(0.2538 0.0103 261.45)");
+    root.style.setProperty("--color-fg-tertiary", "#abb2bb");
+    try {
+      const fromTokens = mermaidThemeFromTokens();
+      expect(fromTokens.secondaryColor).toBe("#202328");
+      expect(fromTokens.lineColor).toBe("#abb2bb");
+      for (const value of Object.values(fromTokens)) {
+        expect(value).not.toContain("oklch");
+      }
+    } finally {
+      root.style.removeProperty("--color-bg-raised");
+      root.style.removeProperty("--color-fg-tertiary");
+    }
   });
 
   it("disables the neo look's node gradients", () => {

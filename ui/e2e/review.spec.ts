@@ -324,17 +324,30 @@ test("with no stored choice it follows the system, then keeps the reader's", asy
   await page.goto(`${ORIGIN}/review.html?t=${TOKEN}`);
   const html = page.locator("html");
   await expect(html).not.toHaveAttribute("data-mode", /.*/);
+  // The page's own surface, as painted: the shell's dark and light
+  // backgrounds. The token behind it is the design system's, in oklch
+  // (DESIGN-0028 §4), so the check paints it onto a canvas and reads
+  // the pixel back rather than comparing the token's text.
   const bg = () =>
-    page.evaluate(() =>
-      getComputedStyle(document.documentElement)
-        .getPropertyValue("--color-bg-base")
-        .trim(),
-    );
-  // The shell's dark and light surfaces (shell.css).
+    page.evaluate(() => {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 1;
+      const context = canvas.getContext("2d");
+      if (context === null) {
+        return "";
+      }
+      context.fillStyle = getComputedStyle(document.body).backgroundColor;
+      context.fillRect(0, 0, 1, 1);
+      const [r = 0, g = 0, b = 0] = context.getImageData(0, 0, 1, 1).data;
+      return `#${[r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+    });
+  // With nothing stored, the dark class follows the system.
+  await expect(html).toHaveClass(/(^|\s)dark(\s|$)/);
   expect(await bg()).toBe("#17191c");
 
   await page.getByRole("button", { name: "Switch to light mode" }).click();
   await expect(html).toHaveAttribute("data-mode", "light");
+  await expect(html).not.toHaveClass(/(^|\s)dark(\s|$)/);
   expect(await bg()).toBe("#f6f7f9");
 
   // The page drops its token from the URL, so reopen the link.

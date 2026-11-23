@@ -9,6 +9,7 @@ import {
   subscribeMermaidTheme,
 } from "@/lib/mermaid-theme";
 import { mermaidLayout } from "@/lib/mermaidLayout";
+import { oklchToHex } from "@/theme/oklch";
 
 /*
  * Client-side mermaid rendering (IMPL-0002 Phase 4, OQ-1a).
@@ -171,9 +172,17 @@ export function mermaidInitConfig(): MermaidConfig {
  */
 export function mermaidThemeFromTokens(): Record<string, string> {
   const style = getComputedStyle(document.documentElement);
+  // The shell's shared tokens are the design system's (DESIGN-0028 §4),
+  // so a computed value arrives as `oklch(...)`. mermaid's colour
+  // library parses hex, rgb, and hsl only and fails the whole render on
+  // anything else, so oklch is converted here; a document theme's hex
+  // passes through.
   const read = (name: string, fallback: string): string => {
     const value = style.getPropertyValue(name).trim();
-    return value.length > 0 ? value : fallback;
+    if (value.length === 0) {
+      return fallback;
+    }
+    return value.startsWith("oklch(") ? oklchToHex(value) : value;
   };
   const bgRaised = read("--color-bg-raised", "#121722");
   const bgElevated = read("--color-bg-elevated", "#181e2b");

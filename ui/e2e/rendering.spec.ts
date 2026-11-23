@@ -200,15 +200,28 @@ for (const appearance of SHELL_MODES) {
       (node) => !/begin|decide|work/.test(node.className),
     );
     expect(plain.length).toBeGreaterThan(0);
-    // The token as the browser resolves it, so the check holds under
-    // every theme and mode rather than naming one theme's value.
+    // The token as the browser paints it, so the check holds under
+    // every theme and mode rather than naming one theme's value. The
+    // shell's token is the design system's, in oklch, and a computed
+    // colour keeps that notation, while mermaid is handed hex and its
+    // stroke computes to rgb(). So the token is painted onto a canvas
+    // and the pixel read back, which is sRGB either way.
     const borderStrong = await page.evaluate(() => {
       const probe = document.createElement("span");
       probe.style.color = "var(--color-border-strong)";
       document.body.append(probe);
       const color = getComputedStyle(probe).color;
       probe.remove();
-      return color;
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 1;
+      const context = canvas.getContext("2d");
+      if (context === null) {
+        return color;
+      }
+      context.fillStyle = color;
+      context.fillRect(0, 0, 1, 1);
+      const [r = 0, g = 0, b = 0] = context.getImageData(0, 0, 1, 1).data;
+      return `rgb(${String(r)}, ${String(g)}, ${String(b)})`;
     });
     for (const node of plain) {
       expect(node.stroke).toBe(borderStrong);
