@@ -147,10 +147,11 @@ nothing imports it yet.
 - [x] `just ui install`: fail before running Bun when `NPM_TOKEN` is
   unset, printing the `NPM_TOKEN=$(gh auth token)` line and the
   `read:packages` scope it needs.
-- [ ] Grant the docz repository read access to the package in the
+- [x] Grant the docz repository read access to the package in the
   package's "Manage Actions access" settings.
-  **Deferred** - human required: it is a setting on the package's page
-  with no API, and every CI install fails with a 403 until it is granted.
+  Seen working on 2026-11-23: the `ui`, `ui-e2e`, and `plugin` jobs
+  installed on pull request #238, and so did `prerelease.yml` for
+  `v2.7.0-beta.1`, each with the workflow's own token.
 - [x] `ci.yml`: add `packages: read` and
   `NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}` to the install step of the
   `ui`, `ui-e2e`, and `plugin` jobs.
@@ -696,9 +697,10 @@ This is the phase a reader sees.
   beta.
 - [ ] Cut a beta from this branch and check it on the homelab (question
   5 below), since the release workflows' token wiring runs nowhere else.
-  **Deferred** - human required: `v2.7.0-beta.1` is cut from this
-  branch (chart `1.5.0-beta.1`), on the author's word of 2026-11-23.
-  Deploying it to the homelab and checking it there is the author's.
+  **Deferred** - human required: `v2.7.0-beta.1` was cut from this
+  branch on 2026-11-23, on the author's word. `prerelease.yml` passed,
+  and chart `1.5.0-beta.1` and both images are published. Deploying it
+  to the homelab and checking it there is the author's.
 - [x] `ui/CLAUDE.md`: rewrite the routing, shell, and per-type accent
   paragraphs.
 
