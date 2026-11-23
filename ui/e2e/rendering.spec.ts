@@ -193,8 +193,8 @@ for (const appearance of SHELL_MODES) {
     expect(strokeOf("decide")).toBe("rgb(224, 175, 104)");
     expect(strokeOf("work")).toBe("rgb(125, 207, 255)");
 
-    // Everything the document did not color takes --color-border-strong
-    // from the theme map. A flat rgb() rather than a url(#…-gradient) is
+    // Everything the document did not color takes the shell's
+    // --border-strong from the theme map. A flat rgb() rather than a url(#…-gradient) is
     // also what proves the neo look's node gradients stay off.
     const plain = nodes.filter(
       (node) => !/begin|decide|work/.test(node.className),
@@ -208,7 +208,7 @@ for (const appearance of SHELL_MODES) {
     // and the pixel read back, which is sRGB either way.
     const borderStrong = await page.evaluate(() => {
       const probe = document.createElement("span");
-      probe.style.color = "var(--color-border-strong)";
+      probe.style.color = "var(--border-strong)";
       document.body.append(probe);
       const color = getComputedStyle(probe).color;
       probe.remove();

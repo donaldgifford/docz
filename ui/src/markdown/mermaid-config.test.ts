@@ -127,11 +127,11 @@ describe("the theme variables", () => {
   });
 
   it("hands mermaid hex for a token the design system gives in oklch", () => {
-    // The shell's shared tokens compute to `oklch(...)`, which
+    // The design system's tokens compute to `oklch(...)`, which
     // mermaid's colour library cannot parse: the render fails and the
-    // figure keeps its source. A document theme's hex passes through.
+    // figure keeps its source. docz's own hex passes through.
     const root = document.documentElement;
-    root.style.setProperty("--color-bg-raised", "oklch(0.2538 0.0103 261.45)");
+    root.style.setProperty("--card", "oklch(0.2538 0.0103 261.45)");
     root.style.setProperty("--color-fg-tertiary", "#abb2bb");
     try {
       const fromTokens = mermaidThemeFromTokens();
@@ -141,7 +141,7 @@ describe("the theme variables", () => {
         expect(value).not.toContain("oklch");
       }
     } finally {
-      root.style.removeProperty("--color-bg-raised");
+      root.style.removeProperty("--card");
       root.style.removeProperty("--color-fg-tertiary");
     }
   });

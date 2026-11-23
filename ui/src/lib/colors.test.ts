@@ -35,7 +35,9 @@ describe("typeColor", () => {
 
   it("hashes unknown types into the fixed fallback palette", () => {
     const color = typeColor("postmortem");
-    expect(color).toMatch(/^var\(--color-hash-[0-7]\)$/);
+    expect(color).toMatch(
+      /^var\(--color-hash-[0-7], var\(--category-[1-8]\)\)$/,
+    );
   });
 
   it("is deterministic for unknown types across calls and casing", () => {
@@ -46,8 +48,12 @@ describe("typeColor", () => {
   it("pins the hash function against accidental change", () => {
     // If these move, every custom type's color changes for every user —
     // that's a breaking visual change, not a refactor.
-    expect(typeColor("postmortem")).toBe("var(--color-hash-7)");
-    expect(typeColor("playbook")).toBe("var(--color-hash-6)");
+    expect(typeColor("postmortem")).toBe(
+      "var(--color-hash-7, var(--category-8))",
+    );
+    expect(typeColor("playbook")).toBe(
+      "var(--color-hash-6, var(--category-7))",
+    );
   });
 });
 

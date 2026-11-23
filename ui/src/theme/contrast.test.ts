@@ -21,10 +21,11 @@ import {
  * theme_test.go holds equal, so it is not checked twice here.
  *
  * The shell is checked in both modes too. Its values are no longer hex
- * in a stylesheet (DESIGN-0028 §13): 32 of its names are aliases onto
- * the design system's oklch tokens and 26 are docz's own. shellLookCss()
- * follows every var() into the package's tokens.css through oklch.ts and
- * writes the look as the hex block this test parses. It throws on a
+ * in a stylesheet (DESIGN-0028 §13): 32 of pkg/theme's names are the
+ * design system's oklch tokens, by charcoal.ts's derivation table, and
+ * 26 are docz's own. shellLookCss() follows every var() into the
+ * package's tokens.css through oklch.ts and writes the look as the hex
+ * block this test parses. It throws on a
  * token that resolves to nothing, so a lost mapping fails here and is
  * never skipped.
  *

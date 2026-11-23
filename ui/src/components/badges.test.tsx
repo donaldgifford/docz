@@ -87,7 +87,9 @@ describe("TypeDot", () => {
   it("gives a custom type one of the eight category colours, stably", () => {
     const first = render(<TypeDot type="postmortem" />);
     const colour = dot(first.container).style.backgroundColor;
-    expect(colour).toMatch(/^var\(--color-hash-[0-7]\)$/);
+    expect(colour).toMatch(
+      /^var\(--color-hash-[0-7], var\(--category-[1-8]\)\)$/,
+    );
     const second = render(<TypeDot type="PostMortem" />);
     expect(dot(second.container).style.backgroundColor).toBe(colour);
   });

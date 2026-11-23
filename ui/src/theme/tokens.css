@@ -55,33 +55,17 @@
 @import "@donaldgifford/design-system/parts/shell/sidebar-tree.css";
 @import "@donaldgifford/design-system/parts/shell/top-bar.css";
 
-/* docz's 58 token names, in two files (DESIGN-0028 §4). shell.css
- * aliases the 32 whose value is the package's, so chrome that still
- * writes a docz name keeps working until it moves (IMPL-0033 Phase 9
- * deletes the file). docz-tokens.css holds docz's own 26, light at
- * :root and dark under .dark. Both are unlayered, so they override the
- * @theme values below.
+/* docz's own tokens (DESIGN-0028 §4): the 26 names whose value is not
+ * the design system's, light at :root and dark under .dark. The chrome
+ * reads the type colours from it, as a `tone` docz hands a package
+ * part, and scripts/gen-charcoal.ts reads its dark block.
  *
  * Neither page sets data-theme on <html>: a document's theme (pkg/theme,
  * DESIGN-0025 §3) arrives scoped to its .docz-page through
  * __generated__/page.css, which DocSurface and DocPane import, and sets
- * these same names there. */
-@import "./shell.css";
+ * every one of pkg/theme's names there. */
 @import "./docz-tokens.css";
 
-/* The utility names docz writes: pkg/theme's public token names, which
- * page.css sets per document theme (bg-bg-raised, text-fg-prose,
- * text-t-rfc). `static`, and not `inline`, on purpose. `static` emits
- * every token even before a utility references it: the type and status
- * colour module resolves tokens at runtime through var(), so the full
- * set is a runtime contract. Not `inline`, so a utility compiles to
- * var(--color-bg-raised) and resolves where it is used: against the
- * shell in chrome and against the document's theme inside .docz-page.
- *
- * A shared name's value is the package's token, as in shell.css. An own
- * name's value is its dark one from docz-tokens.css, which overrides it
- * in both modes; Tailwind only needs something to register the name
- * against (shell.test.ts holds the two equal). */
 @theme static {
   /* Font stacks, self-hosted via @fontsource-variable in main.tsx.
      --font-sans and --font-mono name the two families the package
@@ -93,117 +77,93 @@
   --font-mono:
     "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-serif: "Source Serif 4 Variable", Charter, Georgia, serif;
-
-  /* Background scale */
-  --color-bg-base: var(--background);
-  --color-bg-raised: var(--card);
-  --color-bg-elevated: var(--secondary);
-  --color-bg-hover: #2d3137;
-  --color-bg-active: var(--surface-pressed);
-
-  /* Border scale */
-  --color-border-hairline: #262a31;
-  --color-border-default: var(--border);
-  --color-border-strong: var(--border-strong);
-
-  /* Foreground scale. tertiary and muted both render real text, so they
-     hold WCAG AA 4.5:1 on every surface (src/theme/contrast.test.ts and
-     the e2e axe scans). The step between them stays visible. */
-  --color-fg-primary: var(--foreground);
-  --color-fg-secondary: #c6cbd2;
-  --color-fg-tertiary: #abb2bb;
-  --color-fg-muted: var(--muted-foreground);
-  /* Reader body text (DESIGN-0005 OQ-10, amended on review): a step
-     brighter than fg-secondary so long-form prose holds up on dark
-     without touching UI secondary text; still a visible step below
-     fg-primary so bold and headings keep their lift. */
-  --color-fg-prose: #d3d8de;
-
-  /* Status colors (case-insensitive status convention maps onto these —
-     see DESIGN-0001 "Type and status color system") */
-  --color-st-draft: var(--warning);
-  --color-st-proposed: var(--info);
-  --color-st-active: var(--success);
-  --color-st-accepted: var(--success);
-  --color-st-adopted: var(--success);
-  --color-st-rejected: var(--destructive);
-  --color-st-deprecated: var(--muted-foreground);
-
-  /* GitHub-alert admonition tints (IMPL-0002 Phase 3): the matching
-     st-* color mixed into bg-base, PRECOMPUTED as hex so
-     contrast.test.ts can enforce label/body text on them
-     mathematically. Recompute when a source color changes:
-     round(base*(1-p) + kind*p) per channel. */
-  --color-adm-note-bg: #212733;
-  --color-adm-tip-bg: #1b2921;
-  --color-adm-important-bg: #262430;
-  --color-adm-warning-bg: #2a261c;
-  --color-adm-caution-bg: #2d2224;
-
-  /* Curated doc-type colors. Unknown types hash into the fallback
-     palette below, through src/lib/colors.ts. */
-  --color-t-rfc: #7aa2f7;
-  --color-t-adr: #e0af68;
-  --color-t-design: #2ac3de;
-  --color-t-impl: #ff9e64;
-  --color-t-investigation: #a887e3;
-  --color-t-mandate: #f7768e;
-  --color-t-guide: #9ece6a;
-  --color-t-principle: #7dcfff;
-  --color-t-policy: #bb9af7;
-  --color-t-framework: #73daca;
-  --color-t-working: #ff9e64;
-  /* DESIGN-0019: the sixth built-in, disabled by default. Pink-magenta,
-     a hue no other curated type uses. */
-  --color-t-runbook: #ff79c6;
-  /* DESIGN-0002 OQ-6b: the plain-documentation type (DOCS-XXXX from
-     INV-0003), pre-curated so its badge never falls into the hash
-     palette. Colors are never runtime-configurable (DESIGN-0001). */
-  --color-t-docs: #c0caf5;
-
-  /* Deterministic fallback palette for unknown doc types — indexed by
-     the hash in src/lib/colors.ts. Order matters; never reorder. The
-     package's eight category colours, which hold docz's values. */
-  --color-hash-0: var(--category-1);
-  --color-hash-1: var(--category-2);
-  --color-hash-2: var(--category-3);
-  --color-hash-3: var(--category-4);
-  --color-hash-4: var(--category-5);
-  --color-hash-5: var(--category-6);
-  --color-hash-6: var(--category-7);
-  --color-hash-7: var(--category-8);
-
-  /* Neither code-bg nor st-superseded is registered (IMPL-0033 Phase
-     7). The chrome's code surface is the package's: `bg-code-bg` is its
-     utility over --code-bg, which follows the page, and a docz
-     --color-code-bg here would take that utility and paint it dark in
-     both modes. A superseded status is the package's `ignored` badge.
-     Both names stay in docz-tokens.css for charcoal, and a document
-     reads its own theme's inside .docz-page. */
-
-  /* No radius here (DESIGN-0028 §3). The scale is the package's: sm, md,
-     and lg are its one 3px corner, which docz's bordered controls take
-     as rounded-sm, and rounded-pill is its fully rounded shape. The
-     wipe that used to sit here removed rounded-md and rounded-lg from
-     the build, and the package's components use both. */
-
-  /* Motion */
-  --ease-brand: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* docz's brand colour as a utility: bg-brand, text-brand, border-brand,
- * with brand-dim, brand-bg, brand-border, and on-brand (DESIGN-0028
- * question 2). The name `accent` is the package's: bg-accent compiles
- * to its hover surface wherever it is written, so docz's utility could
- * not keep it (accent-utility.test.ts fails on one). The CSS variable
- * --color-accent keeps its name, because it is pkg/theme's public token
- * and exported pages set it.
+/* The document-scoped utility names: pkg/theme's public token names
+ * (bg-bg-raised, text-fg-prose, text-t-rfc), for markup that sits
+ * inside a .docz-page, where page.css gives each name the document
+ * theme's value. They are written in src/markdown, doc-pane.tsx,
+ * doc-surface.tsx, and the review page's document view, and nowhere
+ * else: vocabulary.test.ts fails on one in chrome, which is written in
+ * the package's names (bg-card, text-muted-foreground, border).
  *
- * `inline`, so the utility compiles to var(--color-accent) itself and
- * resolves where it is used: the shell's primary in chrome, and the
- * document's own accent inside .docz-page. A --color-brand variable
- * would be computed once at :root and never see the document's. */
+ * `inline`, and each name is its own value, so a utility compiles to
+ * var(--color-bg-raised) and the name has no value at :root. (Where a
+ * rule below reads one, Tailwind also emits it at :root as itself,
+ * `--color-bg-base: var(--color-bg-base)`. That is a cycle, which CSS
+ * treats as no value, so a var() fallback still applies.) The chrome
+ * has no value for these names, which is the point: there is no alias
+ * from a docz name to a package token any more (IMPL-0033 Phase 9).
+ *
+ * Four of pkg/theme's names are not here, because the name is the
+ * package's utility and an entry would take it from the chrome:
+ * `accent` (docz's is `brand`, below), `code-bg`, `border-strong`, and
+ * `st-superseded` (the package's `ignored` badge). */
 @theme inline {
+  /* Surfaces. */
+  --color-bg-base: var(--color-bg-base);
+  --color-bg-raised: var(--color-bg-raised);
+  --color-bg-elevated: var(--color-bg-elevated);
+  --color-bg-hover: var(--color-bg-hover);
+  --color-bg-active: var(--color-bg-active);
+
+  /* Borders. border-strong is not here: it is the package's utility
+     too, and an entry would take it from the chrome. */
+  --color-border-hairline: var(--color-border-hairline);
+  --color-border-default: var(--color-border-default);
+
+  /* Text. fg-prose is a document's body text. */
+  --color-fg-primary: var(--color-fg-primary);
+  --color-fg-secondary: var(--color-fg-secondary);
+  --color-fg-tertiary: var(--color-fg-tertiary);
+  --color-fg-muted: var(--color-fg-muted);
+  --color-fg-prose: var(--color-fg-prose);
+
+  /* Statuses. */
+  --color-st-draft: var(--color-st-draft);
+  --color-st-proposed: var(--color-st-proposed);
+  --color-st-active: var(--color-st-active);
+  --color-st-accepted: var(--color-st-accepted);
+  --color-st-adopted: var(--color-st-adopted);
+  --color-st-rejected: var(--color-st-rejected);
+  --color-st-deprecated: var(--color-st-deprecated);
+
+  /* GitHub-alert admonition tints. */
+  --color-adm-note-bg: var(--color-adm-note-bg);
+  --color-adm-tip-bg: var(--color-adm-tip-bg);
+  --color-adm-important-bg: var(--color-adm-important-bg);
+  --color-adm-warning-bg: var(--color-adm-warning-bg);
+  --color-adm-caution-bg: var(--color-adm-caution-bg);
+
+  /* Document types (src/lib/colors.ts). */
+  --color-t-rfc: var(--color-t-rfc);
+  --color-t-adr: var(--color-t-adr);
+  --color-t-design: var(--color-t-design);
+  --color-t-impl: var(--color-t-impl);
+  --color-t-investigation: var(--color-t-investigation);
+  --color-t-mandate: var(--color-t-mandate);
+  --color-t-guide: var(--color-t-guide);
+  --color-t-principle: var(--color-t-principle);
+  --color-t-policy: var(--color-t-policy);
+  --color-t-framework: var(--color-t-framework);
+  --color-t-working: var(--color-t-working);
+  --color-t-runbook: var(--color-t-runbook);
+  --color-t-docs: var(--color-t-docs);
+
+  /* The fallback palette for a custom type. */
+  --color-hash-0: var(--color-hash-0);
+  --color-hash-1: var(--color-hash-1);
+  --color-hash-2: var(--color-hash-2);
+  --color-hash-3: var(--color-hash-3);
+  --color-hash-4: var(--color-hash-4);
+  --color-hash-5: var(--color-hash-5);
+  --color-hash-6: var(--color-hash-6);
+  --color-hash-7: var(--color-hash-7);
+
+  /* docz's brand colour: bg-brand, text-brand, border-brand, with
+     brand-dim, brand-bg, brand-border, and on-brand (DESIGN-0028
+     question 2). The CSS variable keeps the name --color-accent, which
+     is pkg/theme's public token and what exported pages set. */
   --color-brand: var(--color-accent);
   --color-brand-dim: var(--color-accent-dim);
   --color-brand-bg: var(--color-accent-bg);
@@ -213,32 +173,21 @@
 
 @layer components {
   /*
-   * MONO_CHIP_OFFSET — why every bordered mono chip needs lopsided
-   * vertical padding.
+   * MONO_CHIP_OFFSET: why a bordered mono chip needs lopsided vertical
+   * padding. The one chip left is inline code in prose (.doc-prose
+   * code, below); the chrome's chips are the design system's Badge.
    *
    * An inline box is as tall as the font's ascent plus descent, never
    * its line-height, and the glyphs sit inside that box wherever the
-   * font's metrics put them. Monaspace Neon at any size leaves
-   * 0.032em of air above its capitals and 0.19em below the baseline.
-   * Symmetric padding therefore renders every chip with its text
-   * jammed against the top edge — the complaint that produced this
-   * comment, twice.
+   * font's metrics put them. A mono leaves little air above its
+   * capitals and much more below the baseline (0.032em and 0.19em,
+   * measured on Monaspace Neon), so symmetric padding renders the chip
+   * with its text jammed against the top edge.
    *
    * Centering the cap band means making the paddings differ by
-   * 0.19 - 0.032 = 0.159em. This class carries that difference and is
-   * the ONLY vertical padding its elements should have: do not add a
-   * py-* utility beside it. Retuning the height is fine as long as the
-   * difference survives. Uppercase chips center exactly; mixed-case
-   * chips get descender clearance out of the bottom value.
+   * 0.19 - 0.032 = 0.159em. Retuning the height is fine as long as the
+   * difference survives.
    */
-  .mono-chip-y {
-    /* 0.169em apart rather than the bare 0.159em: the browser rounds
-       the font's ascent and descent to whole pixels, which biases the
-       gap downward at small sizes. Measured residual across the chip
-       sizes in use is now under half a pixel. */
-    padding-top: 0.31em;
-    padding-bottom: 0.141em;
-  }
 
   /* Reader prose, ported from mockup .doc-prose. Scoped descendant
      selectors because the content is pipeline-rendered markdown we
@@ -710,7 +659,8 @@
 }
 
 @layer base {
-  /* color-scheme is core.css's: dark under .dark, light without it. */
+  /* The page's surface, text, selection, focus ring, and colour scheme
+     are core.css's. What is left here is behaviour. */
   html {
     scroll-behavior: smooth;
     /* Reserve the viewport scrollbar gutter so short pages (type
@@ -720,34 +670,16 @@
   }
 
   /* Classic (non-overlay) scrollbars, thinned and recolored for inner
-     scroll regions like the repo nav rail — the default gutter reads
-     heavy against the dark surfaces. */
+     scroll regions. */
   * {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-border-strong) transparent;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    html {
-      scroll-behavior: auto;
-    }
-  }
-
-  body {
-    background: var(--color-bg-base);
-    color: var(--color-fg-primary);
-    font-family: var(--font-sans);
-    font-size: 16px;
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  ::selection {
-    background: var(--color-accent-bg);
+    scrollbar-color: var(--border-strong) transparent;
   }
 
   /* docz-review's annotations, painted with the CSS Custom Highlight
-     API (src/review/annotations.tsx) so no DOM enters the markdown. */
+     API (src/review/annotations.tsx) so no DOM enters the markdown. A
+     highlight takes its custom properties from the element it is in,
+     which is inside the document, so these are the document theme's. */
   ::highlight(docz-review) {
     background-color: var(--color-adm-warning-bg);
     text-decoration: underline var(--color-accent-dim);
@@ -766,10 +698,5 @@
     font-size: 11.5px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-  }
-
-  :focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
   }
 }

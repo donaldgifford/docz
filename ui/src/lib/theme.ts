@@ -6,7 +6,7 @@ import {
 
 /*
  * The theme docz-site shows documents in (DESIGN-0026 §3). The shell has
- * one look of its own (shell.css); a document sits inside .docz-page in
+ * one look, the design system's; a document sits inside .docz-page in
  * this theme, which is the deployment's: the runtime value server/serve.ts
  * injects from DOCZ_THEME, then the build-time VITE_THEME (dev and e2e),
  * then paper. There is no reader's pick (DESIGN-0026 Open Question 2).

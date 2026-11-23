@@ -20,8 +20,11 @@ import {
  *   tint     the accent at 10% and 30% (2 names)
  *   own      docz's own, read from docz-tokens.css's dark block (26)
  *
- * The first three are the 32 names shell.css aliases. The table lists
- * them in the order charcoal.css prints them, one group per paragraph.
+ * The first three are the 32 names whose value is the package's. The
+ * table lists them in the order charcoal.css prints them, one group
+ * per paragraph. It is also the only place a docz name is mapped onto
+ * a package token: src/test/shell-look.ts reads it to give the
+ * contrast test the shell's look under these names.
  */
 
 export const PACKAGE = "@donaldgifford/design-system";

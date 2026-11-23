@@ -172,11 +172,12 @@ export function mermaidInitConfig(): MermaidConfig {
  */
 export function mermaidThemeFromTokens(): Record<string, string> {
   const style = getComputedStyle(document.documentElement);
-  // The shell's shared tokens are the design system's (DESIGN-0028 §4),
-  // so a computed value arrives as `oklch(...)`. mermaid's colour
-  // library parses hex, rgb, and hsl only and fails the whole render on
-  // anything else, so oklch is converted here; a document theme's hex
-  // passes through.
+  // A diagram is drawn in the shell's colours, read from <html>: the
+  // design system's tokens (DESIGN-0028 §4), and docz's own
+  // --color-fg-tertiary from docz-tokens.css. A computed value of the
+  // package's arrives as `oklch(...)`. mermaid's colour library parses
+  // hex, rgb, and hsl only and fails the whole render on anything else,
+  // so oklch is converted here; docz's hex passes through.
   const read = (name: string, fallback: string): string => {
     const value = style.getPropertyValue(name).trim();
     if (value.length === 0) {
@@ -184,10 +185,10 @@ export function mermaidThemeFromTokens(): Record<string, string> {
     }
     return value.startsWith("oklch(") ? oklchToHex(value) : value;
   };
-  const bgRaised = read("--color-bg-raised", "#121722");
-  const bgElevated = read("--color-bg-elevated", "#181e2b");
-  const border = read("--color-border-strong", "#34405a");
-  const fgPrimary = read("--color-fg-primary", "#e8ebf0");
+  const bgRaised = read("--card", "#121722");
+  const bgElevated = read("--secondary", "#181e2b");
+  const border = read("--border-strong", "#34405a");
+  const fgPrimary = read("--foreground", "#e8ebf0");
   const fgTertiary = read("--color-fg-tertiary", "#8a92a5");
   return {
     primaryColor: bgElevated,

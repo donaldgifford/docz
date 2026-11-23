@@ -7,8 +7,10 @@
  *
  * This is the one hand-written source for them. The chrome reads the
  * type and alert colours from here, and scripts/gen-charcoal.ts reads
- * the dark block for pkg/theme's charcoal theme. The other 32 of the
- * shell's 58 names take their value from the package (shell.css).
+ * the dark block for pkg/theme's charcoal theme. The other 32 of
+ * pkg/theme's 58 names have the package's value in the shell, where
+ * the chrome reads the package's token by its own name
+ * (src/theme/charcoal.ts has the table).
  *
  * Each value is fitted to 4.5:1 on the package's surfaces, which
  * contrast.test.ts holds in both modes: the type and status colours

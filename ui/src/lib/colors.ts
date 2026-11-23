@@ -6,10 +6,12 @@
  *
  * A type's colour is a CSS custom-property reference: docz's own
  * `--color-t-*` (src/theme/docz-tokens.css in the chrome, the document's
- * theme inside a .docz-page), or one of eight `--color-hash-*` for a
- * custom type, which are the design system's `--category-1` to
- * `--category-8`. A status has no colour here: it takes one of the
- * design system's Badge variants.
+ * theme inside a .docz-page), or for a custom type one of eight
+ * `--color-hash-*`, falling back to the design system's `--category-1`
+ * to `--category-8`. Only a document theme sets `--color-hash-*`, so
+ * the reference reads the document's colour inside a .docz-page and the
+ * package's in the chrome. A status has no colour here: it takes one of
+ * the design system's Badge variants.
  */
 
 const CURATED_TYPES: Readonly<Record<string, string | undefined>> = {
@@ -53,7 +55,8 @@ export function typeColor(type: string): string {
   if (curated !== undefined) {
     return `var(--color-t-${curated})`;
   }
-  return `var(--color-hash-${String(fnv1a(key) % HASH_PALETTE_SIZE)})`;
+  const slot = fnv1a(key) % HASH_PALETTE_SIZE;
+  return `var(--color-hash-${String(slot)}, var(--category-${String(slot + 1)}))`;
 }
 
 type StatusGroup =
