@@ -53,7 +53,7 @@ let setting = PAPER_LIGHT;
 async function open(page: Page) {
   await page.goto(`${ORIGIN}/review.html?t=${TOKEN}`);
   await expect(
-    page.getByRole("heading", { name: "Review cache", level: 1 }),
+    page.getByRole("heading", { name: "Review cache", exact: true, level: 1 }),
   ).toBeVisible();
   const html = page.locator("html");
   await expect(html).not.toHaveAttribute("data-theme", /.*/);
@@ -312,6 +312,61 @@ for (const each of SETTINGS) {
       expect(message.trim()).toBe(
         "docz review: DESIGN-0001 Review cache, round 1: approved",
       );
+    });
+
+    test("the tabs, the status control, and a dialog act and pass axe", async ({
+      page,
+      request,
+    }) => {
+      await open(page);
+      const title = page.getByRole("heading", {
+        name: "Review cache",
+        exact: true,
+        level: 1,
+      });
+
+      // Each document in the round has a tab.
+      const documents = page.getByRole("tablist", { name: "Documents" });
+      await documents.getByRole("tab", { name: /DESIGN-0002/ }).click();
+      await expect(title).toBeHidden();
+      await documents.getByRole("tab", { name: /DESIGN-0001/ }).click();
+      await expect(title).toBeVisible();
+
+      // Another status is a draft, so approving has to discard it first.
+      const status = page.getByRole("tablist", { name: "Status" });
+      await expect(
+        status.getByRole("tab", { name: "Draft (current)" }),
+      ).toHaveAttribute("aria-selected", "true");
+      await status.getByRole("tab", { name: "In Review" }).click();
+      await page
+        .getByRole("button", { name: "Discard draft and approve" })
+        .click();
+      const dialog = page.getByRole("dialog", {
+        name: "Discard this draft and approve?",
+      });
+      await expect(dialog).toBeVisible();
+      // The dialog fades in, and axe reads a half-faded dialog as low
+      // contrast, so the check waits for it to arrive.
+      await dialog.evaluate((el) =>
+        Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)),
+      );
+      const results = await new AxeBuilder({ page }).analyze();
+      expect(
+        results.violations
+          .filter((v) => v.impact === "serious" || v.impact === "critical")
+          .map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.html) })),
+      ).toEqual([]);
+      await dialog.getByRole("button", { name: "Cancel" }).click();
+      await expect(dialog).toBeHidden();
+
+      await page.getByRole("button", { name: "Submit" }).click();
+      await expect(
+        page.getByText(/This round is closed: changes/),
+      ).toBeVisible();
+      const message = await (
+        await request.get(`${ORIGIN}/__fake/feedback`)
+      ).text();
+      expect(message).toContain("Status: set to In Review");
     });
   });
 }

@@ -1,7 +1,9 @@
-import { useId } from "react";
+import { SegmentedControl } from "@donaldgifford/design-system/blocks/segmented-control";
+
+import { LABEL_CLASS } from "@/review/controls";
 
 /*
- * The status select (DESIGN-0024 section 5): the type's statuses with
+ * The status control (DESIGN-0024 section 5): the type's statuses with
  * the document's current one chosen. Choosing another is actionable and
  * the feedback says "Status: set to …".
  */
@@ -17,30 +19,29 @@ export function StatusSelect({
   value: string;
   onChange: (status: string) => void;
 }) {
-  const id = useId();
-  // A document whose status is not one the type allows still shows it.
-  const options = statuses.includes(current)
-    ? statuses
-    : [current, ...statuses];
+  // A document whose status is not one the type allows still shows it;
+  // a document with no status has none to show.
+  const all =
+    current === "" || statuses.includes(current)
+      ? statuses
+      : [current, ...statuses];
   return (
-    <div className="flex items-center gap-2">
-      <label htmlFor={id} className="font-mono text-[12px] text-fg-tertiary">
+    <div className="flex flex-col gap-1.5">
+      <span aria-hidden className={LABEL_CLASS}>
         Status
-      </label>
-      <select
-        id={id}
+      </span>
+      <SegmentedControl
+        label="Status"
+        // A type may have more statuses than one row of the sidebar
+        // holds, so the segments wrap and each keeps a control's height.
+        className="h-auto! max-w-full flex-wrap justify-start [&_[data-slot=tabs-trigger]]:h-(--control-h)"
+        options={all.map((s) => ({
+          value: s,
+          label: s === current ? `${s} (current)` : s,
+        }))}
         value={value}
-        onChange={(e) => {
-          onChange(e.target.value);
-        }}
-        className="border border-border-default bg-bg-base px-2 py-[2px] font-mono text-[12.5px] text-fg-primary"
-      >
-        {options.map((s) => (
-          <option key={s} value={s}>
-            {s === current ? `${s} (current)` : s}
-          </option>
-        ))}
-      </select>
+        onValueChange={onChange}
+      />
     </div>
   );
 }

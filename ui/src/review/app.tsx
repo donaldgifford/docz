@@ -1,3 +1,10 @@
+import { InlineLoading } from "@donaldgifford/design-system/blocks/inline-state";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@donaldgifford/design-system/components/tabs";
 import { ModeToggle } from "@donaldgifford/design-system/shell/mode-toggle";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -11,13 +18,13 @@ import {
   type ReviewDocument,
 } from "@/review/api";
 import { useAppearance } from "@/lib/appearance";
-import { ReviewButton } from "@/review/controls";
+import { ConfirmDialog, ReviewButton, StateBadge } from "@/review/controls";
 import { DocumentReview } from "@/review/document-review";
 import { emptyDraft, type Draft } from "@/review/draft";
 
 /*
- * The review page (DESIGN-0024 section 5): a switcher over the round's
- * documents, one DocumentReview at a time, and Done. Drafts live here,
+ * The review page (DESIGN-0024 section 5): a tab per document in the
+ * round, one DocumentReview at a time, and Done. Drafts live here,
  * keyed by document, so a stale submission or a reload keeps them; each
  * is autosaved to the server, and the page warns before unload while
  * any draft holds something.
@@ -53,6 +60,7 @@ export function ReviewApp({ client }: { client: ReviewClient }) {
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [stale, setStale] = useState<Record<string, string>>({});
   const [closed, setClosed] = useState<string | null>(null);
+  const [leaving, setLeaving] = useState(false);
   const timers = useRef(new Map<string, number>());
 
   const documents = session.data?.documents ?? [];
@@ -120,14 +128,18 @@ export function ReviewApp({ client }: { client: ReviewClient }) {
     }
   };
 
+  const done = () => {
+    void client.done().then(() => {
+      setClosed("done");
+    });
+  };
+
   if (session.isPending) {
-    return (
-      <p className="p-8 font-mono text-fg-tertiary">Loading the review…</p>
-    );
+    return <InlineLoading className="p-8">Loading the review…</InlineLoading>;
   }
   if (session.isError) {
     return (
-      <p role="alert" className="p-8 font-mono text-st-rejected">
+      <p role="alert" className="p-8 text-base text-destructive">
         The review server refused this page: {session.error.message}. Open the
         link docz-review printed.
       </p>
@@ -135,7 +147,7 @@ export function ReviewApp({ client }: { client: ReviewClient }) {
   }
   if (closed !== null) {
     return (
-      <p className="p-8 font-mono text-fg-secondary">
+      <p className="p-8 text-base text-muted-foreground">
         The review session ended ({closed}). You can close this tab.
       </p>
     );
@@ -144,30 +156,25 @@ export function ReviewApp({ client }: { client: ReviewClient }) {
   const allDone = documents.every((d) => d.state !== "open");
   return (
     <>
-      <header className="sticky top-0 z-50 flex h-10 items-center gap-4 border-b border-border-default bg-bg-raised px-4">
-        <span className="flex items-center gap-[0.55rem]">
+      <header className="sticky top-0 z-40 flex h-11 items-center gap-4 border-b bg-background px-4">
+        <span className="flex items-center gap-2">
           <span
             aria-hidden
-            className="grid size-[20px] place-items-center rounded-sm bg-brand font-mono text-[12px] font-bold text-on-brand"
+            className="grid size-5 place-items-center rounded-sm bg-primary font-mono text-xs font-bold text-primary-foreground"
           >
             D
           </span>
-          <span className="text-[14px] font-semibold">docz</span>
-          <span className="text-[14px] text-fg-muted">· review</span>
+          <span className="text-base font-semibold text-foreground">docz</span>
+          <span className="text-base text-muted-foreground">· review</span>
         </span>
-        <div className="ml-auto flex items-center gap-2 text-[13px]">
+        <div className="ml-auto flex items-center gap-2">
           <ModeToggle mode={appearance.mode} onToggle={appearance.toggleMode} />
           <ReviewButton
             onClick={() => {
-              if (
-                !dirty ||
-                window.confirm(
-                  "Leave without an outcome for the open documents?",
-                )
-              ) {
-                void client.done().then(() => {
-                  setClosed("done");
-                });
+              if (dirty) {
+                setLeaving(true);
+              } else {
+                done();
               }
             }}
           >
@@ -175,51 +182,66 @@ export function ReviewApp({ client }: { client: ReviewClient }) {
           </ReviewButton>
         </div>
       </header>
-      <main className="mx-auto max-w-[1280px] p-6">
-        <nav
+      <ConfirmDialog
+        open={leaving}
+        onOpenChange={setLeaving}
+        title="Leave without an outcome for the open documents?"
+        description="Done ends the review session. A draft that was not submitted is not sent."
+        confirm="Leave"
+        onConfirm={done}
+      />
+      <Tabs
+        className="mx-auto max-w-[1280px] gap-6 p-6"
+        value={doc?.key ?? null}
+        onValueChange={(key) => {
+          setActive(String(key));
+        }}
+        render={<main />}
+      >
+        <TabsList
+          variant="line"
           aria-label="Documents"
-          className="mb-6 flex flex-wrap items-center gap-2"
+          className="max-w-full justify-start overflow-x-auto"
         >
           {documents.map((d) => (
-            <ReviewButton
-              key={d.key}
-              aria-current={d.key === doc?.key ? "page" : undefined}
-              variant={d.key === doc?.key ? "selected" : "plain"}
-              onClick={() => {
-                setActive(d.key);
-              }}
-            >
-              {d.key} · {d.state}
-            </ReviewButton>
+            <TabsTrigger key={d.key} value={d.key} data-document={d.key}>
+              {d.key}
+              <StateBadge state={d.state} />
+            </TabsTrigger>
           ))}
-        </nav>
+        </TabsList>
         {allDone && (
-          <p className="mb-4 font-mono text-[12.5px] text-fg-secondary">
+          <p className="text-xs text-muted-foreground">
             Every document has an outcome. You can close this tab.
           </p>
         )}
         {doc !== undefined && (
-          <DocumentReview
-            key={`${doc.key}:${doc.round}`}
-            doc={doc}
-            draft={draftFor(doc)}
-            onDraft={(next) => {
-              setDraft(doc, next);
-            }}
-            newSubmissionId={newSubmissionId}
-            stale={stale[doc.key] ?? null}
-            theme={theme}
-            onReload={() => {
-              void queryClient.invalidateQueries({ queryKey: SESSION_KEY });
-            }}
-            actions={{
-              submit: (body) => settle(doc, () => client.submit(doc.key, body)),
-              approve: (key) => settle(doc, () => client.approve(doc.key, key)),
-              dismiss: (key) => settle(doc, () => client.dismiss(doc.key, key)),
-            }}
-          />
+          <TabsContent value={doc.key}>
+            <DocumentReview
+              key={`${doc.key}:${doc.round}`}
+              doc={doc}
+              draft={draftFor(doc)}
+              onDraft={(next) => {
+                setDraft(doc, next);
+              }}
+              newSubmissionId={newSubmissionId}
+              stale={stale[doc.key] ?? null}
+              theme={theme}
+              onReload={() => {
+                void queryClient.invalidateQueries({ queryKey: SESSION_KEY });
+              }}
+              actions={{
+                submit: (body) =>
+                  settle(doc, () => client.submit(doc.key, body)),
+                approve: (key) =>
+                  settle(doc, () => client.approve(doc.key, key)),
+                dismiss: (key) =>
+                  settle(doc, () => client.dismiss(doc.key, key)),
+              }}
+            />
+          </TabsContent>
         )}
-      </main>
+      </Tabs>
     </>
   );
 }

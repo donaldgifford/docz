@@ -97,7 +97,7 @@ test("a review through the real server prints its record", async ({ page }) => {
   const run = await startReview(["DESIGN-0001", "--json"]);
   await page.goto(run.url);
   await expect(
-    page.getByRole("heading", { name: "Review cache", level: 1 }),
+    page.getByRole("heading", { name: "Review cache", exact: true, level: 1 }),
   ).toBeVisible();
   // The token left the location bar on load.
   expect(page.url()).not.toContain("t=");

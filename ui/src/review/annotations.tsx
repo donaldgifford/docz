@@ -5,7 +5,9 @@ import {
   rangeForAnchor,
   type SelectionAnchor,
 } from "@/review/anchor";
-import { ReviewButton } from "@/review/controls";
+import { Badge } from "@donaldgifford/design-system/components/badge";
+
+import { FIELD_CLASS, LABEL_CLASS, ReviewButton } from "@/review/controls";
 import { inDocumentOrder, type AnnotationDraft } from "@/review/draft";
 
 import type { Heading } from "@/cli/__generated__/inspect";
@@ -146,9 +148,9 @@ export function SelectionPopover({
       role="dialog"
       aria-label="Annotate selection"
       style={popoverPosition(pending.rect)}
-      className="fixed z-50 w-[320px] border border-border-strong bg-bg-elevated p-2 shadow-lg"
+      className="fixed z-50 w-[320px] rounded-lg border bg-card p-2 shadow-overlay"
     >
-      <p className="mb-2 line-clamp-2 font-mono text-[12px] text-fg-tertiary">
+      <p className="mb-2 line-clamp-2 font-mono text-xs text-muted-foreground">
         “{anchor.selection}”
       </p>
       {mode === null ? (
@@ -202,10 +204,10 @@ export function SelectionPopover({
             }
           }}
         >
-          <label className="block font-mono text-[12px] text-fg-tertiary">
+          <label className={LABEL_CLASS}>
             {mode === "comment" ? "Comment" : "Replace with"}
             <textarea
-              className="mt-1 block w-full border border-border-default bg-bg-base p-2 text-fg-primary"
+              className={FIELD_CLASS}
               value={text}
               onChange={(e) => {
                 setText(e.target.value);
@@ -248,10 +250,10 @@ export function DocumentComment({
         onComposing?.(false);
       }}
     >
-      <label className="font-mono text-[12px] text-fg-tertiary">
+      <label className={LABEL_CLASS}>
         Comment on the whole document
         <textarea
-          className="mt-1 block w-full border border-border-default bg-bg-base p-2 text-fg-primary"
+          className={FIELD_CLASS}
           value={text}
           onChange={(e) => {
             setText(e.target.value);
@@ -259,7 +261,11 @@ export function DocumentComment({
           }}
         />
       </label>
-      <ReviewButton type="submit" disabled={text.trim() === ""}>
+      <ReviewButton
+        type="submit"
+        className="self-start"
+        disabled={text.trim() === ""}
+      >
         Add document comment
       </ReviewButton>
     </form>
@@ -292,23 +298,23 @@ function AnnotationItem({
   return (
     <li
       data-annotation={annotation.id}
-      className="border border-border-hairline bg-bg-raised p-2"
+      className="rounded-lg border bg-card p-2"
     >
-      <p className="font-mono text-[11.5px] tracking-[0.04em] text-fg-tertiary uppercase">
-        {KIND_LABEL[annotation.kind]}
+      <p className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
+        <Badge variant="muted">{KIND_LABEL[annotation.kind]}</Badge>
         {annotation.anchor !== undefined &&
-          ` · line ${String(annotation.anchor.line)}`}
+          `line ${String(annotation.anchor.line)}`}
       </p>
       {annotation.anchor !== undefined && (
-        <p className="mt-1 line-clamp-2 text-[13px] text-fg-secondary">
+        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
           “{annotation.anchor.selection}”
         </p>
       )}
       {field !== null && (
-        <label className="mt-1 block font-mono text-[12px] text-fg-tertiary">
+        <label className={`mt-1 ${LABEL_CLASS}`}>
           {field === "replacement" ? "Replace with" : "Text"}
           <textarea
-            className="mt-1 block w-full border border-border-default bg-bg-base p-1 text-fg-primary"
+            className={FIELD_CLASS}
             value={annotation[field] ?? ""}
             onChange={(e) => {
               onEdit({ [field]: e.target.value });
@@ -316,7 +322,7 @@ function AnnotationItem({
           />
         </label>
       )}
-      <ReviewButton className="mt-1" onClick={onRemove}>
+      <ReviewButton size="sm" className="mt-1" onClick={onRemove}>
         Remove
       </ReviewButton>
     </li>
@@ -334,7 +340,7 @@ export function AnnotationList({
 }) {
   if (annotations.length === 0) {
     return (
-      <p className="font-mono text-[12px] text-fg-muted">
+      <p className="text-xs text-muted-foreground">
         Select text in the document to annotate it.
       </p>
     );

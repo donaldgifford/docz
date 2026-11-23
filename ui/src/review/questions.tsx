@@ -1,6 +1,7 @@
+import { Badge } from "@donaldgifford/design-system/components/badge";
 import { useId } from "react";
 
-import { ReviewButton } from "@/review/controls";
+import { FIELD_CLASS, LABEL_CLASS, ReviewButton } from "@/review/controls";
 
 import type { Question } from "@/cli/__generated__/inspect";
 import type { QuestionDraft } from "@/review/draft";
@@ -12,6 +13,10 @@ import type { QuestionDraft } from "@/review/draft";
  * when asked. A resolved question is read-only and shows its
  * resolution. An unanswered card sends nothing.
  */
+
+/** An option is a button as wide as its card, whose text may wrap. */
+const OPTION_CLASS =
+  "h-auto min-h-(--control-h) justify-start py-1 text-left whitespace-normal";
 
 type Answers = Record<number, QuestionDraft>;
 
@@ -62,13 +67,13 @@ function QuestionCard({
     <section
       aria-labelledby={`${id}-title`}
       data-question={question.number}
-      className="border border-border-hairline bg-bg-raised p-3"
+      className="rounded-lg border bg-card p-3"
     >
-      <h3 id={`${id}-title`} className="font-sans text-[14px] text-fg-primary">
+      <h3 id={`${id}-title`} className="text-base font-medium text-foreground">
         Q{question.number}. {question.title}
       </h3>
       {resolved !== null ? (
-        <p className="mt-2 font-mono text-[12.5px] text-fg-tertiary">
+        <p className="mt-2 font-mono text-xs text-muted-foreground">
           Resolved {resolved.date}: ({resolved.choice})
           {resolved.note === "" ? "" : ` ${resolved.note}`}
         </p>
@@ -85,14 +90,16 @@ function QuestionCard({
                 role="radio"
                 aria-checked={choice === o.letter}
                 variant={choice === o.letter ? "selected" : "plain"}
-                className="text-left"
+                className={OPTION_CLASS}
                 onClick={() => {
                   set({ choice: o.letter });
                 }}
               >
                 {o.letter}. {optionLabel(o.text)}
                 {o.recommended && (
-                  <span className="ml-2 text-brand">recommended</span>
+                  <Badge variant="info" className="ml-auto">
+                    recommended
+                  </Badge>
                 )}
               </ReviewButton>
             ))}
@@ -100,7 +107,7 @@ function QuestionCard({
               role="radio"
               aria-checked={choice === "other"}
               variant={choice === "other" ? "selected" : "plain"}
-              className="text-left"
+              className={OPTION_CLASS}
               onClick={() => {
                 set({ choice: "other" });
               }}
@@ -109,10 +116,10 @@ function QuestionCard({
             </ReviewButton>
           </div>
           {choice === "other" && (
-            <label className="mt-2 block font-mono text-[12px] text-fg-tertiary">
+            <label className={`mt-2 ${LABEL_CLASS}`}>
               Other answer
               <textarea
-                className="mt-1 block w-full border border-border-default bg-bg-base p-2 text-fg-primary"
+                className={FIELD_CLASS}
                 value={answer?.text ?? ""}
                 onChange={(e) => {
                   set({ text: e.target.value });
@@ -120,10 +127,10 @@ function QuestionCard({
               />
             </label>
           )}
-          <label className="mt-2 block font-mono text-[12px] text-fg-tertiary">
+          <label className={`mt-2 ${LABEL_CLASS}`}>
             Note
             <input
-              className="mt-1 block w-full border border-border-default bg-bg-base p-1 text-fg-primary"
+              className={FIELD_CLASS}
               value={answer?.note ?? ""}
               onChange={(e) => {
                 set({ note: e.target.value });
@@ -132,6 +139,7 @@ function QuestionCard({
           </label>
           {choice !== undefined && (
             <ReviewButton
+              size="sm"
               className="mt-2"
               onClick={() => {
                 onChange(undefined);
