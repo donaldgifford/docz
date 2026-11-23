@@ -689,15 +689,16 @@ This is the phase a reader sees.
   the specimen page first.
 - [ ] Compare each screen with `ui/design/mockup.html` in both modes and
   attach screenshots to the pull request.
-  **Deferred** - human required: there is no pull request to attach
-  screenshots to yet, and opening one is the author's call. Screenshots
-  of every screen in both modes were taken and looked at while building;
-  the comparison against the mockup, and what to accept where they
-  differ, is a person's.
+  **Deferred** - human required: the pull request is #238, opened
+  2026-11-23. Screenshots of every screen in both modes were taken and
+  looked at while building; the comparison against the mockup, and what
+  to accept where they differ, is a person's. The author does it on the
+  beta.
 - [ ] Cut a beta from this branch and check it on the homelab (question
   5 below), since the release workflows' token wiring runs nowhere else.
-  **Deferred** - human required: cutting a release and deploying to the
-  homelab are a person's to do.
+  **Deferred** - human required: `v2.7.0-beta.1` is cut from this
+  branch (chart `1.5.0-beta.1`), on the author's word of 2026-11-23.
+  Deploying it to the homelab and checking it there is the author's.
 - [x] `ui/CLAUDE.md`: rewrite the routing, shell, and per-type accent
   paragraphs.
 
@@ -931,9 +932,9 @@ are flipped.
   **Deferred** - human required: a report on another repository's plan
   is the author's to post. What it should carry is listed under the
   measurements below.
-- [ ] Open an issue for the app switcher fast follow, with the mockup's
+- [x] Open an issue for the app switcher fast follow, with the mockup's
   section and the runtime setting it needs.
-  **Deferred** - human required: opening an issue is the author's to do.
+  Opened 2026-11-23 as #239.
 - [ ] `docz status set`: DESIGN-0028 to Implemented and this document
   to Completed.
   **Deferred** - human required: the statuses flip once the branch is
