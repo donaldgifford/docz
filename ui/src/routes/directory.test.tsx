@@ -365,19 +365,19 @@ describe("directory route", () => {
       "showing 25 of 60",
     );
 
-    await user.click(screen.getByRole("button", { name: /load more/ }));
+    await user.click(screen.getByRole("button", { name: /load more/i }));
     await waitFor(() => {
       expect(router.state.location.search).toBe("?offset=25");
     });
     await screen.findByText("Synthetic doc 49");
     expect(screen.getAllByRole("listitem")).toHaveLength(50);
 
-    await user.click(screen.getByRole("button", { name: /load more/ }));
+    await user.click(screen.getByRole("button", { name: /load more/i }));
     await screen.findByText("Synthetic doc 59");
     expect(screen.getAllByRole("listitem")).toHaveLength(60);
     // Whole set shown — nothing left to load.
     expect(
-      screen.queryByRole("button", { name: /load more/ }),
+      screen.queryByRole("button", { name: /load more/i }),
     ).not.toBeInTheDocument();
   });
 
@@ -427,7 +427,7 @@ describe("directory route", () => {
       .getAllByRole("listitem")
       .map((row) => row.textContent);
 
-    await user.click(screen.getByRole("button", { name: /load more/ }));
+    await user.click(screen.getByRole("button", { name: /load more/i }));
     await screen.findByText("Synthetic doc 49");
     const after = screen.getAllByRole("listitem").map((row) => row.textContent);
 
@@ -490,7 +490,7 @@ describe("directory route", () => {
     expect(await screen.findByText("Something went wrong")).toBeInTheDocument();
 
     failing = false;
-    await user.click(screen.getByRole("button", { name: "retry" }));
+    await user.click(screen.getByRole("button", { name: "Retry" }));
     expect(await screen.findByText(SITE_DESIGN_TITLE)).toBeInTheDocument();
   });
 

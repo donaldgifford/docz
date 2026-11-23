@@ -6,6 +6,7 @@ import { TocList } from "@/components/doc-rail";
 import {
   ErrorPanel,
   NotFoundPanel,
+  ProseSkeleton,
   SessionRequiredRedirect,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
@@ -26,27 +27,6 @@ import { useRenderedSource } from "@/markdown/useRenderedMarkdown";
 
 const TITLE_CLASS =
   "mb-4 font-serif text-[clamp(1.7rem,4vw,2.3rem)] leading-[1.15] font-bold text-fg-primary";
-
-function ChangelogSkeleton() {
-  return (
-    <div
-      aria-hidden
-      data-testid="repo-changelog-skeleton"
-      className="animate-pulse"
-    >
-      <div className="mb-6 h-8 w-2/5 bg-bg-elevated" />
-      <div className="space-y-3">
-        {Array.from({ length: 6 }, (_, i) => (
-          <div
-            key={i}
-            className="h-3 bg-bg-raised"
-            style={{ width: `${String(96 - (i % 3) * 12)}%` }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 /**
  * The repo serves no changelog: either the `changelog:` block is not
@@ -144,11 +124,7 @@ export function Component() {
   if (repoQuery.isError) {
     return (
       <ErrorPanel
-        message={
-          repoQuery.error instanceof Error
-            ? repoQuery.error.message
-            : "Request failed"
-        }
+        error={repoQuery.error}
         onRetry={() => {
           void repoQuery.refetch();
         }}
@@ -161,7 +137,7 @@ export function Component() {
       // Wait for the repo detail so the panel can say WHY (config
       // disabled vs file absent) instead of guessing.
       return detail === undefined ? (
-        <ChangelogSkeleton />
+        <ProseSkeleton data-testid="repo-changelog-skeleton" />
       ) : (
         <QuietPanel file={cfg?.file} />
       );
@@ -169,11 +145,7 @@ export function Component() {
     if (changelogQuery.isError) {
       return (
         <ErrorPanel
-          message={
-            changelogQuery.error instanceof Error
-              ? changelogQuery.error.message
-              : "Request failed"
-          }
+          error={changelogQuery.error}
           onRetry={() => {
             void changelogQuery.refetch();
           }}
@@ -184,7 +156,7 @@ export function Component() {
       return <EmptyPanel file={cfg?.file ?? "CHANGELOG.md"} />;
     }
     if (rendered.data === undefined) {
-      return <ChangelogSkeleton />;
+      return <ProseSkeleton data-testid="repo-changelog-skeleton" />;
     }
     return (
       <DocSurface>

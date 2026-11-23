@@ -7,6 +7,7 @@ import { TocList } from "@/components/doc-rail";
 import {
   ErrorPanel,
   NotFoundPanel,
+  ProseSkeleton,
   SessionRequiredRedirect,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
@@ -26,23 +27,6 @@ import { useRenderedSource } from "@/markdown/useRenderedMarkdown";
  * misses); a 503 stays the retryable panel (DESIGN-0003). An empty
  * splat redirects home: the landing page IS the repo home.
  */
-
-function PageSkeleton() {
-  return (
-    <div aria-hidden data-testid="page-skeleton" className="animate-pulse">
-      <div className="mb-6 h-8 w-2/5 bg-bg-elevated" />
-      <div className="space-y-3">
-        {Array.from({ length: 6 }, (_, i) => (
-          <div
-            key={i}
-            className="h-3 bg-bg-raised"
-            style={{ width: `${String(96 - (i % 3) * 12)}%` }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function Component() {
   const params = useParams();
@@ -142,11 +126,7 @@ export function Component() {
     if (failed !== undefined) {
       return (
         <ErrorPanel
-          message={
-            failed.error instanceof Error
-              ? failed.error.message
-              : "Request failed"
-          }
+          error={failed.error}
           onRetry={() => {
             void failed.refetch();
           }}
@@ -154,7 +134,7 @@ export function Component() {
       );
     }
     if (page === undefined || rendered.data === undefined) {
-      return <PageSkeleton />;
+      return <ProseSkeleton data-testid="page-skeleton" />;
     }
     return (
       <>

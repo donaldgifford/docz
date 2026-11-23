@@ -1,7 +1,8 @@
+import { buttonVariants } from "@donaldgifford/design-system/components/button";
 import { useEffect } from "react";
 import { Link, isRouteErrorResponse, useRouteError } from "react-router";
 
-import { ERROR_PANEL_ACTION, ErrorPanelFrame } from "@/components/query-states";
+import { ErrorPanel } from "@/components/query-states";
 
 /*
  * Route error boundary (DESIGN-0006 Component 9).
@@ -13,6 +14,10 @@ import { ERROR_PANEL_ACTION, ErrorPanelFrame } from "@/components/query-states";
  * beacon, no global window.onerror or unhandledrejection handler:
  * those are only useful if something records them, and that decision
  * belongs with browser telemetry rather than here.
+ *
+ * The panel is the same ErrorPanel a failed query draws. The design
+ * system's own RouteErrorLayout is not used: its one action is Retry,
+ * and this boundary must not offer one.
  */
 
 /** Best-effort description of whatever the router handed us. */
@@ -40,15 +45,20 @@ export function RouteErrorBoundary() {
   }, [error]);
 
   return (
-    <ErrorPanelFrame message={describe(error)}>
+    <ErrorPanel error={new Error(describe(error))}>
       {/*
        * A link home is the ONLY affordance (OQ-5a). A "retry" that
        * re-rendered the same crashed route would simply throw again,
-       * which reads to the user as a button that does nothing.
+       * which reads to the user as a button that does nothing. It is a
+       * link in the button's classes, not a Button: Base UI's Button
+       * gives a rendered anchor the button role.
        */}
-      <Link to="/" className={ERROR_PANEL_ACTION}>
+      <Link
+        to="/"
+        className={buttonVariants({ variant: "outline", size: "sm" })}
+      >
         go home
       </Link>
-    </ErrorPanelFrame>
+    </ErrorPanel>
   );
 }

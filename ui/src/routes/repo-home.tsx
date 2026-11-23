@@ -1,3 +1,4 @@
+import { PageHeader } from "@donaldgifford/design-system/blocks/page-header";
 import { Link, useParams } from "react-router";
 
 import { useGetRepo, useGetRepoIndex } from "@/api/__generated__/docz-api";
@@ -6,6 +7,7 @@ import { TocList } from "@/components/doc-rail";
 import {
   ErrorPanel,
   NotFoundPanel,
+  ProseSkeleton,
   SessionRequiredRedirect,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
@@ -45,53 +47,35 @@ function GeneratedHome({ detail }: { detail: RepoDetail }) {
   const { facts } = useRepoFacts(detail.repo);
   return (
     <div>
-      <h1 className="mb-4 font-serif text-[clamp(1.7rem,4vw,2.3rem)] leading-[1.15] font-bold text-fg-primary">
-        {detail.repo.split("/").at(-1) ?? detail.repo}
-      </h1>
-      <p className="mb-8 text-[14px] text-fg-tertiary">
-        No <code className="font-mono text-[0.85em] text-brand">index.md</code>{" "}
-        configured in docz.yaml.
-      </p>
-
+      <PageHeader
+        className="px-0 pt-0"
+        title={detail.repo.split("/").at(-1) ?? detail.repo}
+        description={
+          <>
+            No <code className="font-mono">index.md</code> configured in
+            docz.yaml.
+          </>
+        }
+      />
       {arr(detail.types).map((docType) => {
         const count = facts?.typeCounts[docType.name] ?? 0;
         return (
-          <section
-            key={docType.name}
-            className="mb-6 border-t border-border-hairline pt-5"
-          >
-            <h2 className="mb-1 text-[17px] font-semibold text-fg-primary">
+          <section key={docType.name} className="mb-6 border-t pt-5">
+            <h2 className="mb-1 text-lg font-semibold">
               {docType.plural_label}{" "}
-              <span className="font-mono text-[13px] font-normal text-fg-muted">
+              <span className="font-mono text-xs font-normal text-muted-foreground">
                 {count}
               </span>
             </h2>
             <Link
               to={`/${detail.repo}/${docType.name}`}
-              className="font-mono text-[13.5px] text-brand hover:underline"
+              className="font-mono text-sm text-primary hover:underline"
             >
               browse {docType.dir}/ →
             </Link>
           </section>
         );
       })}
-    </div>
-  );
-}
-
-function HomeSkeleton() {
-  return (
-    <div aria-hidden data-testid="repo-home-skeleton" className="animate-pulse">
-      <div className="mb-6 h-8 w-3/5 bg-bg-elevated" />
-      <div className="space-y-3">
-        {Array.from({ length: 6 }, (_, i) => (
-          <div
-            key={i}
-            className="h-3 bg-bg-raised"
-            style={{ width: `${String(96 - (i % 3) * 12)}%` }}
-          />
-        ))}
-      </div>
     </div>
   );
 }
@@ -146,11 +130,7 @@ export function Component() {
   if (repoQuery.isError) {
     return (
       <ErrorPanel
-        message={
-          repoQuery.error instanceof Error
-            ? repoQuery.error.message
-            : "Request failed"
-        }
+        error={repoQuery.error}
         onRetry={() => {
           void repoQuery.refetch();
         }}
@@ -161,7 +141,7 @@ export function Component() {
   const content = (() => {
     if (noIndex) {
       return detail === undefined ? (
-        <HomeSkeleton />
+        <ProseSkeleton data-testid="repo-home-skeleton" />
       ) : (
         <GeneratedHome detail={detail} />
       );
@@ -169,11 +149,7 @@ export function Component() {
     if (indexQuery.isError) {
       return (
         <ErrorPanel
-          message={
-            indexQuery.error instanceof Error
-              ? indexQuery.error.message
-              : "Request failed"
-          }
+          error={indexQuery.error}
           onRetry={() => {
             void indexQuery.refetch();
           }}
@@ -181,7 +157,7 @@ export function Component() {
       );
     }
     if (rendered.data === undefined) {
-      return <HomeSkeleton />;
+      return <ProseSkeleton data-testid="repo-home-skeleton" />;
     }
     return (
       <DocSurface>
@@ -197,7 +173,7 @@ export function Component() {
       crumbs={[{ label: repoId }]}
       rail={
         <>
-          <div className="mb-3 border-b border-border-hairline pb-2 text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
+          <div className="mb-3 border-b border-border pb-2 text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
             On this page
           </div>
           <TocList toc={rendered.data?.toc ?? []} />

@@ -1,12 +1,14 @@
+import { PageHeader } from "@donaldgifford/design-system/blocks/page-header";
 import { Link, useParams } from "react-router";
 
 import { useGetRepo, useListDocs } from "@/api/__generated__/docz-api";
 import { NotFoundError, SessionRequiredError } from "@/api/fetcher";
-import { StatusPill } from "@/components/badges";
+import { StatusPill, TypeBadge } from "@/components/badges";
 import { TocList } from "@/components/doc-rail";
 import {
   ErrorPanel,
   NotFoundPanel,
+  ProseSkeleton,
   SessionRequiredRedirect,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
@@ -101,23 +103,6 @@ function DocsTable({
   );
 }
 
-function TypeSkeleton() {
-  return (
-    <div aria-hidden data-testid="repo-type-skeleton" className="animate-pulse">
-      <div className="mb-6 h-8 w-2/5 bg-bg-elevated" />
-      <div className="space-y-3">
-        {Array.from({ length: 5 }, (_, i) => (
-          <div
-            key={i}
-            className="h-3 bg-bg-raised"
-            style={{ width: `${String(94 - (i % 3) * 10)}%` }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function Component() {
   const { owner, repo, type } = useParams();
   if (owner === undefined || repo === undefined || type === undefined) {
@@ -154,7 +139,7 @@ export function Component() {
     const error = repoQuery.error ?? docsQuery.error;
     return (
       <ErrorPanel
-        message={error instanceof Error ? error.message : "Request failed"}
+        error={error}
         onRetry={() => {
           void (repoQuery.isError ? repoQuery.refetch() : docsQuery.refetch());
         }}
@@ -184,7 +169,7 @@ export function Component() {
       ]}
       rail={
         <>
-          <div className="mb-3 border-b border-border-hairline pb-2 text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
+          <div className="mb-3 border-b border-border pb-2 text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
             On this page
           </div>
           <TocList toc={toc} />
@@ -192,43 +177,47 @@ export function Component() {
       }
     >
       {docType === undefined || docs === undefined ? (
-        <TypeSkeleton />
+        <ProseSkeleton data-testid="repo-type-skeleton" />
       ) : (
-        <DocSurface accent={typeColor(docType.name)}>
-          <article className="doc-prose">
-            <h1 className="mb-4 font-serif text-[clamp(1.7rem,4vw,2.3rem)] leading-[1.15] font-bold text-fg-primary">
-              {docType.plural_label}
-            </h1>
-            <p className="mb-7 text-[14px] text-fg-tertiary">
-              {typeBlurb(docType)}
-            </p>
-
-            <h2 id="creating">Creating a new {docType.name}</h2>
-            {/* eslint-disable jsx-a11y/no-noninteractive-tabindex --
+        <>
+          {/* The page's title is chrome, in the shell's look; the body
+              below it is still a document, in the document theme. */}
+          <PageHeader
+            className="px-0 pt-0"
+            title={docType.plural_label}
+            meta={<TypeBadge type={docType.name} />}
+            description={typeBlurb(docType)}
+          />
+          <DocSurface accent={typeColor(docType.name)}>
+            <article className="doc-prose">
+              <h2 id="creating">Creating a new {docType.name}</h2>
+              {/* eslint-disable jsx-a11y/no-noninteractive-tabindex --
               scrollable region must be keyboard-reachable (see MarkdownPre) */}
-            <pre
-              role="region"
-              aria-label="code block"
-              tabIndex={0}
-              className="overflow-x-auto"
-            >
-              <code>{`$ docz create ${docType.name} "Your ${docType.name} title"`}</code>
-            </pre>
-            {/* eslint-enable jsx-a11y/no-noninteractive-tabindex */}
+              <pre
+                role="region"
+                aria-label="code block"
+                tabIndex={0}
+                className="overflow-x-auto"
+              >
+                <code>{`$ docz create ${docType.name} "Your ${docType.name} title"`}</code>
+              </pre>
+              {/* eslint-enable jsx-a11y/no-noninteractive-tabindex */}
 
-            <GenMarker>begin docz auto-generated</GenMarker>
-            <h2 id="all">All {docType.plural_label}</h2>
-            {docs.length === 0 ? (
-              <p className="font-mono text-[14px] text-fg-muted">
-                No {docType.name} documents yet —{" "}
-                <code>docz create {docType.name}</code> scaffolds the first one.
-              </p>
-            ) : (
-              <DocsTable repoId={repoId} docType={docType} docs={docs} />
-            )}
-            <GenMarker>end docz auto-generated</GenMarker>
-          </article>
-        </DocSurface>
+              <GenMarker>begin docz auto-generated</GenMarker>
+              <h2 id="all">All {docType.plural_label}</h2>
+              {docs.length === 0 ? (
+                <p className="font-mono text-[14px] text-fg-muted">
+                  No {docType.name} documents yet —{" "}
+                  <code>docz create {docType.name}</code> scaffolds the first
+                  one.
+                </p>
+              ) : (
+                <DocsTable repoId={repoId} docType={docType} docs={docs} />
+              )}
+              <GenMarker>end docz auto-generated</GenMarker>
+            </article>
+          </DocSurface>
+        </>
       )}
     </RepoFrame>
   );

@@ -122,7 +122,7 @@ describe("repo type page", () => {
     expect(await screen.findByText("Something went wrong")).toBeInTheDocument();
 
     failing = false;
-    await userEvent.click(screen.getByRole("button", { name: "retry" }));
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(
       await screen.findByRole("heading", { level: 1, name: "Designs" }),
     ).toBeInTheDocument();

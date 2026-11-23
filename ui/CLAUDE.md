@@ -214,6 +214,34 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   the changelog, and a type's index render in a `DocSurface` too.
   Tailwind's preflight strips link underlines, so pkg/theme underlines
   links itself (axe link-in-text-block).
+- **The design system's parts** (DESIGN-0028 §7, IMPL-0033 Phase 4 on).
+  Import a part by its subpath (`…/components/button`,
+  `…/blocks/empty-state`, `…/shell/…`), never a barrel, and add its
+  `parts/<kind>/<name>.css` line to `tokens.css`, in order:
+  `src/theme/parts.test.ts` fails on a part with no line (it would render
+  unstyled, and jsdom cannot see that) and on a line nothing imports.
+  The package ships TypeScript source, so `tsc -b` and eslint check it
+  with docz's settings. What docz keeps is the meaning, in small
+  wrappers:
+  `components/badges.tsx` (`StatusPill` is `Badge` in the variant
+  `statusVariant()` gives a status, by DESIGN-0028 §8's table;
+  `StatusBadge` a `Dot` and a label; `TypeDot` and `TypeBadge` take
+  `typeColor()` as a `tone`; a status has no colour of docz's own in the
+  chrome, and `Superseded` is the package's `ignored`) and
+  `components/query-states.tsx` (`EmptyPanel`, `NotFoundPanel`,
+  `ErrorPanel`, `ProseSkeleton`, and the re-exported `Skeleton` and
+  `InlineLoading`; a route takes every state from that module).
+  `ErrorPanel` takes the error itself: the package's `ErrorState` prints
+  `String(error)` for a rejection that is not an `Error`, so the wrapper
+  swaps in a `fallback` (default "Request failed"). A skeleton is
+  `aria-hidden` with a `data-testid`. Icons are Tabler components
+  (`icon={IconSearch}`, never an element), from `@tabler/icons-react`,
+  a direct dependency pinned to the version the package pins.
+  A heading through `render` (`<CardTitle render={<h1 />}>`) trips
+  `jsx-a11y/heading-has-content`, since the children arrive through the
+  part; disable that one line with the reason. Before IMPL-0033 Phase 7
+  the routes still sit in docz's own top bar and `max-w-[940px]` column,
+  so `PageHeader` takes `className="px-0"` there.
 - `tsconfig.json` is solution-style → `tsconfig.app.json` (browser code,
   strict + `noUncheckedIndexedAccess`) + `tsconfig.node.json` (config
   files). New config files at the repo root go in `tsconfig.node.json`'s
@@ -385,7 +413,10 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - Auth UX (Phase 5): `/login` (`src/routes/login.tsx`) renders provider
   buttons as REAL `<a href="/auth/login?provider=…">` anchors — the
   OAuth 302 must reach the browser, so never convert them to router
-  Links. The enabled set (`src/lib/authProviders.ts`; comma-separated,
+  Links, and never to the design system's `Button` with `render`: Base
+  UI's Button gives a rendered anchor `role="button"`. A link that looks
+  like a button is the anchor (or router `Link`) wearing
+  `buttonVariants({ variant, size })`, here and everywhere else. The enabled set (`src/lib/authProviders.ts`; comma-separated,
   keys `github`/`okta`/`keycloak`, unknown dropped, empty falls back to
   GitHub) resolves at RUNTIME from `window.__DOCZ_CONFIG__.authProviders`
   — injected into index.html by the prod server (`server/serve.ts` reads
@@ -518,7 +549,9 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   no `window.onerror`, no `unhandledrejection`, no beacon (a test
   verifies their absence). A link home is the ONLY affordance — a retry
   would re-render the same crashed route and throw again. Panel chrome
-  is shared via `ErrorPanelFrame` in query-states.tsx; the error state
+  is `ErrorPanel` in query-states.tsx, with the link home as its
+  `children` (the package's `RouteErrorLayout` is not used: its one
+  action is Retry); the error state
   is in the axe sweep.
 - Session classification (DESIGN-0003): auth chrome renders from
   `classifySession` (`src/lib/session.ts`) — pending / signed-in /

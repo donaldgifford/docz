@@ -15,6 +15,7 @@ import {
   ErrorPanel,
   NotFoundPanel,
   SessionRequiredRedirect,
+  Skeleton,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
 import { DocSurface } from "@/components/doc-surface";
@@ -30,16 +31,16 @@ function ArticleSkeleton() {
     <div
       aria-hidden
       data-testid="doc-skeleton"
-      className="mx-auto max-w-3xl animate-pulse px-6 py-10"
+      className="mx-auto max-w-3xl px-6 py-10"
     >
-      <div className="h-3 w-40 bg-bg-elevated" />
-      <div className="mt-6 h-8 w-4/5 bg-bg-elevated" />
-      <div className="mt-3 h-3 w-56 bg-bg-elevated" />
+      <Skeleton className="h-3 w-40" />
+      <Skeleton className="mt-6 h-8 w-4/5" />
+      <Skeleton className="mt-3 h-3 w-56" />
       <div className="mt-10 space-y-3">
         {Array.from({ length: 8 }, (_, i) => (
-          <div
+          <Skeleton
             key={i}
-            className="h-3 bg-bg-raised"
+            className="h-3"
             style={{ width: `${String(100 - (i % 4) * 9)}%` }}
           />
         ))}
@@ -225,7 +226,7 @@ export function Component() {
     const error = docQuery.error ?? rendered.error;
     return (
       <ErrorPanel
-        message={error instanceof Error ? error.message : "Request failed"}
+        error={error}
         onRetry={() => {
           void (docQuery.isError ? docQuery.refetch() : rendered.refetch());
         }}

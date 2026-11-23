@@ -19,8 +19,16 @@
 
 /* One line per package part imported under src/, in order.
  * parts.test.ts holds this list to the imports, both ways. */
+@import "@donaldgifford/design-system/parts/blocks/empty-state.css";
+@import "@donaldgifford/design-system/parts/blocks/error-state.css";
+@import "@donaldgifford/design-system/parts/blocks/inline-state.css";
 @import "@donaldgifford/design-system/parts/blocks/list-row.css";
+@import "@donaldgifford/design-system/parts/blocks/load-more.css";
+@import "@donaldgifford/design-system/parts/blocks/page-header.css";
 @import "@donaldgifford/design-system/parts/components/badge.css";
+@import "@donaldgifford/design-system/parts/components/button.css";
+@import "@donaldgifford/design-system/parts/components/card.css";
+@import "@donaldgifford/design-system/parts/components/skeleton.css";
 
 /* docz's 58 token names, in two files (DESIGN-0028 §4). shell.css
  * aliases the 32 whose value is the package's, so chrome that still

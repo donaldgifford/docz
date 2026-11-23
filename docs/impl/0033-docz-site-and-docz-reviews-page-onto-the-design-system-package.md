@@ -397,21 +397,21 @@ states, the page header, and load more.
   variant, and the type dot and chip by `tone` from `typeColor()`.
 - [x] Point the eight hash colours at `--category-1` to `--category-8`
   and confirm a custom type still gets a stable colour.
-- [ ] `query-states.tsx`: `EmptyState`, `ErrorState`, `Skeleton`, and
+- [x] `query-states.tsx`: `EmptyState`, `ErrorState`, `Skeleton`, and
   `InlineLoading`, with `SessionRequiredRedirect` unchanged.
-- [ ] `route-error.tsx` and `not-found.tsx` on the same parts.
-- [ ] Repository cards in `repos.tsx` as `Card`.
-- [ ] The page hero on `directory`, `repos`, `repo-home`, and
+- [x] `route-error.tsx` and `not-found.tsx` on the same parts.
+- [x] Repository cards in `repos.tsx` as `Card`.
+- [x] The page hero on `directory`, `repos`, `repo-home`, and
   `repo-type` as `PageHeader`.
-- [ ] Every "show more" as `LoadMore`.
-- [ ] `login.tsx` and `consent.tsx` on `Card` and `Button`, with each
+- [x] Every "show more" as `LoadMore`.
+- [x] `login.tsx` and `consent.tsx` on `Card` and `Button`, with each
   provider button still a real `<a href="/auth/login?...">` through
   `Button`'s `render` prop. Keep the test that asserts the anchor.
 - [x] Rewrite `badges.test.tsx` to assert the variant and tone a status
   and a type produce.
-- [ ] Move the classes in the files touched here from docz's names to
+- [x] Move the classes in the files touched here from docz's names to
   the package's.
-- [ ] Record the eager JavaScript size in the pull request.
+- [x] Record the eager JavaScript size in the pull request.
 
 <!--docz:tasks:end-->
 
@@ -426,6 +426,32 @@ states, the page header, and load more.
   `just ui local-up`.
 - The unit suite and both axe sweeps pass in both modes.
 - The eager JavaScript is under 165 KB.
+
+Measured on 2026-11-23. The eager JavaScript is 140.6 KB gzipped, against
+124.1 KB after Phase 2, with ten parts imported: `Badge`, `Button`,
+`Card`, `Skeleton`, `EmptyState`, `ErrorState`, `InlineLoading`,
+`ListRow` (for `Dot`), `LoadMore`, and `PageHeader`. The unit suite
+(1,531 tests) and the e2e suite (84, with full-rule axe in both modes)
+pass.
+
+Three things differ from the list above:
+
+- A sign-in provider button is an anchor wearing `buttonVariants`, not
+  `Button` with `render`. Base UI's `Button` gives a rendered anchor the
+  button role, the package's README says a link styled as a button stays
+  a link, and the test that asserts the anchor asserts its link role.
+  The route error's "go home" and the 404's link are drawn the same way.
+- The route error boundary uses `ErrorState`, not the package's
+  `RouteErrorLayout`, whose one action is Retry. The boundary must not
+  offer a retry, so its link home sits under the panel.
+- `@tabler/icons-react` is now a direct dependency, pinned to the
+  version the package pins (3.49.0), because the package's blocks take
+  an icon as a Tabler component.
+
+The sign-in flow against a real docz-api (`just ui local-up`) is
+**deferred - human required**: it needs the local docz-api stack and a
+person to sign in through a provider. The hand check against
+`ui/design/mockup.html` is owed for the pull request, as in Phase 2.
 
 <!--docz:criteria:end-->
 <!--docz:phase:end-->

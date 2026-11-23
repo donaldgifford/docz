@@ -1,3 +1,12 @@
+import { buttonVariants } from "@donaldgifford/design-system/components/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@donaldgifford/design-system/components/card";
+import { cn } from "@donaldgifford/design-system/lib/utils";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 
@@ -24,17 +33,39 @@ import { classifySession } from "@/lib/session";
  * buttons unchanged (OQ-3a: zero added latency for normal
  * deployments; a none-mode cold visit at worst flashes buttons that
  * 404 exactly as they do today).
+ *
+ * Each button is an anchor wearing the design system's button classes
+ * (buttonVariants), not its Button with `render`: Base UI's Button gives
+ * a rendered anchor the button role, and these must stay links, to the
+ * browser and to a screen reader alike.
  */
 
-function LoginCard({ children }: { children: ReactNode }) {
+function LoginCard({
+  title,
+  titleTestId,
+  description,
+  children,
+}: {
+  title: string;
+  titleTestId?: string;
+  description: ReactNode;
+  children: ReactNode;
+}) {
   return (
-    <main className="mx-auto flex max-w-[420px] flex-col px-5 pt-[14vh]">
-      <div className="border border-border-default bg-bg-raised px-8 py-8 rounded-sm">
-        <div className="mb-1 font-mono text-[13.5px] tracking-[0.05em] text-brand">
-          / docz <span className="text-fg-muted">/</span> sign in
-        </div>
-        {children}
-      </div>
+    <main className="mx-auto flex max-w-sm flex-col px-5 pt-[14vh]">
+      <Card className="gap-5 py-6">
+        <CardHeader className="px-6">
+          <CardTitle
+            // eslint-disable-next-line jsx-a11y/heading-has-content -- CardTitle hands the h1 its children
+            render={<h1 data-testid={titleTestId} />}
+            className="text-lg/none"
+          >
+            {title}
+          </CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </CardHeader>
+        <CardContent className="px-6">{children}</CardContent>
+      </Card>
     </main>
   );
 }
@@ -47,20 +78,17 @@ export function Component() {
 
   if (state.kind === "anonymous") {
     return (
-      <LoginCard>
-        <h1
-          data-testid="login-auth-disabled"
-          className="mb-2 text-[22px] font-semibold tracking-[-0.01em] text-fg-primary"
-        >
-          Authentication is disabled
-        </h1>
-        <p className="mb-6 text-[14px] text-fg-tertiary">
-          This deployment runs without sign-in — everything here is readable
-          without an account.
-        </p>
+      <LoginCard
+        title="Authentication is disabled"
+        titleTestId="login-auth-disabled"
+        description="This deployment runs without sign-in — everything here is readable without an account."
+      >
         <Link
           to="/"
-          className="block border border-border-default px-4 py-[0.55rem] text-center font-mono text-[14px] text-fg-secondary hover:border-border-strong hover:text-fg-primary rounded-sm"
+          className={cn(
+            buttonVariants({ variant: "outline", size: "lg" }),
+            "w-full",
+          )}
         >
           Browse the docs
         </Link>
@@ -69,14 +97,10 @@ export function Component() {
   }
 
   return (
-    <LoginCard>
-      <h1 className="mb-2 text-[22px] font-semibold tracking-[-0.01em] text-fg-primary">
-        Sign in
-      </h1>
-      <p className="mb-6 text-[14px] text-fg-tertiary">
-        Authentication is handled by docz-api — no tokens ever reach this app.
-      </p>
-
+    <LoginCard
+      title="Sign in"
+      description="Authentication is handled by docz-api — no tokens ever reach this app."
+    >
       <ul className="flex flex-col gap-2">
         {providers.map((provider, index) => (
           <li key={provider.key}>
@@ -86,15 +110,18 @@ export function Component() {
               onClick={() => {
                 rememberProvider(provider.key);
               }}
-              className={`block border px-4 py-[0.55rem] text-center font-mono text-[14px] ${
-                index === 0
-                  ? "border-brand-border bg-brand-bg text-brand hover:border-brand"
-                  : "border-border-default text-fg-secondary hover:border-border-strong hover:text-fg-primary"
-              }`}
+              className={cn(
+                buttonVariants({
+                  // The first is the last one used, or GitHub.
+                  variant: index === 0 ? "default" : "outline",
+                  size: "lg",
+                }),
+                "w-full",
+              )}
             >
               Continue with {provider.label}
               {provider.key === lastUsed && (
-                <span className="text-fg-muted"> · last used</span>
+                <span className="opacity-80"> · last used</span>
               )}
             </a>
           </li>

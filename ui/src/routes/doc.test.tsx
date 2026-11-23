@@ -100,7 +100,7 @@ describe("reader four-state matrix", () => {
       await screen.findByText("meilisearch is on fire"),
     ).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "retry" }));
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
     await findRenderedDesign0001();
   });
 
@@ -129,7 +129,7 @@ describe("reader four-state matrix", () => {
     ).not.toBeInTheDocument();
     expect(sessionStorage.getItem("docz:auth:return-to")).toBeNull();
 
-    await userEvent.click(screen.getByRole("button", { name: "retry" }));
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
     await findRenderedDesign0001();
   });
 });

@@ -1,3 +1,6 @@
+import { LoadMore } from "@donaldgifford/design-system/blocks/load-more";
+import { PageHeader } from "@donaldgifford/design-system/blocks/page-header";
+import { Button } from "@donaldgifford/design-system/components/button";
 import { keepPreviousData } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
@@ -6,7 +9,12 @@ import { useSearchDocs } from "@/api/__generated__/docz-api";
 import { SessionRequiredError } from "@/api/fetcher";
 import { StatusPill } from "@/components/badges";
 import { RepoPicker, TypeChips } from "@/components/directory-controls";
-import { ErrorPanel, SessionRequiredRedirect } from "@/components/query-states";
+import {
+  EmptyPanel,
+  ErrorPanel,
+  SessionRequiredRedirect,
+  Skeleton,
+} from "@/components/query-states";
 import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
 import { usePrefetchPage } from "@/hooks/usePrefetchPage";
 import {
@@ -42,22 +50,15 @@ const Q_DEBOUNCE_MS = 200;
  * rather than floating against a taller middle.
  */
 const ROW_CARD =
-  "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border border-border-hairline bg-bg-raised px-4 py-3 transition-colors hover:border-border-default hover:bg-bg-elevated md:grid-cols-[minmax(0,1fr)_132px_118px] md:gap-6";
+  "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border border-border bg-card px-4 py-3 transition-colors hover:border-border-strong hover:bg-muted md:grid-cols-[minmax(0,1fr)_132px_118px] md:gap-6";
 
-function DirectoryHero({ repo }: { repo: string | null }) {
+function DirectoryHero() {
   return (
-    <header className="pt-10 pb-2">
-      <div className="font-mono text-[13.5px] tracking-[0.05em] text-brand">
-        / docz <span className="text-fg-muted">/</span> {repo ?? "all repos"}
-      </div>
-      <h1 className="mt-2 mb-1 text-[clamp(1.6rem,4vw,2rem)] font-semibold tracking-[-0.01em] text-fg-primary">
-        Documentation
-      </h1>
-      <p className="text-[14px] text-fg-tertiary">
-        Designs, plans, RFCs, and decisions — across every repo registered with
-        the API.
-      </p>
-    </header>
+    <PageHeader
+      className="px-0"
+      title="Documentation"
+      description="Designs, plans, RFCs, and decisions — across every repo registered with the API."
+    />
   );
 }
 
@@ -105,7 +106,7 @@ function SearchBox({
       onChange={(event) => {
         setDraft(event.target.value);
       }}
-      className="mt-5 w-full border border-border-default bg-bg-raised px-3 py-2 font-mono text-[14px] text-fg-primary placeholder:text-fg-muted focus:border-border-strong focus:outline-none rounded-sm"
+      className="w-full border border-border bg-card px-3 py-2 font-mono text-[14px] text-foreground placeholder:text-muted-foreground focus:border-border-strong focus:outline-none rounded-sm"
     />
   );
 }
@@ -128,7 +129,7 @@ function UpdatedCell({ hit }: { hit: SearchHit }) {
   const stamp = formatUpdatedStamp(iso);
   if (stamp === undefined) {
     return (
-      <span className="hidden text-right font-mono text-[12.5px] text-fg-muted md:block">
+      <span className="hidden text-right font-mono text-[12.5px] text-muted-foreground md:block">
         —
       </span>
     );
@@ -136,10 +137,10 @@ function UpdatedCell({ hit }: { hit: SearchHit }) {
   return (
     <time
       dateTime={iso}
-      className="hidden text-right font-mono text-[12.5px] whitespace-nowrap text-fg-tertiary md:block"
+      className="hidden text-right font-mono text-[12.5px] whitespace-nowrap text-muted-foreground md:block"
     >
       {stamp.date}
-      <span className="mt-[3px] block text-[11.5px] text-fg-muted">
+      <span className="mt-[3px] block text-[11.5px] text-muted-foreground">
         {stamp.time}
       </span>
     </time>
@@ -175,7 +176,7 @@ function HitRow({ hit }: { hit: SearchHit }) {
               reader scan sideways to assemble it. */}
           <span
             title={isPage ? `${hit.repo}/${hit.path}` : hit.repo}
-            className="block truncate font-mono text-[12px] tracking-[0.08em] text-fg-muted uppercase"
+            className="block truncate font-mono text-[12px] tracking-[0.08em] text-muted-foreground uppercase"
           >
             {isPage ? "page" : hit.doc_id}
             {/* Inherits fg-muted: every token in this line is
@@ -186,7 +187,7 @@ function HitRow({ hit }: { hit: SearchHit }) {
             </span>
             <span className="normal-case">{repoName}</span>
           </span>
-          <span className="mt-[3px] block truncate text-[16px] text-fg-primary">
+          <span className="mt-[3px] block truncate text-[16px] text-foreground">
             {hit.title}
           </span>
         </span>
@@ -204,21 +205,21 @@ function SkeletonRows() {
     <div
       aria-hidden
       data-testid="directory-skeleton"
-      className="mt-4 animate-pulse space-y-2"
+      className="mt-4 space-y-2"
     >
       {Array.from({ length: 6 }, (_, i) => (
         <div key={i} className={ROW_CARD}>
           <div>
-            <div className="h-3 w-20 bg-bg-elevated" />
-            <div
-              className="mt-2 h-4 bg-bg-elevated"
+            <Skeleton className="h-3 w-20" />
+            <Skeleton
+              className="mt-2 h-4"
               style={{ width: `${String(72 - (i % 3) * 14)}%` }}
             />
           </div>
-          <div className="h-5 w-20 bg-bg-elevated md:justify-self-center" />
+          <Skeleton className="h-5 w-20 md:justify-self-center" />
           <div className="hidden justify-self-end md:block">
-            <div className="h-3 w-[88px] bg-bg-elevated" />
-            <div className="mt-2 ml-auto h-3 w-14 bg-bg-elevated" />
+            <Skeleton className="h-3 w-22" />
+            <Skeleton className="mt-2 ml-auto h-3 w-14" />
           </div>
         </div>
       ))}
@@ -292,7 +293,7 @@ export function Component() {
 
   return (
     <main className="mx-auto max-w-[940px] px-5">
-      <DirectoryHero repo={state.repo} />
+      <DirectoryHero />
       <SearchBox value={state.q} onCommit={commitQuery} />
 
       <div className="mt-5 flex flex-wrap items-center gap-4">
@@ -309,7 +310,7 @@ export function Component() {
             onClick={() => {
               applyFilters(EMPTY_SEARCH_STATE);
             }}
-            className="font-mono text-[12.5px] text-fg-muted hover:text-fg-primary"
+            className="font-mono text-[12.5px] text-muted-foreground hover:text-foreground"
           >
             clear filters ✕
           </button>
@@ -317,12 +318,10 @@ export function Component() {
         {result !== undefined && (
           <div
             data-testid="results-count"
-            className="ml-auto font-mono text-[13px] text-fg-tertiary"
+            className="ml-auto font-mono text-[13px] text-muted-foreground"
           >
             showing{" "}
-            <b className="font-medium text-fg-secondary">
-              {result.hits.length}
-            </b>{" "}
+            <b className="font-medium text-foreground">{result.hits.length}</b>{" "}
             of {result.estimated_total_hits}
             {/* Source split only when pages are present, so non-opted
                 deployments render today's exact line (OQ-3a). */}
@@ -342,11 +341,8 @@ export function Component() {
       {searchQuery.isError ? (
         <div className="mt-6">
           <ErrorPanel
-            message={
-              searchQuery.error instanceof Error
-                ? searchQuery.error.message
-                : "Search failed"
-            }
+            error={searchQuery.error}
+            fallback="Search failed"
             onRetry={() => {
               void searchQuery.refetch();
             }}
@@ -356,29 +352,26 @@ export function Component() {
         <SkeletonRows />
       ) : result.hits.length === 0 ? (
         hasActiveFilters(state) ? (
-          <div className="mx-auto my-16 w-max max-w-full border border-border-default bg-bg-raised px-8 py-6 text-center rounded-sm">
-            <p className="font-mono text-[14px] text-fg-secondary">
-              No matches
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                applyFilters(EMPTY_SEARCH_STATE);
-              }}
-              className="mt-3 border border-border-strong px-4 py-1 font-mono text-[13px] text-fg-secondary hover:bg-bg-hover"
-            >
-              clear filters
-            </button>
-          </div>
+          <EmptyPanel
+            title="No matches"
+            description="Nothing matches this search and these filters."
+            action={
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  applyFilters(EMPTY_SEARCH_STATE);
+                }}
+              >
+                clear filters
+              </Button>
+            }
+          />
         ) : (
-          <div className="mx-auto my-16 w-max max-w-full border border-border-default bg-bg-raised px-8 py-6 text-center rounded-sm">
-            <p className="font-mono text-[14px] text-fg-secondary">
-              No documents yet
-            </p>
-            <p className="mt-2 max-w-96 text-[14px] text-fg-tertiary">
-              Onboard a repo with the docz GitHub App to index its docs here.
-            </p>
-          </div>
+          <EmptyPanel
+            title="No documents yet"
+            description="Onboard a repo with the docz GitHub App to index its docs here."
+          />
         )
       ) : (
         <div className="mt-4 mb-16">
@@ -387,26 +380,23 @@ export function Component() {
               <HitRow key={hitKey(hit)} hit={hit} />
             ))}
           </ul>
-          {result.hits.length < result.estimated_total_hits && (
-            <button
-              type="button"
-              disabled={searchQuery.isFetching}
-              onClick={() => {
-                // Pushed: back shrinks the window again.
-                setSearchParams(
-                  serializeSearchState({
-                    ...state,
-                    offset: state.offset + PAGE_SIZE,
-                  }),
-                );
-              }}
-              className="mx-auto mt-6 block border border-border-default px-5 py-[0.45rem] font-mono text-[13px] text-fg-secondary hover:border-border-strong hover:text-fg-primary disabled:opacity-50 rounded-sm"
-            >
-              {searchQuery.isFetching
-                ? "loading…"
-                : `load more · ${String(result.estimated_total_hits - result.hits.length)} remaining`}
-            </button>
-          )}
+          <LoadMore
+            className="mt-4 border-t-0 px-0"
+            noun="documents"
+            loaded={result.hits.length}
+            total={result.estimated_total_hits}
+            hasMore={result.hits.length < result.estimated_total_hits}
+            loading={searchQuery.isFetching}
+            onMore={() => {
+              // Pushed: back shrinks the window again.
+              setSearchParams(
+                serializeSearchState({
+                  ...state,
+                  offset: state.offset + PAGE_SIZE,
+                }),
+              );
+            }}
+          />
         </div>
       )}
     </main>
