@@ -23,6 +23,10 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Drop the Go patch version from the server's pin note
 - *(inv)* Sketch docz-site on the design system for INV-0036
 - *(inv)* Record the design-system spike in INV-0036
+- *(inv)* Conclude INV-0036 with the Go side and the upstream issue
+- *(inv)* Record design-system#32's answer and 0.5.0 in INV-0036
+- *(inv)* Add the 0.5.0 release note's three cautions to INV-0036
+- *(inv)* Add design-system 0.6.0 to INV-0036
 
 ## [2.6.2] - 2026-11-05
 

@@ -1,7 +1,7 @@
 ---
 id: INV-0036
 title: "docz-site on the shared design system, or docz as a backend of repo-guardian's UI"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-11-19
 ---
@@ -29,6 +29,8 @@ created: 2026-11-19
   - [Observation 8: what B moves, and what it leaves behind](#observation-8-what-b-moves-and-what-it-leaves-behind)
   - [Observation 9: what a sketch of A shows](#observation-9-what-a-sketch-of-a-shows)
   - [Observation 10: the spike](#observation-10-the-spike)
+  - [Observation 11: the Go side](#observation-11-the-go-side)
+  - [Observation 12: the package's answer, and 0.5.0](#observation-12-the-packages-answer-and-050)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
 - [Open Questions](#open-questions)
@@ -111,7 +113,7 @@ migration twice.
    bundle budget, and `Dockerfile.ui` with the registry token. Done;
    Observation 10.
 6. Design the Go side of A: how `pkg/theme`'s `charcoal` is derived from
-   the package's `tokens.css` and held to it. Not done.
+   the package's `tokens.css` and held to it. Done; Observation 11.
 7. Sketch A as static HTML on the package's tokens: docz-site's screens
    with the package's parts, and a page of the parts docz has that the
    package lacks. Done; Observation 9.
@@ -128,7 +130,7 @@ local branch, `chore/spike-design-system`, which is not for merge.
 
 | Component | Version / Value |
 | --------- | --------------- |
-| `@donaldgifford/design-system` | 0.3.2 (`064bb78`), GitHub Packages |
+| `@donaldgifford/design-system` | 0.3.2 (`064bb78`), GitHub Packages; 0.5.0 and 0.6.0 for Observation 12 |
 | repo-guardian | `main` at `cc97e3f`, UI on the package at 0.3.2 |
 | docz | `main` at `0aa53f1` |
 | docz-site | React 19, react-router 8, Tailwind 4.3, Vite 8, vitest in jsdom |
@@ -425,6 +427,155 @@ What the spike found beyond the four checks:
   without the secret succeeded from cache, so CI has to pass the secret
   on every build, not only the first.
 
+### Observation 11: the Go side
+
+Open question 3 chose a recipe that generates `charcoal.css` from the
+package. Read against the package at 0.3.2 and docz at `0744925`, that
+recipe is smaller than Observation 6 feared.
+
+- **The source is `tokens.json`, not `tokens.css`.** The package ships
+  one, generated from its stylesheet, with a `light` and a `dark` set
+  whose values are oklch or a `{name}` reference to another token. A
+  generator resolves the references and needs no CSS parser.
+- **oklch stops at the generator.** It converts each value to sRGB hex
+  and writes hex, so `pkg/theme`'s tests, `contrast.test.ts`, and the
+  export's goldens keep reading what they read today, and `pkg/theme`
+  stays standard library only.
+- **The shell already is the generated file.** `shell.css`'s dark block
+  has the same 58 token names as `charcoal.css`. Eleven come straight
+  from the package and convert to the shell's hex exactly, in both
+  modes. Nine more follow from those by rule in the dark set (`link` is
+  the accent, `st-draft` is `warn`, `st-deprecated` is `fg-muted`, and
+  so on), and
+  the two accent tints are the accent at 10% and 30%. That is 22 of 58
+  from the package. The other 36 are docz's own: four surface and border
+  steps, three text steps, `accent-dim`, `st-superseded`, five alert
+  backgrounds, thirteen type colours, eight hash colours, and `code-bg`,
+  all already fitted to 4.5:1 on the package's surfaces.
+- **`charcoal` moves a little.** It was written from repo-guardian's
+  DESIGN-0036 by hand, and only three of its 58 values equal the
+  shell's. Surfaces move by one or two steps in a channel (`#17191d` to
+  `#17191c`); `bad` moves from `#f4645c` to `#f7756e`; the type and hash
+  colours become the shell's. Exported charcoal pages change by that
+  much, and the per-theme page golden with them. `pkg/theme` is governed
+  by name and token, not by byte, so this is not a breaking change.
+- **A light mode comes free.** The package has a light set and the
+  shell's light block has all 58 names, so a generated `charcoal` could
+  carry both modes as `paper` does. Whether it should is the DESIGN's.
+
+The mechanism, after `just vendor-mermaid`:
+
+1. A recipe, run after `just ui install`, reads the package's
+   `tokens.json` from `ui/node_modules` and writes `charcoal.css`'s token
+   block from a table of the 22 package-derived tokens and a
+   hand-written file of docz's 36. The font block stays hand-written.
+2. The generated file records the package version it came from. A Go
+   test holds that version to the one `ui/bun.lock` pins, as
+   `TestVendoredMermaid` does, so a lockfile bump without the recipe
+   fails.
+3. The frontend's CI job, which has `node_modules`, regenerates and
+   fails on a difference, as `gen-themes-check` does. The Go job cannot,
+   so the version is its half and the bytes are the frontend's.
+
+Two things the DESIGN has to carry:
+
+- `ci.yml` names `bun.lock` in no path filter, so a pull request that
+  only bumps the package would not run the Go test in step 2. The `go`
+  filter needs `ui/bun.lock`. The same gap exists for mermaid today.
+- The mode switch does not change here. Open question 2 keeps
+  `data-mode` in `pkg/theme` and exported pages, and has the site set
+  `.dark` beside it.
+
+### Observation 12: the package's answer, and 0.5.0
+
+design-system#32 was answered the day it was filed, on #11's rule: a gap
+in a component is fixed in the package, and a design difference is the
+package's design and docz adopts it. The four parts that were waiting in
+the working tree shipped in 0.4.0, and 0.5.0, released on 2026-11-22,
+carries the rest.
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
+
+| Item in #32 | Decision | In 0.5.0 |
+| --- | --- | --- |
+| A1 sidebar tree | Package, after RFC-0003 | `shell/sidebar-tree`, `hooks/use-tree-open` |
+| A2 outline | Package | `blocks/outline`, `hooks/use-active-heading` |
+| A3 search result row | Package | `eyebrow`, `detail`, `render` on `ListRow`; `Time` `style="stacked"`; `blocks/marked` |
+| A4 palette slots | Package | `CommandFilters`, `CommandFooter`, `preview` on `CommandDialog` |
+| A5 top-bar controls | Package | `shell/search-trigger`, `shell/mode-toggle` |
+| A6 vertical stepper | Package | `orientation="vertical"` and `size="sm"` on `Stepper` |
+| A7 disclosure | Package | `components/collapsible`, `blocks/disclosure` |
+| A8 a tone the app supplies | Package; `Superseded` maps to `ignored` | `tone` on `Badge` and `Dot`; `--category-1` to `--category-8` |
+| A9 two tokens | Package | `--border-strong`, `--surface-pressed` |
+| B1 `--code-bg` follows the page | Intended; docz adopts | docz moves to a light and dark Shiki theme pair |
+| B2 toggle filter chip | Package | `pressed` on `FilterChip` |
+| B3 `accent` | docz renames its token | A README note |
+| C1, C2 stylesheet scans everything, static fonts | Package | `core.css` and `fonts.css`; `globals.css` unchanged |
+| C3 no `prefers-color-scheme` | Package | A README note with the script |
+
+<!-- markdownlint-restore -->
+
+So none of the nine parts is docz's to build, and two decisions fall to
+docz: its site-rendered code follows the page's mode, and `Superseded`
+takes the `ignored` variant.
+
+The release note on the issue adds three things for the DESIGN:
+
+- `core.css` has to be imported with `source(none)`. Without it,
+  Tailwind 4.3.3 takes the whole directory of any file named under
+  `node_modules`, and the stylesheet is no smaller.
+- A loading line in the sidebar tree is an `InlineLoading` inside a
+  `ShellSidebarTreeNote`; a bare paragraph in the nested list is not
+  valid markup.
+- On the icon rail, opening a row's popover calls `onOpenChange(true)`
+  on the top-level row only. docz fetches a type's documents when its
+  row first opens, which that covers; a nested branch that loaded on
+  open would show nothing there, and docz's pages tree has none, since
+  it comes from one request.
+
+0.6.0 followed the same day with two more. Each part has a stylesheet
+under `parts/` that names the part's file and everything it imports, so
+an app imports `parts/shell/sidebar.css` and writes no `@source` line
+into `node_modules`. And a `ListRow` with both `render` and `onClick`
+runs `onClick` when its link is followed, which 0.5.0 dropped and which
+a search hit needs to close the palette. One limit stays on purpose: a
+`Badge` with `tone` is tinted only, never filled. docz fills nothing
+with a type colour, so that costs nothing.
+
+The spike was moved to 0.6.0 and the per-part sheets. Four imports
+replace ten `@source` lines and compile to the same stylesheet, byte
+for byte in size, and the tests and `tsc -b` pass.
+
+The spike branch was moved to 0.5.0 and its stylesheet to `core.css`
+with `source(none)` and one `@source` line per part the probe uses. The
+contrast test and the unit suite pass as before (1439 of 1439), and
+`tsc -b` passes. The image build was not run again; nothing about the
+install changed.
+
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
+
+| Measure | Before | 0.3.2, `globals.css` | 0.5.0, `core.css` |
+| --- | --- | --- | --- |
+| Stylesheet | 68.0 KB (16.6 KB gzipped) | 149.7 KB (29.4 KB) | 107.9 KB (23.6 KB) |
+| Static font files emitted | 0 | 5 | 0 |
+| Eager JS, button and badge | 124.0 KB gzipped | 137.3 KB | 137.3 KB |
+| Eager JS, with the frame | 124.0 KB gzipped | 156.6 KB | 156.6 KB |
+
+<!-- markdownlint-restore -->
+
+The stylesheet numbers on 0.5.0 include the classes of the frame's ten
+parts, which the stylesheet names whether or not the probe mounts them.
+The JavaScript is unchanged, so the bundle budget is still the one gate
+that does not hold.
+
+0.5.0's new tokens are docz's own values. `--border-strong` and
+`--surface-pressed` convert to the shell's `border-strong` and
+`bg-active`, and `--category-1` to `--category-8` to the shell's eight
+hash colours, exactly, in both modes. That moves Observation 11's count
+from 22 of 58 tokens to 32, and leaves 26 that are docz's own.
+
 <!--docz:findings:end-->
 
 <!--docz:conclusion:start-->
@@ -445,10 +596,17 @@ small edits; the bundle budget does not hold and needs a new number.
   token (Observation 10). It does not fit the 130 KB bundle budget, and
   two of docz's token choices, the name `accent` and the wiped radius
   scale, have to change before a package component renders correctly.
-- **A's Go half is undesigned** (Observation 6), and it is the part with
-  a public contract.
-- **A's gaps are listed but not filed** (Observation 9): nine parts the
-  package lacks, drawn in `ui/design/candidates.html`.
+- **A's Go half is a generator and two checks** (Observation 11):
+  `charcoal.css` written from the package's `tokens.json`, a Go test on
+  the version, and a drift check in the frontend's CI. 22 of its 58
+  tokens come from the package and exported charcoal pages shift by a
+  few steps of colour.
+- **A's gaps are filed** (Observation 9) as
+  [design-system#32](https://github.com/donaldgifford/design-system/issues/32):
+  nine parts the package lacks, three differences to decide, and three
+  things the spike found in the package's stylesheet. All were answered,
+  and 0.5.0 ships every part asked for (Observation 12), so docz builds
+  none of the nine locally.
 
 <!--docz:conclusion:end-->
 
@@ -457,14 +615,16 @@ small edits; the bundle budget does not hold and needs a new number.
 
 1. The spike (step 5) is run and its four results are in Observation
    10.
-2. Before any design, file the gaps upstream, as repo-guardian did in
-   design-system#11. `ui/design/candidates.html` is the list
-   (Observation 9); nothing has been filed.
+2. The gaps were filed upstream as design-system#32 and are answered
+   (Observation 12). The DESIGN targets 0.6.0 or later and imports
+   `core.css` and the per-part sheets, not `globals.css`.
 3. Write a DESIGN for A from the open questions' answers below, then an
    IMPL in repo-guardian's phase order: tokens first, components after,
    shell last. The DESIGN also has to set a new bundle budget, rename
-   docz's `accent`, drop the radius wipe, and say how `pkg/theme` is held
-   to the package's tokens (step 6, still not done).
+   docz's `accent`, drop the radius wipe, add `ui/bun.lock` to CI's `go`
+   path filter, decide whether the generated `charcoal` carries a light
+   mode (Observation 11), and move site-rendered code to a Shiki theme
+   pair that follows the page (Observation 12).
 4. Record B as not doing. If one place to go from compliance to
    documents is still wanted, that is a link from repo-guardian's
    repository page to docz-site, which needs nothing from this work.
