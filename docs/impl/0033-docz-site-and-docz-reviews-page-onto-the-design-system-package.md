@@ -245,16 +245,16 @@ values, and looks exactly as it did.
   package's hover surface.
 - [ ] Remove the radius wipe (`--radius-*: initial`) and confirm docz's
   own controls still render at `rounded-sm`.
-- [ ] `appearance.ts`: `writeMode()` toggles `dark` on `<html>` from the
+- [x] `appearance.ts`: `writeMode()` toggles `dark` on `<html>` from the
   stored mode or the system, and a media-query listener updates the
   class when nothing is stored and the system changes.
-- [ ] Test `applyStoredMode()` and the toggle: `.dark` and `data-mode`
+- [x] Test `applyStoredMode()` and the toggle: `.dark` and `data-mode`
   agree for stored light, stored dark, and system-follow in both
   directions.
 - [ ] `contrast.test.ts`: follow `var()` into the package's `tokens.css`
   through `oklch.ts`, and fail when a token resolves to nothing, so a
   lost mapping can never pass silently.
-- [ ] `src/test/setup.ts`: add the `window.matchMedia` stub.
+- [x] `src/test/setup.ts`: add the `window.matchMedia` stub.
 - [ ] Keep the fonts as they are: the three `@fontsource-variable`
   imports in `main.tsx`, and no import of the package's `fonts.css`.
 - [ ] `ui/CLAUDE.md`: rewrite the `tokens.css`, radius, and shell
