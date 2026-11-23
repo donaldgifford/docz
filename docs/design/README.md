@@ -61,5 +61,6 @@ docz create design "Your Design Title"
 | DESIGN-0025 | docz-html: standalone HTML pages from docz documents, and one themeable design for docz's HTML | Implemented | 2026-10-31 | Donald Gifford | [0025-docz-html-standalone-html-pages-from-docz-documents-and-one.md](0025-docz-html-standalone-html-pages-from-docz-documents-and-one.md) |
 | DESIGN-0026 | docz-site's shell in repo-guardian's look, and the reader's documents as docz-html pages | Implemented | 2026-11-01 | Donald Gifford | [0026-docz-sites-shell-in-repo-guardians-look-and-the-readers.md](0026-docz-sites-shell-in-repo-guardians-look-and-the-readers.md) |
 | DESIGN-0027 | docz view and docz-review-rex: a terminal renderer for docz documents and a Rex client for docz-review | Draft | 2026-11-12 | Donald Gifford | [0027-docz-view-and-docz-review-rex-a-terminal-renderer-for-docz.md](0027-docz-view-and-docz-review-rex-a-terminal-renderer-for-docz.md) |
+| DESIGN-0028 | docz-site and docz-review's page on the shared design-system package | Draft | 2026-11-23 | Donald Gifford | [0028-docz-site-and-docz-reviews-page-on-the-shared-design-system.md](0028-docz-site-and-docz-reviews-page-on-the-shared-design-system.md) |
 <!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->

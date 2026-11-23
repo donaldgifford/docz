@@ -38,6 +38,7 @@ nav:
         - 'DESIGN-0025: docz-html: standalone HTML pages from docz documents, and one themeable design for docz''s HTML': design/0025-docz-html-standalone-html-pages-from-docz-documents-and-one.md
         - 'DESIGN-0026: docz-site''s shell in repo-guardian''s look, and the reader''s documents as docz-html pages': design/0026-docz-sites-shell-in-repo-guardians-look-and-the-readers.md
         - 'DESIGN-0027: docz view and docz-review-rex: a terminal renderer for docz documents and a Rex client for docz-review': design/0027-docz-view-and-docz-review-rex-a-terminal-renderer-for-docz.md
+        - 'DESIGN-0028: docz-site and docz-review''s page on the shared design-system package': design/0028-docz-site-and-docz-reviews-page-on-the-shared-design-system.md
     - Implementation Plans:
         - Overview: impl/README.md
         - 'IMPL-0001: docz CLI Implementation': impl/0001-docz-cli-implementation.md
@@ -71,6 +72,7 @@ nav:
         - 'IMPL-0030: One theme system across docz-html, docz-review, and docz-site, with the widgets in the reader': impl/0030-one-theme-system-across-docz-html-docz-review-and-docz-site.md
         - 'IMPL-0031: The review page laid out like docz-html''s exported page': impl/0031-the-review-page-laid-out-like-docz-htmls-exported-page.md
         - 'IMPL-0032: The repo-guardian-look shell, the reader''s document pane from pkg/export/html, and per-type accents': impl/0032-the-repo-guardian-look-shell-the-readers-document-pane.md
+        - 'IMPL-0033: docz-site and docz-review''s page onto the design-system package, in nine phases': impl/0033-docz-site-and-docz-reviews-page-onto-the-design-system-package.md
     - Investigations:
         - Overview: investigation/README.md
         - 'INV-0001: Wiki Init Template and Init Enabled Fix': investigation/0001-wiki-init-template-and-init-enabled-fix.md

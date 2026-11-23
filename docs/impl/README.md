@@ -65,5 +65,6 @@ docz create impl "Your Implementation Title"
 | IMPL-0030 | One theme system across docz-html, docz-review, and docz-site, with the widgets in the reader | Completed | 2026-11-01 | Donald Gifford | [0030-one-theme-system-across-docz-html-docz-review-and-docz-site.md](0030-one-theme-system-across-docz-html-docz-review-and-docz-site.md) |
 | IMPL-0031 | The review page laid out like docz-html's exported page | Draft | 2026-11-01 | Donald Gifford | [0031-the-review-page-laid-out-like-docz-htmls-exported-page.md](0031-the-review-page-laid-out-like-docz-htmls-exported-page.md) |
 | IMPL-0032 | The repo-guardian-look shell, the reader's document pane from pkg/export/html, and per-type accents | Completed | 2026-11-01 | Donald Gifford | [0032-the-repo-guardian-look-shell-the-readers-document-pane.md](0032-the-repo-guardian-look-shell-the-readers-document-pane.md) |
+| IMPL-0033 | docz-site and docz-review's page onto the design-system package, in nine phases | Draft | 2026-11-23 | Donald Gifford | [0033-docz-site-and-docz-reviews-page-onto-the-design-system-package.md](0033-docz-site-and-docz-reviews-page-onto-the-design-system-package.md) |
 <!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->
