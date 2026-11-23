@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createQueryClient } from "@/app/query-client";
 import { routes } from "@/app/router";
@@ -28,8 +28,33 @@ function mountAt(path: string, queryClient?: QueryClient) {
   return router;
 }
 
-function palette() {
-  return within(screen.getByTestId("command-palette"));
+/*
+ * The palette is the design system's CommandDialog; what is held here
+ * is docz's: the shortcuts, the query and its filters, the recents, the
+ * prefetch, and where a hit goes. The palette's chunk loads on first
+ * use, so finding the dialog is always a wait.
+ */
+
+const PALETTE = { name: "Search documents" } as const;
+
+async function findPalette() {
+  const dialog = await screen.findByRole("dialog", PALETTE);
+  // The dialog hands focus to its input once it is open; a key pressed
+  // before that goes to the page behind it.
+  await waitFor(() => {
+    expect(within(dialog).getByRole("combobox")).toHaveFocus();
+  });
+  return dialog;
+}
+
+async function palette() {
+  return within(await findPalette());
+}
+
+async function expectPaletteClosed() {
+  await waitFor(() => {
+    expect(screen.queryByRole("dialog", PALETTE)).not.toBeInTheDocument();
+  });
 }
 
 describe("command palette", () => {
@@ -38,12 +63,12 @@ describe("command palette", () => {
     mountAt("/repos");
     await screen.findByText("docz");
 
-    expect(screen.queryByTestId("command-palette")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", PALETTE)).not.toBeInTheDocument();
     await user.keyboard("{Meta>}k{/Meta}");
-    expect(screen.getByTestId("command-palette")).toBeInTheDocument();
+    expect(await findPalette()).toBeInTheDocument();
 
     await user.keyboard("{Escape}");
-    expect(screen.queryByTestId("command-palette")).not.toBeInTheDocument();
+    await expectPaletteClosed();
   });
 
   it("opens with / — except while typing in an editable element", async () => {
@@ -56,13 +81,13 @@ describe("command palette", () => {
     // Typing "/" into the directory search box stays typing.
     await user.click(box);
     await user.keyboard("/");
-    expect(screen.queryByTestId("command-palette")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", PALETTE)).not.toBeInTheDocument();
     expect(box).toHaveValue("/");
 
     // From the page body it opens the palette.
     await user.click(document.body);
     await user.keyboard("/");
-    expect(screen.getByTestId("command-palette")).toBeInTheDocument();
+    expect(await findPalette()).toBeInTheDocument();
   });
 
   it("groups results by repo and previews the highlighted hit", async () => {
@@ -71,7 +96,7 @@ describe("command palette", () => {
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
-    const dialog = palette();
+    const dialog = await palette();
 
     // Empty query lists everything, grouped per repo.
     expect(
@@ -82,7 +107,7 @@ describe("command palette", () => {
     ).toBeInTheDocument();
 
     // The first hit is highlighted and previewed from hit data alone.
-    const preview = screen.getByTestId("palette-preview");
+    const preview = dialog.getByRole("group", { name: "Preview" });
     await waitFor(() => {
       expect(within(preview).getByText(SITE_DESIGN_TITLE)).toBeInTheDocument();
     });
@@ -100,7 +125,7 @@ describe("command palette", () => {
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
-    const dialog = palette();
+    const dialog = await palette();
     await dialog.findByText("donaldgifford/docz-site — 9 matches");
 
     await user.keyboard("ingestion service");
@@ -120,7 +145,7 @@ describe("command palette", () => {
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
-    const dialog = palette();
+    const dialog = await palette();
     await dialog.findByText("donaldgifford/docz-site — 9 matches");
 
     // Repo pill (short name) scopes to that repo.
@@ -153,7 +178,7 @@ describe("command palette", () => {
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
-    expect(screen.getByTestId("command-palette")).toBeInTheDocument();
+    expect(await findPalette()).toBeInTheDocument();
   });
 
   it("finds documents by body text, not just titles", async () => {
@@ -162,7 +187,7 @@ describe("command palette", () => {
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
-    const dialog = palette();
+    const dialog = await palette();
     await dialog.findByText("donaldgifford/docz-site — 9 matches");
 
     // "frontmatter" appears in doc bodies, never in a fixture title.
@@ -184,7 +209,7 @@ describe("command palette", () => {
     await user.click(
       screen.getByRole("button", { name: /Search docs, rfcs, authors/ }),
     );
-    expect(screen.getByTestId("command-palette")).toBeInTheDocument();
+    expect(await findPalette()).toBeInTheDocument();
   });
 
   it("opens the first hit on Enter without arrowing first", async () => {
@@ -193,9 +218,9 @@ describe("command palette", () => {
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
-    await palette().findByText("donaldgifford/docz-site — 9 matches");
+    await (await palette()).findByText("donaldgifford/docz-site — 9 matches");
     await user.keyboard("ingestion service");
-    await palette().findByText("donaldgifford/docz-api — 1 match");
+    await (await palette()).findByText("donaldgifford/docz-api — 1 match");
 
     await user.keyboard("{Enter}");
     await waitFor(() => {
@@ -223,7 +248,7 @@ describe("command palette", () => {
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
-    await palette().findByText("donaldgifford/docz-site — 9 matches");
+    await (await palette()).findByText("donaldgifford/docz-site — 9 matches");
 
     // The auto-highlighted first hit warms immediately…
     await waitFor(() => {
@@ -264,7 +289,7 @@ describe("command palette", () => {
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
-    const dialog = palette();
+    const dialog = await palette();
     expect(await dialog.findByText("recent")).toBeInTheDocument();
 
     // The recent entry is the initial highlight — Enter opens it.
@@ -294,7 +319,7 @@ describe("command palette", () => {
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
-    const dialog = palette();
+    const dialog = await palette();
     expect(await dialog.findByText("recent")).toBeInTheDocument();
 
     await user.keyboard("ingestion service");
@@ -309,7 +334,7 @@ describe("command palette", () => {
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
-    const dialog = palette();
+    const dialog = await palette();
     // Page hits ride the docz-site group on the empty query — marker
     // line `page · <published path>`, no type badge.
     expect(
@@ -344,7 +369,7 @@ describe("command palette", () => {
 
     await user.keyboard("{Meta>}k{/Meta}");
     await user.keyboard("container pair");
-    await palette().findByText("donaldgifford/docz-site — 1 match");
+    await (await palette()).findByText("donaldgifford/docz-site — 1 match");
 
     // The lone page hit is auto-highlighted — the prefetch uses the
     // reader's one-segment encoded spelling, so the cache key matches.
@@ -372,7 +397,7 @@ describe("command palette", () => {
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
-    const dialog = palette();
+    const dialog = await palette();
     expect(await dialog.findByText("recent")).toBeInTheDocument();
     // The marker line renders in the recent item and (as the
     // highlighted hit) in the preview pane.
@@ -395,7 +420,7 @@ describe("command palette", () => {
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
-    await palette().findByText("donaldgifford/docz-site — 9 matches");
+    await (await palette()).findByText("donaldgifford/docz-site — 9 matches");
 
     // ↓ to the second hit, then Enter.
     await user.keyboard("{ArrowDown}{Enter}");
@@ -404,6 +429,26 @@ describe("command palette", () => {
         "/donaldgifford/docz-site/impl/IMPL-0001",
       );
     });
-    expect(screen.queryByTestId("command-palette")).not.toBeInTheDocument();
+    await expectPaletteClosed();
+  });
+
+  it("closes when a hit is followed with the pointer, and navigates once", async () => {
+    const user = userEvent.setup();
+    const router = mountAt("/repos");
+    await screen.findByText("docz");
+
+    await user.keyboard("{Meta>}k{/Meta}");
+    const dialog = await palette();
+    await dialog.findByText("donaldgifford/docz-site — 9 matches");
+
+    const navigate = vi.spyOn(router, "navigate");
+    await user.click(dialog.getByRole("option", { name: /IMPL-0001/ }));
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(
+        "/donaldgifford/docz-site/impl/IMPL-0001",
+      );
+    });
+    await expectPaletteClosed();
+    expect(navigate).toHaveBeenCalledOnce();
   });
 });

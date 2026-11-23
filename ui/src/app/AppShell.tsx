@@ -10,7 +10,10 @@ import {
 
 import { useGetSession } from "@/api/__generated__/docz-api";
 import { AppearanceControls } from "@/components/appearance-controls";
-import { CommandPalette } from "@/components/command-palette";
+import {
+  LazyCommandPalette,
+  preloadCommandPalette,
+} from "@/components/command-palette-lazy";
 import { SessionMenu } from "@/components/session-menu";
 import { useAppearance } from "@/lib/appearance";
 import { typeColor } from "@/lib/colors";
@@ -41,8 +44,8 @@ function typeAccentStyle(type: string | undefined): CSSProperties | undefined {
 
 function navLinkClass({ isActive }: { isActive: boolean }): string {
   return isActive
-    ? "text-fg-primary"
-    : "text-fg-tertiary hover:text-fg-primary";
+    ? "text-foreground"
+    : "text-muted-foreground hover:text-foreground";
 }
 
 /**
@@ -87,16 +90,16 @@ export function AppShell() {
   return (
     // display: contents, so the wrapper only carries the accent.
     <div className="contents" style={typeAccentStyle(type)}>
-      <header className="sticky top-0 z-50 flex h-10 items-center gap-6 border-b border-border-default bg-bg-raised px-4">
+      <header className="sticky top-0 z-50 flex h-10 items-center gap-6 border-b border-border bg-card px-4">
         <Link to="/" className="flex items-center gap-[0.55rem]">
           <span
             aria-hidden
-            className="grid size-[20px] place-items-center rounded-sm bg-brand font-mono text-[12px] font-bold text-on-brand"
+            className="grid size-[20px] place-items-center rounded-sm bg-primary font-mono text-[12px] font-bold text-primary-foreground"
           >
             D
           </span>
           <span className="text-[14px] font-semibold">docz</span>
-          <span className="text-[14px] text-fg-muted">· reader</span>
+          <span className="text-[14px] text-muted-foreground">· reader</span>
         </Link>
 
         {/* Search affordance: opens the ⌘K palette. Hidden on narrow
@@ -106,7 +109,9 @@ export function AppShell() {
           onClick={() => {
             setPaletteOpen(true);
           }}
-          className="ml-4 hidden min-w-[260px] cursor-pointer items-center gap-2 border border-border-default px-[0.6rem] py-[0.2rem] text-[13px] text-fg-tertiary hover:border-border-strong min-[720px]:flex rounded-sm"
+          onPointerEnter={preloadCommandPalette}
+          onFocus={preloadCommandPalette}
+          className="ml-4 hidden min-w-[260px] cursor-pointer items-center gap-2 border border-border px-[0.6rem] py-[0.2rem] text-[13px] text-muted-foreground hover:border-border-strong min-[720px]:flex rounded-sm"
         >
           <svg
             aria-hidden
@@ -122,10 +127,10 @@ export function AppShell() {
           </svg>
           <span>Search docs, rfcs, authors…</span>
           <span aria-hidden className="ml-auto flex gap-[3px]">
-            <kbd className="min-w-4 border border-border-default px-1 text-center font-mono text-[12px] text-fg-tertiary rounded-sm">
+            <kbd className="min-w-4 border border-border px-1 text-center font-mono text-[12px] text-muted-foreground rounded-sm">
               ⌘
             </kbd>
-            <kbd className="min-w-4 border border-border-default px-1 text-center font-mono text-[12px] text-fg-tertiary rounded-sm">
+            <kbd className="min-w-4 border border-border px-1 text-center font-mono text-[12px] text-muted-foreground rounded-sm">
               K
             </kbd>
           </span>
@@ -156,7 +161,7 @@ export function AppShell() {
       </header>
       <RestoreAfterLogin />
       <Outlet />
-      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      <LazyCommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </div>
   );
 }
