@@ -130,7 +130,7 @@ local branch, `chore/spike-design-system`, which is not for merge.
 
 | Component | Version / Value |
 | --------- | --------------- |
-| `@donaldgifford/design-system` | 0.3.2 (`064bb78`), GitHub Packages; 0.5.0 for Observation 12 |
+| `@donaldgifford/design-system` | 0.3.2 (`064bb78`), GitHub Packages; 0.5.0 and 0.6.0 for Observation 12 |
 | repo-guardian | `main` at `cc97e3f`, UI on the package at 0.3.2 |
 | docz | `main` at `0aa53f1` |
 | docz-site | React 19, react-router 8, Tailwind 4.3, Vite 8, vitest in jsdom |
@@ -534,6 +534,19 @@ The release note on the issue adds three things for the DESIGN:
   open would show nothing there, and docz's pages tree has none, since
   it comes from one request.
 
+0.6.0 followed the same day with two more. Each part has a stylesheet
+under `parts/` that names the part's file and everything it imports, so
+an app imports `parts/shell/sidebar.css` and writes no `@source` line
+into `node_modules`. And a `ListRow` with both `render` and `onClick`
+runs `onClick` when its link is followed, which 0.5.0 dropped and which
+a search hit needs to close the palette. One limit stays on purpose: a
+`Badge` with `tone` is tinted only, never filled. docz fills nothing
+with a type colour, so that costs nothing.
+
+The spike was moved to 0.6.0 and the per-part sheets. Four imports
+replace ten `@source` lines and compile to the same stylesheet, byte
+for byte in size, and the tests and `tsc -b` pass.
+
 The spike branch was moved to 0.5.0 and its stylesheet to `core.css`
 with `source(none)` and one `@source` line per part the probe uses. The
 contrast test and the unit suite pass as before (1439 of 1439), and
@@ -603,8 +616,8 @@ small edits; the bundle budget does not hold and needs a new number.
 1. The spike (step 5) is run and its four results are in Observation
    10.
 2. The gaps were filed upstream as design-system#32 and are answered
-   (Observation 12). The DESIGN targets 0.5.0 or later and imports
-   `core.css`, not `globals.css`.
+   (Observation 12). The DESIGN targets 0.6.0 or later and imports
+   `core.css` and the per-part sheets, not `globals.css`.
 3. Write a DESIGN for A from the open questions' answers below, then an
    IMPL in repo-guardian's phase order: tokens first, components after,
    shell last. The DESIGN also has to set a new bundle budget, rename
