@@ -322,6 +322,23 @@ vendor-mermaid:
     gzip -9 -n -c "$src" > pkg/export/html/assets/mermaid.min.js.gz
     echo "✓ mermaid $(sed -n 's/.*"version": "\(.*\)".*/\1/p' ui/node_modules/mermaid/package.json | head -1) vendored"
 
+# Generate pkg/theme's charcoal theme from the design system in
+# ui/node_modules, at the version ui/bun.lock pins (DESIGN-0028 §11).
+# Run `just ui install` first. A bump of the package is the lockfile,
+# this recipe, and the export's goldens (go test ./... -update) in one
+# pull request; `just ui gen-charcoal-check` and a Go test in pkg/theme
+# hold the file to it.
+[group('build')]
+gen-charcoal:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    src=ui/node_modules/@donaldgifford/design-system/tokens.json
+    if [ ! -f "$src" ]; then
+        echo "✗ $src is missing; run: just ui install" >&2
+        exit 1
+    fi
+    cd ui && bun scripts/gen-charcoal.ts
+
 # ─── License compliance ────────────────────────────────────────────
 
 # Check dependency licenses against the allow list

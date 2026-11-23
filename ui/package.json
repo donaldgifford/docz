@@ -28,7 +28,9 @@
     "gen-review-fixture": "bun scripts/gen-review-fixture.ts",
     "gen-cli:check": "scripts/gen-cli-check.sh",
     "gen-themes": "bun scripts/gen-themes.ts",
-    "gen-themes:check": "scripts/gen-themes-check.sh"
+    "gen-themes:check": "scripts/gen-themes-check.sh",
+    "gen-charcoal": "bun scripts/gen-charcoal.ts",
+    "gen-charcoal:check": "scripts/gen-charcoal-check.sh"
   },
   "dependencies": {
     "@donaldgifford/design-system": "0.6.0",

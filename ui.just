@@ -73,6 +73,12 @@ gen-themes:
 gen-themes-check:
     ./scripts/gen-themes-check.sh
 
+# Drift gate for pkg/theme's charcoal theme: regenerate it to a temporary
+# file from the installed design system and fail on a difference. The
+# file is written by `just gen-charcoal`, at the root.
+gen-charcoal-check:
+    ./scripts/gen-charcoal-check.sh
+
 # Lint (eslint flat config)
 lint:
     bun run lint
@@ -191,4 +197,4 @@ local-down:
     @echo "✓ docz-site stopped"
 
 # CI parity: everything the ci workflow runs, in order
-ci: gen-api gen-cli gen-themes lint fmt-check typecheck test test-server build bundle-budget e2e gen-api-check gen-cli-check gen-themes-check
+ci: gen-api gen-cli gen-themes lint fmt-check typecheck test test-server build bundle-budget e2e gen-api-check gen-cli-check gen-themes-check gen-charcoal-check
