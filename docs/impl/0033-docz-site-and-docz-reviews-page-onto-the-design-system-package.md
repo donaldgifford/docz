@@ -147,10 +147,10 @@ nothing imports it yet.
 - [x] `just ui install`: fail before running Bun when `NPM_TOKEN` is
   unset, printing the `NPM_TOKEN=$(gh auth token)` line and the
   `read:packages` scope it needs.
-- [ ] **Deferred - human required.** Grant the docz repository read
-  access to the package in the package's "Manage Actions access"
-  settings. It is a setting on the package's page with no API, and
-  every CI install fails with a 403 until it is granted.
+- [ ] Grant the docz repository read access to the package in the
+  package's "Manage Actions access" settings.
+  **Deferred** - human required: it is a setting on the package's page
+  with no API, and every CI install fails with a 403 until it is granted.
 - [x] `ci.yml`: add `packages: read` and
   `NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}` to the install step of the
   `ui`, `ui-e2e`, and `plugin` jobs.
@@ -174,17 +174,18 @@ nothing imports it yet.
 - [x] Prove the cache trap is closed: build the image once with the
   secret, then again without it and with `--no-cache`, and confirm the
   second fails.
-- [ ] **Deferred - human required.** `renovate.json5`: a `hostRules`
-  entry for `npm.pkg.github.com` with an encrypted token, and a rule
-  that keeps the package pinned exactly and out of any grouped update.
-  The rule is in; the host rule waits for a token encrypted for this
-  repository, which only a person can make. The file says what to add.
-- [ ] **Deferred - human required.** Open a pull request from a fork
-  that touches `ui/` and record whether the `ui` job can install
-  (DESIGN-0028 question 5). Act on the result by question 3 below. It
-  needs a second account's fork and the Actions access grant above.
-  `ui/CONTRIBUTING.md` already describes question 3's answer (a), so a
-  failing install needs no further change.
+- [ ] `renovate.json5`: a `hostRules` entry for `npm.pkg.github.com`
+  with an encrypted token, and a rule that keeps the package pinned
+  exactly and out of any grouped update.
+  **Deferred** - human required: the rule is in; the host rule waits for
+  a token encrypted for this repository, which only a person can make.
+  The file says what to add.
+- [ ] Open a pull request from a fork that touches `ui/` and record
+  whether the `ui` job can install (DESIGN-0028 question 5). Act on the
+  result by question 3 below.
+  **Deferred** - human required: it needs a second account's fork and
+  the Actions access grant above. `ui/CONTRIBUTING.md` already describes
+  question 3's answer (a), so a failing install needs no further change.
 - [x] `ui/README.md` and `ui/CONTRIBUTING.md`: installing needs a GitHub
   token with `read:packages`, with the one-line way to get it.
 - [x] `ui/CLAUDE.md`: the token comes from the environment and is never
