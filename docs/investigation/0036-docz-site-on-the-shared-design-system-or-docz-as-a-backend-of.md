@@ -520,6 +520,20 @@ So none of the nine parts is docz's to build, and two decisions fall to
 docz: its site-rendered code follows the page's mode, and `Superseded`
 takes the `ignored` variant.
 
+The release note on the issue adds three things for the DESIGN:
+
+- `core.css` has to be imported with `source(none)`. Without it,
+  Tailwind 4.3.3 takes the whole directory of any file named under
+  `node_modules`, and the stylesheet is no smaller.
+- A loading line in the sidebar tree is an `InlineLoading` inside a
+  `ShellSidebarTreeNote`; a bare paragraph in the nested list is not
+  valid markup.
+- On the icon rail, opening a row's popover calls `onOpenChange(true)`
+  on the top-level row only. docz fetches a type's documents when its
+  row first opens, which that covers; a nested branch that loaded on
+  open would show nothing there, and docz's pages tree has none, since
+  it comes from one request.
+
 The spike branch was moved to 0.5.0 and its stylesheet to `core.css`
 with `source(none)` and one `@source` line per part the probe uses. The
 contrast test and the unit suite pass as before (1439 of 1439), and
