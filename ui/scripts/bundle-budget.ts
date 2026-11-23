@@ -13,15 +13,26 @@
  * before first paint just the same. Measuring only the entry file
  * would let an eager import hide in a preloaded chunk.
  *
- * Budget rationale: the eager set (react + router + query + generated
- * client + shell/palette) gzips to ~123 KB today; 130 KB allows normal
- * growth while any eager-import regression fails loudly.
+ * Budget rationale (DESIGN-0028 §12, IMPL-0033 question 4): 165 KB
+ * while the site moves onto @donaldgifford/design-system. The eager
+ * set was react + router + query + the generated client + docz's own
+ * shell and palette, ~124 KB against a budget of 130. The package's
+ * parts arrive phase by phase before docz's own leave, and its frame
+ * (sidebar, top bar, the Base UI primitives under them) is the first
+ * paint, so it cannot be lazy: a spike measured 156.6 KB with the frame
+ * mounted beside the old shell. 165 KB holds through that overlap.
+ * IMPL-0033 Phase 9 measures the final set and sets the budget to that
+ * total plus 6 KB.
+ *
+ * What the budget guards has not changed, and each is far larger than
+ * the headroom: the markdown pipeline, a Shiki grammar, mermaid, or the
+ * widgets leaking into the eager graph.
  */
 
 import { readFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 
-const BUDGET_GZIP_BYTES = 130 * 1024;
+const BUDGET_GZIP_BYTES = 165 * 1024;
 
 function read(path: string): Buffer {
   try {
@@ -64,8 +75,8 @@ console.log(
 if (total > BUDGET_GZIP_BYTES) {
   console.error(
     "Eager JS exceeds the budget. Check for eager imports of the " +
-      "markdown pipeline, Shiki, or other lazy-only modules before " +
-      "raising the number here.",
+      "markdown pipeline, Shiki, mermaid, the widgets, or other " +
+      "lazy-only modules before raising the number here.",
   );
   process.exit(1);
 }

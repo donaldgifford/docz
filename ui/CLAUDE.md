@@ -841,8 +841,12 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
 - Per-task local gate is `just ci` semantics: test, lint, `tsc -b
   --force`, build, AND `bun run format:check` — formatting misses fail
   CI even when everything else is green.
-- Bundle budget: CI fails if the eager JS tops 130 KB gz
-  (`scripts/bundle-budget.ts`, `just bundle-budget`, ~120 KB today).
+- Bundle budget: CI fails if the eager JS tops 165 KB gz
+  (`scripts/bundle-budget.ts`, `just ui bundle-budget`). It was 130 KB
+  until IMPL-0033 Phase 4: the design system's parts arrive before
+  docz's own leave, and its frame is the first paint, so the budget
+  holds that overlap until Phase 9 sets it to the measured total plus
+  6 KB. The script's comment carries the numbers.
   "Eager" = the entry chunk PLUS every modulepreload'd chunk in
   index.html — Rollup splits shared statics out of `index-*.js` as
   the graph shifts, so measuring only the entry file would let an

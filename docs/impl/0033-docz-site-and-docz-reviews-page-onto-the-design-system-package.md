@@ -388,7 +388,7 @@ states, the page header, and load more.
   and fail when a part has no matching `parts/*.css` import in
   `tokens.css`. Add it before the first import, so every later phase is
   held to it.
-- [ ] `bundle-budget.ts`: 165 KB, with the comment rewritten for the new
+- [x] `bundle-budget.ts`: 165 KB, with the comment rewritten for the new
   eager set (question 4 below).
 - [ ] `statusVariant()` in `lib/colors.ts` over the existing
   `STATUS_GROUPS`, by DESIGN-0028's section 8 table, with a table test
