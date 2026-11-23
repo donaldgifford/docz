@@ -220,7 +220,7 @@ values, and looks exactly as it did.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `ui/src/theme/oklch.ts`: resolve a `{name}` reference and convert
+- [x] `ui/src/theme/oklch.ts`: resolve a `{name}` reference and convert
   oklch to sRGB hex, with unit tests for a reference chain, a cycle, an
   unknown name, and the eleven values INV-0036's spike confirmed.
 - [ ] `tokens.css`: replace `@import "tailwindcss"` with the package's
