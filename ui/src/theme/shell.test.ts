@@ -84,6 +84,16 @@ describe("tokens.css's @theme block", () => {
     }
   });
 
+  it("leaves the code surface and the superseded status to the package", () => {
+    // Registered, --color-code-bg would take the package's bg-code-bg
+    // utility and pin it to docz's dark value in both modes.
+    expect(theme.has("code-bg")).toBe(false);
+    expect(theme.has("st-superseded")).toBe(false);
+    // Both stay docz's own for charcoal and for a document's theme.
+    expect(ownDark.has("code-bg")).toBe(true);
+    expect(ownDark.has("st-superseded")).toBe(true);
+  });
+
   it("leaves the accent to the brand utility", () => {
     // --color-accent as a theme key would take the package's accent
     // utility, its hover surface, and paint it in docz's brand colour.

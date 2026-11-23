@@ -125,7 +125,6 @@
   --color-st-accepted: var(--success);
   --color-st-adopted: var(--success);
   --color-st-rejected: var(--destructive);
-  --color-st-superseded: #ab8be3;
   --color-st-deprecated: var(--muted-foreground);
 
   /* GitHub-alert admonition tints (IMPL-0002 Phase 3): the matching
@@ -172,8 +171,13 @@
   --color-hash-6: var(--category-7);
   --color-hash-7: var(--category-8);
 
-  /* Code blocks */
-  --color-code-bg: #101215;
+  /* Neither code-bg nor st-superseded is registered (IMPL-0033 Phase
+     7). The chrome's code surface is the package's: `bg-code-bg` is its
+     utility over --code-bg, which follows the page, and a docz
+     --color-code-bg here would take that utility and paint it dark in
+     both modes. A superseded status is the package's `ignored` badge.
+     Both names stay in docz-tokens.css for charcoal, and a document
+     reads its own theme's inside .docz-page. */
 
   /* No radius here (DESIGN-0028 §3). The scale is the package's: sm, md,
      and lg are its one 3px corner, which docz's bordered controls take
@@ -556,13 +560,37 @@
     padding: 1rem 1.1rem;
     overflow-x: auto;
     margin: 1rem 0 1.4rem;
-    /* Shiki inlines the theme background; the mockup's code-bg wins. */
-    background: var(--color-code-bg) !important;
-    /* Code stays dark in every mode, so a block Shiki did not color
-       (plain text, a pre the app writes) takes the code surface's own
-       text color rather than the light page's prose color. Shiki's
-       inline color still wins for a highlighted block. */
-    color: var(--color-code-fg);
+    /* Code the site renders follows the page (DESIGN-0028 §9): the
+       design system's --code-bg, light or dark with the `dark` class,
+       whatever theme the document around it wears. A block Shiki did
+       not color (plain text, a pre the app writes) takes the package's
+       text color on that surface; a highlighted block takes its
+       theme's own, below. */
+    /* !important twice over: the document's own stylesheet
+       (.docz-page pre, unlayered) paints its theme's dark code
+       surface and that surface's text colour, and would outrank
+       this layer. */
+    background: var(--code-bg) !important;
+    color: var(--shiki-light, var(--foreground)) !important;
+  }
+  .dark .doc-prose pre {
+    color: var(--shiki-dark, var(--foreground)) !important;
+  }
+  /* Shiki writes both themes onto every token as custom properties
+     and no color (defaultColor: false); these pick the set. A span
+     with no token color (a line) has neither property, and an
+     unset var() on an inherited property inherits. */
+  .doc-prose pre span {
+    color: var(--shiki-light);
+    font-style: var(--shiki-light-font-style);
+    font-weight: var(--shiki-light-font-weight);
+    text-decoration: var(--shiki-light-text-decoration);
+  }
+  .dark .doc-prose pre span {
+    color: var(--shiki-dark);
+    font-style: var(--shiki-dark-font-style);
+    font-weight: var(--shiki-dark-font-weight);
+    text-decoration: var(--shiki-dark-text-decoration);
   }
   .doc-prose pre code {
     background: none;
@@ -578,7 +606,7 @@
   .doc-prose .codeblock {
     margin: 1rem 0 1.4rem;
     border: 1px solid var(--color-border-default);
-    background: var(--color-code-bg);
+    background: var(--code-bg);
   }
   .doc-prose .codeblock-header {
     display: flex;

@@ -102,6 +102,16 @@ export function shellLook(mode: ShellMode): Map<string, string> {
 }
 
 /**
+ * shellToken resolves one custom property in effect on <html> in
+ * `mode` to `#rrggbb`: a name of the package's own (`code-bg`), which
+ * shellLook, docz's `--color-*` names only, does not carry.
+ */
+export function shellToken(mode: ShellMode, name: string): string {
+  const tokens = declared(mode);
+  return colorToHex(resolveToken(name, (token) => tokens.get(token)));
+}
+
+/**
  * shellLookCss writes a look as the declarations a hand-written token
  * block would hold, for a test that parses a block of CSS.
  */
