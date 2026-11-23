@@ -19,6 +19,7 @@
 
 /* One line per package part imported under src/, in order.
  * parts.test.ts holds this list to the imports, both ways. */
+@import "@donaldgifford/design-system/parts/blocks/data-table.css";
 @import "@donaldgifford/design-system/parts/blocks/details-grid.css";
 @import "@donaldgifford/design-system/parts/blocks/disclosure.css";
 @import "@donaldgifford/design-system/parts/blocks/empty-state.css";
