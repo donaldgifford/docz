@@ -240,7 +240,7 @@ values, and looks exactly as it did.
   utilities and the 17 `var()` reads. Register
   `--color-brand: var(--color-accent)` so `pkg/theme`'s variable keeps
   its name.
-- [ ] Add a test that fails on `bg-accent`, `text-accent`, or
+- [x] Add a test that fails on `bg-accent`, `text-accent`, or
   `border-accent` anywhere under `ui/src`, since each now compiles to the
   package's hover surface.
 - [x] Remove the radius wipe (`--radius-*: initial`) and confirm docz's
