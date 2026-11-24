@@ -5,9 +5,14 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Bug Fixes
+
+- *(ui)* Send a relative link to a type's README to the type's page
+
 ### Documentation
 
 - *(impl)* Record the beta's result and the package access in IMPL-0033
+- *(impl)* Record the keyboard check in IMPL-0033
 
 ## [2.7.0-beta.1] - 2026-11-23
 
