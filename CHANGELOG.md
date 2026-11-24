@@ -30,6 +30,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(design)* Add DESIGN-0028 and IMPL-0033 for the design-system adoption
 - *(inv)* Add INV-0037 on nested .docz.yaml files in one repository
 - *(design)* Add DESIGN-0029 for projects and the repo and site jobs
+- *(inv)* Add INV-0038 on a relative --repo-root doubling the root
+- *(design)* DESIGN-0029 roots are absolute, per INV-0038
 
 ## [2.6.2] - 2026-11-05
 

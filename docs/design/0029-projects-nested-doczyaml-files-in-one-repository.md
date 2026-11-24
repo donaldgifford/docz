@@ -245,6 +245,11 @@ flowchart TD
 - `--project <path>` takes a project path from anywhere in the
   repository. It is an error with `--repo-root` or `--config`, and an
   error when the path is not a discovered project.
+- Every branch yields an absolute root. `--repo-root` and the directory
+  of `--config` are made absolute first, because a relative root is
+  joined twice today and writes land under `<root>/<root>/`
+  ([INV-0038](../investigation/0038-a-relative-repo-root-or-config-doubles-the-root-empty-reads-and.md)).
+  That fix ships on its own and this design depends on it.
 
 The walk is the one behaviour change for a repository with no
 `projects:` block: a command run from a subdirectory now finds the
@@ -272,7 +277,8 @@ question 4.
 - `FindRoot(start string) (root, gitRoot string, err error)`, the walk.
 - `Projects(ctx, gitRoot string, cfg *config.Config) ([]Project, error)`
   with `Project{Path, Root, Cfg}`, each a root a caller can hand to
-  `Repo{Root, Cfg}`.
+  `Repo{Root, Cfg}`. `Root` is `gitRoot` joined with `Path`, so it is
+  absolute whenever `gitRoot` is, and `FindRoot` returns both absolute.
 
 `config.Config` gains `Projects ProjectsConfig{Paths, Exclude}` with
 yaml and json tags. `config` is frozen at its v1 shape; a new field with
@@ -770,6 +776,8 @@ IMPL-0033.
 
 - [INV-0037](../investigation/0037-nested-doczyaml-files-in-one-repository-monorepo-projects-in.md),
   the investigation this design follows
+- [INV-0038](../investigation/0038-a-relative-repo-root-or-config-doubles-the-root-empty-reads-and.md),
+  the relative-root fault and why every root here is absolute
 - [DESIGN-0028](0028-docz-site-and-docz-reviews-page-on-the-shared-design-system.md)
   and
   [IMPL-0033](../impl/0033-docz-site-and-docz-reviews-page-onto-the-design-system-package.md),

@@ -52,6 +52,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0035 | Go or Bun, not Rust: building leaf's reader for docz view and docz-review-rex without a third toolchain | Concluded | 2026-11-18 | Donald Gifford | [0035-go-or-bun-not-rust-building-leafs-reader-for-docz-view-and-docz.md](0035-go-or-bun-not-rust-building-leafs-reader-for-docz-view-and-docz.md) |
 | INV-0036 | docz-site on the shared design system, or docz as a backend of repo-guardian's UI | Concluded | 2026-11-19 | Donald Gifford | [0036-docz-site-on-the-shared-design-system-or-docz-as-a-backend-of.md](0036-docz-site-on-the-shared-design-system-or-docz-as-a-backend-of.md) |
 | INV-0037 | Nested .docz.yaml files in one repository: monorepo projects in the CLI, API, site, and MCP | Concluded | 2026-11-23 | Donald Gifford | [0037-nested-doczyaml-files-in-one-repository-monorepo-projects-in.md](0037-nested-doczyaml-files-in-one-repository-monorepo-projects-in.md) |
+| INV-0038 | A relative --repo-root or --config doubles the root: empty reads and misplaced writes | Concluded | 2026-11-23 | Donald Gifford | [0038-a-relative-repo-root-or-config-doubles-the-root-empty-reads-and.md](0038-a-relative-repo-root-or-config-doubles-the-root-empty-reads-and.md) |
 <!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
