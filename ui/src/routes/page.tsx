@@ -7,6 +7,7 @@ import { TocList } from "@/components/doc-rail";
 import {
   ErrorPanel,
   NotFoundPanel,
+  ProseSkeleton,
   SessionRequiredRedirect,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
@@ -26,23 +27,6 @@ import { useRenderedSource } from "@/markdown/useRenderedMarkdown";
  * misses); a 503 stays the retryable panel (DESIGN-0003). An empty
  * splat redirects home: the landing page IS the repo home.
  */
-
-function PageSkeleton() {
-  return (
-    <div aria-hidden data-testid="page-skeleton" className="animate-pulse">
-      <div className="mb-6 h-8 w-2/5 bg-bg-elevated" />
-      <div className="space-y-3">
-        {Array.from({ length: 6 }, (_, i) => (
-          <div
-            key={i}
-            className="h-3 bg-bg-raised"
-            style={{ width: `${String(96 - (i % 3) * 12)}%` }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function Component() {
   const params = useParams();
@@ -142,11 +126,7 @@ export function Component() {
     if (failed !== undefined) {
       return (
         <ErrorPanel
-          message={
-            failed.error instanceof Error
-              ? failed.error.message
-              : "Request failed"
-          }
+          error={failed.error}
           onRetry={() => {
             void failed.refetch();
           }}
@@ -154,7 +134,7 @@ export function Component() {
       );
     }
     if (page === undefined || rendered.data === undefined) {
-      return <PageSkeleton />;
+      return <ProseSkeleton data-testid="page-skeleton" />;
     }
     return (
       <>
@@ -163,7 +143,7 @@ export function Component() {
         </DocSurface>
         <div
           data-testid="page-meta"
-          className="mt-10 border-t border-border-hairline pt-3 font-mono text-[12px] text-fg-muted"
+          className="mt-10 border-t border-border pt-3 font-mono text-[12px] text-muted-foreground"
         >
           {sourceInputs?.base ?? page.path} · {page.git_sha.slice(0, 7)}
         </div>
@@ -173,21 +153,12 @@ export function Component() {
 
   return (
     <RepoFrame
-      owner={owner}
-      name={repo}
       crumbs={[
         { label: repoId, to: `/${repoId}` },
         { label: "pages" },
         ...splat.split("/").map((segment) => ({ label: segment })),
       ]}
-      rail={
-        <>
-          <div className="mb-3 border-b border-border-hairline pb-2 text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
-            On this page
-          </div>
-          <TocList toc={rendered.data?.toc ?? []} />
-        </>
-      }
+      rail={<TocList toc={rendered.data?.toc ?? []} />}
     >
       {content}
     </RepoFrame>

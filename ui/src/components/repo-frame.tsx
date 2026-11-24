@@ -1,87 +1,95 @@
-import { Fragment, type ReactNode } from "react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@donaldgifford/design-system/components/breadcrumb";
+import { Fragment, use, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router";
 
-import { RepoNav } from "@/components/repo-nav";
+import { TopBarSlotContext } from "@/components/top-bar-slot";
 
 /*
- * The mockup's three-column repo view: sticky RepoNav left, content
- * center, a 190px rail right (hidden below 1181px; the nav collapses
- * to a stacked bordered header below 861px). Every repo-scoped page —
- * home, type, reader — mounts inside this frame so breadcrumbs and
- * collapse behavior stay consistent.
+ * The frame of a repository's pages inside the shell (DESIGN-0028 §6):
+ * the content, and a 190px rail to its right from 1181px. The
+ * repository's navigation is the shell's sidebar (repo-sidebar.tsx) and
+ * the breadcrumbs sit in the shell's top bar, so every repo-scoped page
+ * — home, changelog, pages, type, reader — mounts inside this and hands
+ * it its crumbs and its rail.
  */
 
 export interface Crumb {
   label: string;
-  /** Link target; the current (last) crumb omits it and renders accent. */
+  /** Link target; the last crumb, the current page, needs none. */
   to?: string;
 }
 
+/**
+ * The route's breadcrumbs, drawn in the shell's top bar: the design
+ * system's Breadcrumb, portalled into the slot AppShell provides. It
+ * draws nothing where there is no top bar.
+ */
 export function RepoBreadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
-  return (
-    <nav
-      aria-label="Breadcrumb"
-      className="mb-6 flex flex-wrap gap-2 font-mono text-[13px] text-fg-muted"
-    >
-      <Link to="/repos" className="text-fg-tertiary hover:text-fg-primary">
-        repos
-      </Link>
-      {crumbs.map((crumb) => (
-        <Fragment key={`${crumb.label}:${crumb.to ?? ""}`}>
-          <span>/</span>
-          {crumb.to === undefined ? (
-            <span className="text-accent [overflow-wrap:anywhere]">
-              {crumb.label}
-            </span>
-          ) : (
-            <Link
-              to={crumb.to}
-              className="text-fg-tertiary hover:text-fg-primary"
-            >
-              {crumb.label}
-            </Link>
-          )}
-        </Fragment>
-      ))}
-    </nav>
+  const slot = use(TopBarSlotContext);
+  if (slot === null) {
+    return null;
+  }
+  return createPortal(
+    // The ancestors keep their width and the leaf gives way; below md
+    // the leaf is all there is room for.
+    <Breadcrumb aria-label="Breadcrumb" className="min-w-0">
+      <BreadcrumbList className="flex-nowrap font-mono">
+        <BreadcrumbItem className="shrink-0 max-md:hidden">
+          <BreadcrumbLink render={<Link to="/repos" />}>repos</BreadcrumbLink>
+        </BreadcrumbItem>
+        {crumbs.map((crumb, index) => (
+          <Fragment key={`${crumb.label}:${crumb.to ?? ""}`}>
+            <BreadcrumbSeparator className="max-md:hidden" />
+            {index === crumbs.length - 1 ? (
+              <BreadcrumbItem className="min-w-0">
+                <BreadcrumbPage className="truncate">
+                  {crumb.label}
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            ) : (
+              <BreadcrumbItem className="shrink-0 max-md:hidden">
+                {crumb.to === undefined ? (
+                  // A step with nothing of its own to open: `pages`,
+                  // a directory no page publishes at.
+                  crumb.label
+                ) : (
+                  <BreadcrumbLink render={<Link to={crumb.to} />}>
+                    {crumb.label}
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+            )}
+          </Fragment>
+        ))}
+      </BreadcrumbList>
+    </Breadcrumb>,
+    slot,
   );
 }
 
 export function RepoFrame({
-  owner,
-  name,
   crumbs,
   rail,
   children,
 }: {
-  owner: string;
-  name: string;
   crumbs: Crumb[];
-  /** Right-rail content; omit to drop the third column's content. */
+  /** Right-rail content; omit to drop the second column's content. */
   rail?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <div className="mx-auto grid max-w-[1360px] grid-cols-1 gap-y-8 px-5 py-7 min-[861px]:grid-cols-[250px_minmax(0,1fr)] min-[861px]:gap-x-10 min-[1181px]:grid-cols-[250px_minmax(0,1fr)_190px] min-[1181px]:gap-x-12">
-      <div className="min-[861px]:sticky min-[861px]:top-[64px] min-[861px]:max-h-[calc(100vh-6rem)] min-[861px]:self-start min-[861px]:overflow-y-auto">
-        {/* Narrow viewports get the nav as a collapsed drawer. */}
-        <details className="border-b border-border-hairline pb-4 min-[861px]:hidden">
-          <summary className="cursor-pointer text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
-            repo menu
-          </summary>
-          <div className="pt-4">
-            <RepoNav owner={owner} name={name} />
-          </div>
-        </details>
-        <div className="hidden min-[861px]:block">
-          <RepoNav owner={owner} name={name} />
-        </div>
-      </div>
-
-      <main className="min-w-0">
-        <RepoBreadcrumbs crumbs={crumbs} />
-        {children}
-      </main>
+    // 1062px is the content's 784px measure, the rail, and the gap.
+    <div className="mx-auto grid w-full max-w-[1062px] grid-cols-1 px-5 py-7 min-[1181px]:grid-cols-[minmax(0,1fr)_190px] min-[1181px]:gap-x-12">
+      <RepoBreadcrumbs crumbs={crumbs} />
+      <main className="min-w-0">{children}</main>
 
       <aside className="hidden min-[1181px]:block">
         <div className="sticky top-[64px]">{rail}</div>

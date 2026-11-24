@@ -83,7 +83,7 @@ describe("repos grid", () => {
     expect(await screen.findByText("Something went wrong")).toBeInTheDocument();
 
     failing = false;
-    await user.click(screen.getByRole("button", { name: "retry" }));
+    await user.click(screen.getByRole("button", { name: "Retry" }));
     expect(
       await screen.findByRole("link", { name: /donaldgifford\/docz-site/ }),
     ).toBeInTheDocument();

@@ -1,8 +1,8 @@
+import { ModeToggle } from "@donaldgifford/design-system/shell/mode-toggle";
 import { act, render, renderHook, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { AppearanceControls } from "@/components/appearance-controls";
 import { applyStoredMode, storedMode, useAppearance } from "@/lib/appearance";
 
 const root = document.documentElement;
@@ -29,7 +29,7 @@ function stubSystem(dark: boolean) {
 
 function Controls() {
   const { mode, toggleMode } = useAppearance();
-  return <AppearanceControls mode={mode} onToggleMode={toggleMode} />;
+  return <ModeToggle mode={mode} onToggle={toggleMode} />;
 }
 
 afterEach(() => {
@@ -93,7 +93,7 @@ describe("useAppearance", () => {
   });
 });
 
-describe("AppearanceControls", () => {
+describe("the mode toggle", () => {
   it("offers the toggle and no theme selector", async () => {
     stubSystem(false);
     const user = userEvent.setup();

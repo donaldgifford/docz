@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 import { THEMES } from "../src/theme/__generated__/themes";
-import { SHELL_MODES } from "./appearances";
+import { arrived, SHELL_MODES } from "./appearances";
 
 /*
  * docz-review's page in a real browser (DESIGN-0024 section 7: the
@@ -53,7 +53,7 @@ let setting = PAPER_LIGHT;
 async function open(page: Page) {
   await page.goto(`${ORIGIN}/review.html?t=${TOKEN}`);
   await expect(
-    page.getByRole("heading", { name: "Review cache", level: 1 }),
+    page.getByRole("heading", { name: "Review cache", exact: true, level: 1 }),
   ).toBeVisible();
   const html = page.locator("html");
   await expect(html).not.toHaveAttribute("data-theme", /.*/);
@@ -313,6 +313,57 @@ for (const each of SETTINGS) {
         "docz review: DESIGN-0001 Review cache, round 1: approved",
       );
     });
+
+    test("the tabs, the status control, and a dialog act and pass axe", async ({
+      page,
+      request,
+    }) => {
+      await open(page);
+      const title = page.getByRole("heading", {
+        name: "Review cache",
+        exact: true,
+        level: 1,
+      });
+
+      // Each document in the round has a tab.
+      const documents = page.getByRole("tablist", { name: "Documents" });
+      await documents.getByRole("tab", { name: /DESIGN-0002/ }).click();
+      await expect(title).toBeHidden();
+      await documents.getByRole("tab", { name: /DESIGN-0001/ }).click();
+      await expect(title).toBeVisible();
+
+      // Another status is a draft, so approving has to discard it first.
+      const status = page.getByRole("tablist", { name: "Status" });
+      await expect(
+        status.getByRole("tab", { name: "Draft (current)" }),
+      ).toHaveAttribute("aria-selected", "true");
+      await status.getByRole("tab", { name: "In Review" }).click();
+      await page
+        .getByRole("button", { name: "Discard draft and approve" })
+        .click();
+      const dialog = page.getByRole("dialog", {
+        name: "Discard this draft and approve?",
+      });
+      await expect(dialog).toBeVisible();
+      await arrived(dialog);
+      const results = await new AxeBuilder({ page }).analyze();
+      expect(
+        results.violations
+          .filter((v) => v.impact === "serious" || v.impact === "critical")
+          .map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.html) })),
+      ).toEqual([]);
+      await dialog.getByRole("button", { name: "Cancel" }).click();
+      await expect(dialog).toBeHidden();
+
+      await page.getByRole("button", { name: "Submit" }).click();
+      await expect(
+        page.getByText(/This round is closed: changes/),
+      ).toBeVisible();
+      const message = await (
+        await request.get(`${ORIGIN}/__fake/feedback`)
+      ).text();
+      expect(message).toContain("Status: set to In Review");
+    });
   });
 }
 
@@ -324,17 +375,30 @@ test("with no stored choice it follows the system, then keeps the reader's", asy
   await page.goto(`${ORIGIN}/review.html?t=${TOKEN}`);
   const html = page.locator("html");
   await expect(html).not.toHaveAttribute("data-mode", /.*/);
+  // The page's own surface, as painted: the shell's dark and light
+  // backgrounds. The token behind it is the design system's, in oklch
+  // (DESIGN-0028 §4), so the check paints it onto a canvas and reads
+  // the pixel back rather than comparing the token's text.
   const bg = () =>
-    page.evaluate(() =>
-      getComputedStyle(document.documentElement)
-        .getPropertyValue("--color-bg-base")
-        .trim(),
-    );
-  // The shell's dark and light surfaces (shell.css).
+    page.evaluate(() => {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 1;
+      const context = canvas.getContext("2d");
+      if (context === null) {
+        return "";
+      }
+      context.fillStyle = getComputedStyle(document.body).backgroundColor;
+      context.fillRect(0, 0, 1, 1);
+      const [r = 0, g = 0, b = 0] = context.getImageData(0, 0, 1, 1).data;
+      return `#${[r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+    });
+  // With nothing stored, the dark class follows the system.
+  await expect(html).toHaveClass(/(^|\s)dark(\s|$)/);
   expect(await bg()).toBe("#17191c");
 
   await page.getByRole("button", { name: "Switch to light mode" }).click();
   await expect(html).toHaveAttribute("data-mode", "light");
+  await expect(html).not.toHaveClass(/(^|\s)dark(\s|$)/);
   expect(await bg()).toBe("#f6f7f9");
 
   // The page drops its token from the URL, so reopen the link.

@@ -13,7 +13,7 @@ import {
   useAnnotationPaint,
   useSelectionAnchor,
 } from "@/review/annotations";
-import { ReviewButton } from "@/review/controls";
+import { ConfirmDialog, ReviewButton, StateBadge } from "@/review/controls";
 import { compareRounds, markChangedRegions, RoundDiff } from "@/review/diff";
 import {
   canApprove,
@@ -45,7 +45,7 @@ function FrontmatterRows({ doc }: { doc: ReviewDocument }) {
   const fm = doc.inspect.frontmatter;
   if (fm === null) {
     return (
-      <p className="font-mono text-[12.5px] text-st-rejected">
+      <p className="text-xs text-destructive">
         This document has no frontmatter.
       </p>
     );
@@ -57,11 +57,11 @@ function FrontmatterRows({ doc }: { doc: ReviewDocument }) {
     ["path", doc.inspect.path],
   ];
   return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-4 font-mono text-[12.5px]">
+    <dl className="grid grid-cols-[auto_1fr] gap-x-4 font-mono text-xs">
       {rows.map(([k, v]) => (
         <div key={k} className="contents">
-          <dt className="text-fg-muted uppercase">{k}</dt>
-          <dd className="text-fg-primary">{v}</dd>
+          <dt className="text-muted-foreground uppercase">{k}</dt>
+          <dd className="text-foreground">{v}</dd>
         </div>
       ))}
     </dl>
@@ -93,6 +93,7 @@ export function DocumentReview({
   const current = inspect.frontmatter?.status ?? "";
   const open = doc.state === "open";
   const [busy, setBusy] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
   const docRef = useRef<HTMLDivElement>(null);
 
   const rendered = useQuery({
@@ -164,10 +165,11 @@ export function DocumentReview({
     <div className="grid grid-cols-[minmax(0,1fr)_340px] gap-8">
       <div className="min-w-0">
         <header className="mb-4">
-          <p className="font-mono text-[12px] tracking-[0.1em] text-fg-muted uppercase">
-            {inspect.id} · round {doc.round_number} · {doc.state}
+          <p className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
+            {inspect.id} · round {doc.round_number}
+            <StateBadge state={doc.state} />
           </p>
-          <h1 className="mt-1 font-serif text-[28px] text-fg-primary">
+          <h1 className="mt-1 text-xl font-semibold text-foreground">
             {inspect.frontmatter?.title ?? inspect.path}
           </h1>
           <div className="mt-2 flex items-center gap-3">
@@ -181,11 +183,13 @@ export function DocumentReview({
         {stale !== null && (
           <div
             role="alert"
-            className="mb-4 border border-st-draft bg-bg-raised p-3 font-mono text-[12.5px] text-st-draft"
+            className="mb-4 rounded-lg border border-warning bg-card p-3 text-xs text-warning"
           >
             The document changed on disk since this round opened ({stale}). Your
             draft is kept; reload to review the new text before submitting.{" "}
-            <ReviewButton onClick={onReload}>Reload</ReviewButton>
+            <ReviewButton size="sm" onClick={onReload}>
+              Reload
+            </ReviewButton>
           </div>
         )}
 
@@ -295,9 +299,7 @@ export function DocumentReview({
               <ReviewButton
                 disabled={busy}
                 onClick={() => {
-                  if (window.confirm("Discard this draft and approve?")) {
-                    void run(() => actions.approve(key()));
-                  }
+                  setDiscarding(true);
                 }}
               >
                 Discard draft and approve
@@ -309,17 +311,25 @@ export function DocumentReview({
             >
               Dismiss
             </ReviewButton>
+            <ConfirmDialog
+              open={discarding}
+              onOpenChange={setDiscarding}
+              title="Discard this draft and approve?"
+              description="Nothing in the draft is sent: its answers, annotations, and status change are dropped."
+              confirm="Discard and approve"
+              onConfirm={() => void run(() => actions.approve(key()))}
+            />
             {hint !== null && (
               <p
                 data-review-hint
-                className="w-full font-mono text-[12px] text-fg-tertiary"
+                className="w-full text-xs text-muted-foreground"
               >
                 {hint}
               </p>
             )}
           </div>
         ) : (
-          <p className="font-mono text-[12.5px] text-fg-tertiary">
+          <p className="text-xs text-muted-foreground">
             This round is closed: {doc.state}.
           </p>
         )}

@@ -160,6 +160,10 @@ jobs:
         id: bake
         if: inputs.dry_run != true
         uses: docker/bake-action@v7
+        env:
+          # _common_ui's build secret: ui/.npmrc reads it to fetch
+          # @donaldgifford/design-system from GitHub Packages.
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           targets: ${{ env.BAKE_TARGET }}
           source: .

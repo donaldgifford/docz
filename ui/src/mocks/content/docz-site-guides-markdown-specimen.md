@@ -171,7 +171,7 @@ Task lists come from IMPL documents:
 A caption comes from the fence meta:
 
 ```ts src/api/fetcher.ts
-// Comments and control-flow keywords render in the italic face.
+// A comment is the theme's grey; a keyword is its red.
 export async function fetcher<T>(url: string): Promise<T> {
   const response = await fetch(url, { credentials: "same-origin" });
   if (response.status === 401) throw new SessionRequiredError();
@@ -284,6 +284,45 @@ console.log("tilde fence");
 ~~~
 
 Double backticks hold a literal backtick inline: `` `code` ``.
+
+### Code in each mode
+
+Code the site renders follows the page: `github-light` on the light
+code surface and `github-dark` on the dark one, with every token colour
+that falls short of 4.5:1 on its surface lifted to it. Both sets are on
+every token, and the mode toggle switches between them with no
+re-render. This block has each token family in it; check it in both
+modes:
+
+```ts each-mode.ts
+// A line comment, the family that most often falls short.
+/** A doc comment with a @param tag. */
+import { type Mode, storedMode } from "@/lib/appearance";
+
+const LIMIT = 42;
+const PATTERN = /^docz:(light|dark)$/u;
+
+export class Reader<T extends Mode> {
+  #mode: T | null = null;
+
+  constructor(private readonly label = `mode ${String(LIMIT)}`) {}
+
+  get current(): Mode {
+    return this.#mode ?? storedMode() ?? "light";
+  }
+
+  matches(key: string): boolean {
+    return PATTERN.test(key) && key.length <= LIMIT && this.label !== "";
+  }
+}
+```
+
+A block with no grammar has no token colours, and takes the page's
+text colour on the same surface:
+
+```text
+plain text on the code surface
+```
 
 ## Mermaid
 

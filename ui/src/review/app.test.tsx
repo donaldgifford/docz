@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, render, screen, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { describe, expect, it, vi } from "vitest";
@@ -9,6 +9,8 @@ import { ReviewApp } from "@/review/app";
 import { FakeReviewServer } from "@/review/fake-server";
 import { INSPECT, reviewDocument, TOKEN } from "@/review/testing";
 
+import type { ReviewDocument } from "@/review/api";
+
 vi.mock("mermaid", () => ({
   default: {
     initialize: vi.fn(),
@@ -16,11 +18,8 @@ vi.mock("mermaid", () => ({
   },
 }));
 
-function mount() {
-  const server = new FakeReviewServer({
-    token: TOKEN,
-    documents: [reviewDocument()],
-  });
+function mount(documents: ReviewDocument[] = [reviewDocument()]) {
+  const server = new FakeReviewServer({ token: TOKEN, documents });
   const client = createReviewClient(TOKEN, server.fetch);
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -203,5 +202,121 @@ describe("ReviewApp", () => {
       "true",
     );
     expect(server.records).toEqual([]);
+  });
+
+  it("gives each document a tab with its state", async () => {
+    const user = userEvent.setup();
+    mount([
+      reviewDocument(),
+      reviewDocument({
+        key: "DESIGN-0043",
+        round: "round-DESIGN-0043-1",
+        state: "approved",
+        inspect: { ...INSPECT, id: "DESIGN-0043" },
+      }),
+    ]);
+    const tabs = within(
+      await screen.findByRole("tablist", { name: "Documents" }),
+    );
+    const first = tabs.getByRole("tab", { name: /DESIGN-0042/ });
+    const second = tabs.getByRole("tab", { name: /DESIGN-0043/ });
+    expect(first).toHaveAttribute("aria-selected", "true");
+    expect(first).toHaveTextContent("open");
+    expect(second).toHaveTextContent("approved");
+    expect(screen.getByRole("button", { name: "Submit" })).toBeInTheDocument();
+
+    await user.click(second);
+    expect(second).toHaveAttribute("aria-selected", "true");
+    expect(
+      await screen.findByText(/This round is closed: approved/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Submit" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("ends the session from Done when nothing is drafted", async () => {
+    const user = userEvent.setup();
+    const server = mount();
+    await screen.findByText("Postgres");
+    await user.click(screen.getByRole("button", { name: "Done" }));
+    expect(
+      await screen.findByText(/The review session ended \(done\)/),
+    ).toBeInTheDocument();
+    expect(server.done).toBe(true);
+  });
+
+  it("asks before Done leaves a draft behind", async () => {
+    const user = userEvent.setup();
+    const server = mount();
+    await screen.findByText("Postgres");
+    await user.click(screen.getByRole("radio", { name: /Memcached/ }));
+
+    await user.click(screen.getByRole("button", { name: "Done" }));
+    const asked = await screen.findByRole("dialog", {
+      name: "Leave without an outcome for the open documents?",
+    });
+    await user.click(within(asked).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("dialog", { name: /Leave without an outcome/ }),
+      ).not.toBeInTheDocument();
+    });
+    expect(server.done).toBe(false);
+    expect(screen.getByRole("radio", { name: /Memcached/ })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+
+    await user.click(screen.getByRole("button", { name: "Done" }));
+    await user.click(
+      within(
+        await screen.findByRole("dialog", { name: /Leave without an outcome/ }),
+      ).getByRole("button", { name: "Leave" }),
+    );
+    expect(
+      await screen.findByText(/The review session ended \(done\)/),
+    ).toBeInTheDocument();
+    expect(server.done).toBe(true);
+    expect(server.records).toEqual([]);
+  });
+
+  it("asks before it discards a draft to approve", async () => {
+    const user = userEvent.setup();
+    const server = mount();
+    await screen.findByText("Postgres");
+    await user.click(screen.getByRole("radio", { name: /Memcached/ }));
+
+    await user.click(
+      screen.getByRole("button", { name: "Discard draft and approve" }),
+    );
+    const asked = await screen.findByRole("dialog", {
+      name: "Discard this draft and approve?",
+    });
+    await user.click(within(asked).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("dialog", { name: /Discard this draft/ }),
+      ).not.toBeInTheDocument();
+    });
+    expect(server.records).toEqual([]);
+
+    await user.click(
+      screen.getByRole("button", { name: "Discard draft and approve" }),
+    );
+    await user.click(
+      within(
+        await screen.findByRole("dialog", { name: /Discard this draft/ }),
+      ).getByRole("button", { name: "Discard and approve" }),
+    );
+    expect(
+      await screen.findByText(/This round is closed: approved/),
+    ).toBeInTheDocument();
+    expect(server.records).toHaveLength(1);
+    expect(server.records[0]).toMatchObject({
+      outcome: "approved",
+      questions: [],
+      annotations: [],
+    });
   });
 });

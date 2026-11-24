@@ -66,7 +66,7 @@ async function start(mount: HTMLElement): Promise<void> {
   createRoot(mount).render(
     <StrictMode>
       {client === null ? (
-        <p role="alert" className="p-8 font-mono text-st-rejected">
+        <p role="alert" className="p-8 text-base text-destructive">
           This page needs the link docz-review printed; open that link instead.
         </p>
       ) : (

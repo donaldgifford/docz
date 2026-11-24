@@ -43,6 +43,7 @@ just ci             # every gate: the Go chain, api::{lint,test}, chart::lint, t
 just api build      # the server binary to build/bin/docz-api (api.just, a module)
 just api test       # the server's packages only: ./cmd/docz-api/... ./internal/... ./api/...
 just vendor-mermaid # gzip ui/node_modules' mermaid into pkg/export/html/assets (after just ui install)
+just gen-charcoal   # write pkg/theme/tokens/charcoal.css from ui/node_modules' design system (same)
 just ui ci          # the frontend's CI parity
 just chart lint     # charts/docz: helm lint with ci/ci-values.yaml (also template, unittest, docs)
 ```

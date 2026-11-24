@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { routes } from "@/app/router";
 
 /*
- * The topbar's appearance (DESIGN-0026 §2): the shell has one look with a
+ * The top bar's appearance (DESIGN-0026 §2): the shell has one look with a
  * light/dark toggle, no theme selector, and no data-theme on <html>.
  */
 
@@ -31,7 +31,7 @@ afterEach(() => {
   root.removeAttribute("data-theme");
 });
 
-describe("topbar appearance", () => {
+describe("top bar appearance", () => {
   it("offers the toggle and no theme selector, whatever DOCZ_THEME says", async () => {
     window.__DOCZ_CONFIG__ = { theme: "classic" };
     mountAt("/repos");

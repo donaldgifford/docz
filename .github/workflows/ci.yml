@@ -54,6 +54,10 @@ jobs:
               - 'ui/src/mocks/content/**'
               - 'ui/src/mocks/__generated__/fragments.json'
               - 'ui/src/mocks/__generated__/hostile-fragments.json'
+              # pkg/theme and pkg/export/html hold charcoal.css and the
+              # vendored mermaid to the versions this lockfile pins, so a
+              # pull request that only bumps one has to run them.
+              - 'ui/bun.lock'
               - 'justfile'
               - '*.just'
               - '.golangci.yml'
@@ -210,8 +214,9 @@ jobs:
     # than fixtures: pkg/doczcore/repo's migration test runs InsertRegions
     # over this repository's docs/, and test/archive scans every tracked
     # file and reads .docz.yaml. A docs-only PR can break either one, and
-    # it skips Test Go, so they run here. Both are quick, and so is the
-    # docz build validate needs.
+    # it skips Test Go, so they run here. pkg/theme reads ui/bun.lock, to
+    # hold the generated charcoal.css to the design system it pins. All
+    # are quick, and so is the docz build validate needs.
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'graft') }}
     runs-on: ubuntu-latest
     steps:
@@ -230,7 +235,7 @@ jobs:
         run: just validate
 
       - name: Run the tests that read the real tree
-        run: go test ./pkg/doczcore/repo/... ./test/archive/...
+        run: go test ./pkg/doczcore/repo/... ./test/archive/... ./pkg/theme/...
 
   security:
     name: Security Scan
@@ -352,6 +357,10 @@ jobs:
       - name: Build and push dev image
         if: github.event_name == 'pull_request'
         uses: docker/bake-action@v7
+        env:
+          # _common_ui's build secret: ui/.npmrc reads it to fetch
+          # @donaldgifford/design-system from GitHub Packages.
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           targets: ci
           source: .
@@ -362,6 +371,10 @@ jobs:
       - name: Build multi-arch images (post-merge validation)
         if: github.event_name == 'push'
         uses: docker/bake-action@v7
+        env:
+          # _common_ui's build secret: ui/.npmrc reads it to fetch
+          # @donaldgifford/design-system from GitHub Packages.
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           targets: ci
           source: .
@@ -375,6 +388,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.ui == 'true'
+    permissions:
+      contents: read
+      packages: read
     defaults:
       run:
         working-directory: ui
@@ -391,6 +407,10 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+        env:
+          # ui/.npmrc reads it: @donaldgifford/design-system is on GitHub
+          # Packages, which the job's own token can read (packages: read).
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate API client
         run: just ui gen-api
@@ -439,6 +459,12 @@ jobs:
       - name: Theme list drift check
         run: just ui gen-themes-check
 
+      # pkg/theme's charcoal.css is generated from the design system in
+      # node_modules, which only this job has: it holds the bytes, and
+      # TestCharcoalMatchesPinnedDesignSystem holds the version in Go.
+      - name: Generated charcoal theme drift check
+        run: just ui gen-charcoal-check
+
       # The four docz-review binaries, with the host's run from an empty
       # directory: the page and a lazy chunk must come from the binary.
       - name: Build review binaries
@@ -467,6 +493,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.ui == 'true' || needs.changes.outputs.go == 'true'
+    permissions:
+      contents: read
+      packages: read
     defaults:
       run:
         working-directory: ui
@@ -483,6 +512,10 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+        env:
+          # ui/.npmrc reads it: @donaldgifford/design-system is on GitHub
+          # Packages, which the job's own token can read (packages: read).
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # The client is gitignored; the MSW preview build imports it.
       - name: Generate API client
@@ -519,6 +552,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.plugin == 'true'
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
 
@@ -556,6 +592,10 @@ jobs:
       - name: Install ui dependencies
         working-directory: ui
         run: bun install --frozen-lockfile
+        env:
+          # ui/.npmrc reads it: @donaldgifford/design-system is on GitHub
+          # Packages, which the job's own token can read (packages: read).
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate CLI types
         working-directory: ui

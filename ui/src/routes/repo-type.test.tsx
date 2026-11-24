@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
@@ -43,7 +43,14 @@ describe("repo type page", () => {
       "href",
       "/donaldgifford/docz-site/design/DESIGN-0001",
     );
-    expect(screen.getByRole("columnheader", { name: "Date" })).toBeVisible();
+    // The table is named for what it lists, and its headers are plain:
+    // the documents come in docz-api's order and the table offers no
+    // other.
+    const table = within(screen.getByRole("table", { name: "All Designs" }));
+    expect(
+      table.getAllByRole("columnheader").map((header) => header.textContent),
+    ).toEqual(["ID", "Title", "Status", "Date", "Link"]);
+    expect(table.queryByRole("button")).not.toBeInTheDocument();
     expect(
       screen.getByText(
         "0001-docz-site-cross-repo-docz-reader-and-search-ui.md",
@@ -76,12 +83,20 @@ describe("repo type page", () => {
       await screen.findByRole("link", { name: "RUNBOOK-0001" }),
     ).toHaveAttribute("href", "/donaldgifford/docz-site/runbook/RUNBOOK-0001");
 
-    // The repo nav lists the type beside the others, with its document.
-    const nav = screen.getAllByRole("navigation", {
-      name: "donaldgifford/docz-site navigation",
-    })[0];
-    expect(nav).toHaveTextContent(/runbook\s*1/);
-    expect(nav).toHaveTextContent("RUNBOOK-0001 · Rotate the session secret");
+    // The sidebar lists the type beside the others, open on its
+    // routes, with its document.
+    const nav = within(
+      screen.getByRole("navigation", { name: "docz navigation" }),
+    );
+    expect(await nav.findByRole("link", { name: "runbook" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      await nav.findByRole("link", {
+        name: "RUNBOOK-0001 · Rotate the session secret",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("shows the docz-create empty state for a type with zero docs", async () => {
@@ -98,6 +113,7 @@ describe("repo type page", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/No rfc documents yet/)).toBeInTheDocument();
     expect(screen.getByText(/scaffolds the first one/)).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 
   it("renders the neutral panel for an unknown type", async () => {
@@ -122,7 +138,7 @@ describe("repo type page", () => {
     expect(await screen.findByText("Something went wrong")).toBeInTheDocument();
 
     failing = false;
-    await userEvent.click(screen.getByRole("button", { name: "retry" }));
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(
       await screen.findByRole("heading", { level: 1, name: "Designs" }),
     ).toBeInTheDocument();

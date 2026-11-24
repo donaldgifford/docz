@@ -10,7 +10,7 @@
       "source": "docs/impl/0001-phase-out-the-legacy-scanner.md",
       "path": "impl/0001-phase-out-the-legacy-scanner.html",
       "action": "wrote",
-      "hash": "sha256:cd4eb56a139d6410d10d4a614d54894d2b51fac8ff77e7cf7c4712d7a27faee9",
+      "hash": "sha256:ec8ea64ffb83fc464c27039bd172a3a4a3bc9c950e9c01b6b85c643439c73f8c",
       "unresolved_links": [],
       "problems": []
     },
@@ -20,7 +20,7 @@
       "source": "docs/impl/0002-registry-store-migration.md",
       "path": "impl/0002-registry-store-migration.html",
       "action": "wrote",
-      "hash": "sha256:e4cbcf465268b994b64918cd3c763c4c67d1054b57c8675b6d6780327c810e7b",
+      "hash": "sha256:93ac652c167b228d3868f0291df2fd34be647295a55f92f0d890a3409cc9d66d",
       "unresolved_links": [
         {
           "href": "../design/0002-registry-storage-backend.md",
@@ -41,7 +41,7 @@
       "source": "",
       "path": "index.html",
       "action": "wrote",
-      "hash": "sha256:9c8b03134dec9e744e799e40308093e1eddc894a2e37e0a63660ad55723516d0",
+      "hash": "sha256:2a0ab93e94f15745da39bdce55c63fcede09b199e57f2744642bac6eb5ef242b",
       "unresolved_links": [],
       "problems": []
     }

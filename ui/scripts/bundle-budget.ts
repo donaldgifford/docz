@@ -13,15 +13,32 @@
  * before first paint just the same. Measuring only the entry file
  * would let an eager import hide in a preloaded chunk.
  *
- * Budget rationale: the eager set (react + router + query + generated
- * client + shell/palette) gzips to ~123 KB today; 130 KB allows normal
- * growth while any eager-import regression fails loudly.
+ * Budget rationale (DESIGN-0028 §12 and question 1, IMPL-0033 Phase
+ * 9): the eager set measured 171.6 KB gzipped on 2026-11-23 with the
+ * move onto @donaldgifford/design-system finished, and the budget is
+ * that total plus 6 KB, 177.6 KB.
+ *
+ * Before the package the eager set was react + router + query + the
+ * generated client + docz's own shell and palette, ~124 KB against a
+ * budget of 130. The package's frame (sidebar, top bar, and the Base
+ * UI primitives under them) is the first paint, so it cannot be lazy.
+ * About 45 KB of the total is the package's components/sidebar, which
+ * imports its sheet and tooltip statically; the palette, the account
+ * menu, and a repository's sidebar groups are lazy chunks so that
+ * their popover, menu, and dialog stay out of this set. If the package
+ * puts its sheet behind a lazy boundary, measure again and lower the
+ * number.
+ *
+ * What the budget guards has not changed, and each is far larger than
+ * the headroom: the markdown pipeline, a Shiki grammar, mermaid, or the
+ * widgets leaking into the eager graph.
  */
 
 import { readFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 
-const BUDGET_GZIP_BYTES = 130 * 1024;
+// 171.6 KB measured, plus 6 KB of headroom.
+const BUDGET_GZIP_BYTES = Math.round(177.6 * 1024);
 
 function read(path: string): Buffer {
   try {
@@ -64,8 +81,8 @@ console.log(
 if (total > BUDGET_GZIP_BYTES) {
   console.error(
     "Eager JS exceeds the budget. Check for eager imports of the " +
-      "markdown pipeline, Shiki, or other lazy-only modules before " +
-      "raising the number here.",
+      "markdown pipeline, Shiki, mermaid, the widgets, or other " +
+      "lazy-only modules before raising the number here.",
   );
   process.exit(1);
 }

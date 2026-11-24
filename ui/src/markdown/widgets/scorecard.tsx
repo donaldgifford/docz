@@ -213,7 +213,7 @@ function ScoreTable({
           aria-label="Score"
           max={100}
           value={pct}
-          className="mt-2 block h-1.5 w-full appearance-none bg-bg-elevated [&::-moz-progress-bar]:bg-accent [&::-webkit-progress-bar]:bg-bg-elevated [&::-webkit-progress-value]:bg-accent"
+          className="mt-2 block h-1.5 w-full appearance-none bg-bg-elevated [&::-moz-progress-bar]:bg-brand [&::-webkit-progress-bar]:bg-bg-elevated [&::-webkit-progress-value]:bg-brand"
         />
         <p className="mt-2 text-[13px] text-fg-tertiary">
           {pct}% of the target, measured on {measured} of {checks.length}{" "}

@@ -12,14 +12,30 @@ SPA, no SSR. The authoritative docs:
   design decisions 1–11 (stack, routes, reader pipeline, colors, auth)
 - `docs/impl/0001-docz-site-mvp-phased-build-of-the-reader-directory-and-repo.md`
   — the phased build plan being executed (check off tasks as completed)
-- `mockup.html` — visual source of truth (demo content; excluded from
-  formatting, don't treat its text as project naming)
+- The design system's Storybook,
+  <https://donaldgifford.github.io/design-system/>: the visual reference
+  for the chrome (DESIGN-0028). `mockup.html` and `design/` are the
+  mockups the first shell and the adoption were drawn from; they stay as
+  records and lead nothing (demo content, excluded from formatting).
 - `docs/input.md` — historical exploratory design; input only
 
 ## Commands
 
 Bun is the package manager and script runner (pinned in `mise.toml`).
 
+- `NPM_TOKEN=$(gh auth token) just ui install` — `@donaldgifford/design-system`
+  (pinned exactly, no caret) comes from GitHub Packages, and `ui/.npmrc`
+  reads the token from `NPM_TOKEN`. The token comes from the environment
+  and is NEVER written to a file: not `.npmrc`, not `.env*`, not
+  `mise.toml`, not a compose file. The recipe fails before Bun runs when
+  the variable is unset. Every other install path takes the same
+  variable: CI's install steps from the job's `GITHUB_TOKEN`
+  (`packages: read`), and every image build as a BuildKit secret
+  (`--mount=type=secret,id=NPM_TOKEN,env=NPM_TOKEN` in `Dockerfile.ui`;
+  `_common_ui` in `docker-bake.hcl`, `just ui docker-build`, both compose
+  files). Never an `ARG` or `ENV`: either would put the token in a layer.
+  Secrets are not part of BuildKit's cache key, so a cached install
+  layer hides a missing secret; test the wiring with `--no-cache`.
 - `bun run dev` — Vite dev server; proxies `/api`, `/auth`,
   `/openapi.yaml` to a local docz-api (`:8080`; override `DOCZ_API_URL`)
 - `bun run dev:msw` — dev server against MSW fixtures (no API needed)
@@ -39,6 +55,18 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   drift gate. A theme added to `pkg/theme` reaches every list in the UI
   (the server's `DOCZ_THEME` check, `defaultTheme()`, the review e2e
   matrix) and the document stylesheet through these files alone
+- `just gen-charcoal` (at the ROOT, not `just ui`) — writes
+  `../pkg/theme/tokens/charcoal.css` from the installed design system's
+  `tokens.json` dark set (`scripts/gen-charcoal.ts`, IMPL-0033 Phase 3).
+  The table of where each of the 58 names comes from is
+  `src/theme/charcoal.ts` (pure, unit-tested; the script is the file
+  I/O), the header prose and font block are
+  `scripts/charcoal.template.css`, and docz's own 26 come from the dark
+  block of `src/theme/docz-tokens.css`: change a value there and
+  `charcoal.css` changes with it. `just ui gen-charcoal-check` is the
+  drift gate (regenerates to a temporary file, diffs, rewrites nothing).
+  A bump of the package is the lockfile, the recipe, and
+  `go test ./... -update` in one pull request
 - `just local-up` / `just local-down` — build + run the site container
   (`deploy/compose.local.yaml`, :8090) joined to the docz-api local
   stack's network; re-run `local-up` after changes to rebuild/recreate
@@ -51,12 +79,84 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 ## Architecture
 
 - `vite.config.ts` — react + tailwind plugins, `@/` → `src/` alias, dev
-  proxy (same-origin in prod; docz-api sends no CORS headers)
-- Routing: `src/app/router.tsx` (`createBrowserRouter`, library mode)
-  wraps everything in `src/app/AppShell.tsx` (topbar + `<Outlet/>`).
+  proxy (same-origin in prod; docz-api sends no CORS headers).
+  `optimizeDeps.include` names use-sync-external-store's two shim
+  entries, for the DEV SERVER only: the design system ships TypeScript
+  source, Vite neither pre-bundles that nor discovers what a file under
+  `node_modules` imports, so Base UI arrives as its own ESM and its
+  store (under every dialog, tabs, popover, and menu) imports a
+  CommonJS shim with no named export. Without the two entries the page
+  is blank in dev and fine in a build, so the preview-based e2e never
+  sees it; `e2e/review.spec.ts`, which runs against the review dev
+  server, does. A part that brings another CommonJS dependency needs
+  its entry added there.
+- Routing: `src/app/router.tsx` (`createBrowserRouter`, library mode).
+  Every route renders inside `src/app/AppShell.tsx`, the frame, except
+  `/login` and `/oauth/consent`, which sit in a second top-level route
+  with its own error boundary and draw a card on the bare page: neither
+  has a session to show navigation for. The frame's route stays FIRST in
+  `routes` (`src/test/throwing-routes.ts` grafts onto `routes[0]`).
   Route modules live in `src/routes/*` and export a named `Component`;
   register new routes with `lazy: () => import("@/routes/<name>")` so
   each stays its own chunk.
+- **The frame** (`src/app/AppShell.tsx`, DESIGN-0028 §6) is the design
+  system's: `SidebarProvider`, `ShellSidebar`, and beside it
+  `TopBarLayout` over the `Outlet`.
+  The sidebar holds the docz mark (a link home), `Browse` (Directory,
+  Repositories), `Pinned` (the deployment's nav links, absent when
+  there are none), on a repository's routes that repository's groups,
+  and the session at its foot. The top bar holds `SidebarTrigger`, the
+  route's breadcrumbs, `SearchTrigger` (opens the palette), and
+  `ModeToggle` (driven by `useAppearance`).
+  - The column beside the sidebar is a plain `div`, NOT the package's
+    `SidebarInset`: that is a `<main>`, and every route brings its own.
+  - The package keeps the sidebar's open state and a tree's open
+    branches in React state only: no cookie, no `localStorage`. A
+    reload opens the sidebar again, and `ui/server` has nothing of it
+    to forward or log. ⌘B / Ctrl+B, the icon rail, and the sheet below
+    768px come with `SidebarProvider`.
+  - **Breadcrumbs are the route's, drawn in the shell's bar.** AppShell
+    puts the element at the bar's start in `TopBarSlotContext`
+    (`components/top-bar-slot.ts`) and `RepoBreadcrumbs` portals the
+    package's `Breadcrumb` into it; outside the frame the context is
+    null and it draws nothing. Only the LAST crumb is the
+    `BreadcrumbPage` (`aria-current="page"`); below `md` it is the only
+    one shown.
+  - **The repository's groups** (`components/repo-sidebar.tsx`) are a
+    `lazy()` chunk: they draw on a repository's routes only and from its
+    data, and the tree under them brings Base UI's popover, collapsible,
+    and scroll area. AppShell reads `owner`, `repo`, `type`, `docId`,
+    and the pages splat from the deepest match and hands them down; the
+    component is keyed by repository. Its rows are
+    `ShellSidebarTreeItem`s: its own group (Home, Changelog), `Pages`
+    (`lib/pageTree.ts` builds the tree; `useTreeOpen` takes the current
+    page and every directory above it), and `Documents`, one row per
+    type with its `TypeDot`, its count as the badge, and a link to the
+    type's index. A closed branch is not in the DOM, so a type's
+    `TypeDocuments` mounts, and `listDocs` fires, when its row opens or
+    the icon rail's popover does; while it loads the branch holds an
+    `InlineLoading` in a `ShellSidebarTreeNote` (a list item, which a
+    bare paragraph is not). Facets omit zero-hit types, so a missing
+    `typeCounts` key after facts load means 0, which disables the caret.
+    A repository docz-api 404s gets no groups.
+  - The app's own rows (`NavRow` in AppShell) are the plain
+    `SidebarMenuButton`, so the tree's parts stay out of the eager
+    graph. A pin has no icon and leads with its first letter, which is
+    what the icon rail shows.
+  - **A type's colour is not the frame's** (DESIGN-0028 question 3). It
+    is on the type row's dot, on a `Dot` or `Badge` docz hands a `tone`,
+    and inside the document. The mark, the breadcrumbs, and the active
+    row are the package's colours on every route; there is no
+    `--type-accent`.
+  - In a test, find the sidebar as the navigation named
+    `docz navigation` and query `within` it: the route beside it has
+    links and list items of its own. The repository's groups arrive
+    after a lazy import (`findByRole("link", { name: "Home" })`). A
+    type's caret is the button `<type>, show contents`; a directory with
+    no page is the button `<name>/`; a count sits beside the link, in
+    the row, not in the link's name. `src/test/setup.ts` stubs
+    `Element.prototype.getAnimations`, which Base UI calls before it
+    unmounts a closing panel.
 - Fonts are self-hosted `@fontsource` imports in `src/main.tsx` —
   never add a third-party font URL (mockup.html may use CDN links; it
   ships nowhere). **IBM Plex Sans Variable** (`--font-sans`) sets the
@@ -68,49 +168,128 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   wght-italic imports.
   Prose sizing is dialed in on the specimen page, not in the abstract:
   body 19px/1.78 on a 66ch measure, headings in em so the hierarchy
-  scales with the body, chrome one step above the mockup's original
-  10–13.5px scale.
-- Bordered mono chips MUST use `.mono-chip-y` (tokens.css) for their
-  vertical padding and MUST NOT carry a `py-*` utility beside it —
-  Tailwind's utilities layer would win. An inline box is as tall as the
-  font's ascent+descent, and a mono's capitals sit high in it (the
-  values were measured on Monaspace Neon, the mono before DESIGN-0026),
-  so symmetric padding renders every chip visibly high. The class holds the compensating
-  difference; `.doc-prose code` carries its own copy with descender
-  clearance. Verify by measuring, not by eye.
-- `src/theme/tokens.css` — the single global stylesheet: Tailwind v4
-  import + `@theme static` tokens ported from `mockup.html` `:root`.
-  Token names keep mockup prefixes, so utilities read `bg-bg-raised`,
-  `text-fg-tertiary`, `text-t-rfc`. Radius scale is wiped except
-  `rounded-sm` (3px, the shell's bordered controls) and `rounded-pill`. Don't add other CSS entrypoints.
-- **The shell and the document theme** (DESIGN-0026). The site's
-  chrome is `src/theme/shell.css`: repo-guardian's tokens, copied in and
-  mapped onto docz's `--color-*` names, light at `:root`, dark under
-  `data-mode="dark"` and again for the system's dark preference with no
-  `data-mode`, with IBM Plex Sans and JetBrains Mono (`@fontsource-variable`).
-  `<html>` carries no `data-theme`; `tokens.css`'s `@theme` values are the
-  shell's dark set (`shell.test.ts` pins it), and the type, status, and
-  hash colours keep the filter chips' hues, fitted per mode to 4.5:1
-  (`contrast.test.ts` checks both modes). Code stays dark in both modes.
-  There is no theme selector and no `docz:theme`: the topbar's
-  `AppearanceControls` is the light/dark toggle alone
-  (`useAppearance(refreshMermaidTheme)`, the mode and nothing else; the
-  review page wears the same shell and toggle). A document's theme is on
+  scales with the body. The chrome's type scale is the design
+  system's.
+- The chrome's chips are the design system's `Badge`; there is no
+  `.mono-chip-y` any more. The one bordered mono chip docz still draws
+  is inline code in prose (`.doc-prose code`), whose vertical padding is
+  lopsided on purpose: an inline box is as tall as the font's
+  ascent+descent, and a mono's capitals sit high in it, so symmetric
+  padding renders the chip visibly high (tokens.css's MONO_CHIP_OFFSET
+  note has the measurements). Verify by measuring, not by eye.
+- `src/theme/tokens.css` — the single global stylesheet (DESIGN-0028
+  §3). Don't add other CSS entrypoints. Its head is
+  `@import "@donaldgifford/design-system/core.css" source(none)`, then
+  `@source` lines for `src/`, `index.html`, and `review.html`.
+  `core.css`, never `globals.css` (which scans the whole package and
+  ships five static font files), and `source(none)` is REQUIRED: without
+  it Tailwind takes the whole directory of any file it sees under
+  `node_modules`. Each package part docz imports gets one
+  `@import "@donaldgifford/design-system/parts/…"` line; docz writes no
+  `@source` into `node_modules`. The fonts stay the three
+  `@fontsource-variable` imports in `main.tsx`; the package's
+  `fonts.css` is not imported, and docz's `--font-sans`/`--font-mono`
+  (the variable builds) override the package's theme entries.
+  What is left in it after IMPL-0033 Phase 9: the imports, docz's
+  three font stacks, the document-scoped utility names, the prose rules,
+  and a few behaviours (smooth scrolling, the scrollbar gutter, the
+  review page's highlight and changed-region badge). The page's
+  surface, text, selection, focus ring, and body size are `core.css`'s.
+  **Two vocabularies, one place each.** The chrome is written in the
+  package's names (`bg-card`, `text-muted-foreground`, `border`), from
+  `core.css`'s `@theme inline` map. `pkg/theme`'s names (`bg-bg-raised`,
+  `text-fg-tertiary`, `text-t-rfc`, `bg-brand`) are DOCUMENT-SCOPED:
+  for markup inside a `.docz-page`, where `page.css` gives each the
+  document theme's value. They are registered `@theme inline` with the
+  name as its own value (`--color-bg-raised: var(--color-bg-raised)`),
+  so a utility compiles to the variable and the name has no value at
+  `:root`. Tailwind does emit that self-reference at `:root` for a name
+  a rule reads; it is a cycle, which CSS treats as no value. So a
+  document-scoped utility written in chrome paints nothing, and
+  `vocabulary.test.ts` fails on one outside `src/markdown`,
+  `doc-pane.tsx`, `doc-surface.tsx`, and `review/regions.tsx`. There is
+  NO alias from a docz name to a package token anywhere in a
+  stylesheet: `shell.css` is gone, and the only table mapping the two is
+  `src/theme/charcoal.ts`'s. Four of `pkg/theme`'s names are not
+  registered, because the name is the package's utility and a docz entry
+  would take it from the chrome: `accent`, `code-bg`, `border-strong`,
+  and `st-superseded` (the package's `ignored` badge). The same test
+  holds that.
+  **`accent` is the package's name.** `bg-accent`, `text-accent`, and
+  `border-accent` compile to its hover surface wherever they are written
+  (its map is inline), so docz's brand colour is the `brand` utility:
+  `bg-brand`, `text-brand`, `brand-dim`, `brand-bg`, `brand-border`,
+  `on-brand` (`accent-utility.test.ts` fails on the old three). `brand`
+  is registered `@theme inline` against `--color-accent`, which keeps its
+  name because it is `pkg/theme`'s public token; inline is what lets a
+  `.docz-page` re-point it. Like the other document-scoped names it has
+  no value in chrome. Never add
+  `--color-accent` to a docz `@theme` block: it would take the package's
+  utility and paint its hover surface in docz's blue.
+  There is no radius of docz's own. The scale is the package's: `sm`,
+  `md`, and `lg` are its one 3px corner (docz's bordered controls use
+  `rounded-sm`), and `rounded-pill` is its fully rounded shape. The old
+  wipe (`--radius-*: initial`) is gone because it removed `rounded-md`
+  and `rounded-lg`, which the package's components use.
+- **The shell and the document theme** (DESIGN-0026, DESIGN-0028). The
+  site's chrome reads the design system's tokens by their own names.
+  `src/theme/docz-tokens.css` holds the 26 of `pkg/theme`'s 58 names
+  the package has no value for (two surface and border steps, three
+  text steps, `accent-dim`, `st-superseded`, the alert backgrounds, the
+  type colours, `code-bg`), light at `:root` and dark under `.dark`.
+  The chrome reads the type colours from it, and
+  `scripts/gen-charcoal.ts` reads its dark block. The other 32 have the
+  package's value by `src/theme/charcoal.ts`'s derivation table, which
+  writes `pkg/theme`'s charcoal theme and is the one place the two
+  vocabularies are mapped. The mode is on `<html>`
+  twice: `data-mode` for `pkg/theme`'s document themes and the `dark`
+  class for the package, both written by `appearance.ts`'s one
+  `writeMode()`; with nothing stored `data-mode` stays unset and the
+  class follows the system through a media-query listener, since the
+  package has no `prefers-color-scheme` block.
+  `<html>` carries no `data-theme`.
+  Three things read a colour outside a utility. A custom type's colour
+  is `var(--color-hash-N, var(--category-N+1))` (`src/lib/colors.ts`):
+  only a document theme sets `--color-hash-*`, so the reference is the
+  document's inside a `.docz-page` and the package's in chrome. A
+  mermaid diagram is drawn in the SHELL's colours, read from `<html>`:
+  `--card`, `--secondary`, `--border-strong`, `--foreground`, and
+  docz's own `--color-fg-tertiary`. And the review page's highlight
+  and changed-region badge read `pkg/theme`'s names, which resolve
+  because both sit inside the document.
+  The type, status, and hash colours keep the filter chips' hues, fitted
+  per mode to 4.5:1. `contrast.test.ts` checks both modes through
+  `src/test/shell-look.ts`, which gives the shell's look under
+  `pkg/theme`'s 58 names from the charcoal table, follows every `var()`
+  into the package's `tokens.css`, and converts oklch through
+  `src/theme/oklch.ts`;
+  it throws on a token that resolves to nothing, so a lost mapping fails
+  and is never skipped. **A token read from computed style is now
+  `oklch(...)`**, not hex: anything that hands one to a library (mermaid's
+  theme does) converts it with `oklchToHex` first, and a spec that
+  compares a token to a painted colour paints it onto a canvas and reads
+  the pixel. Code the site renders follows the page (see the markdown
+  pipeline); code inside a document fragment is `pkg/theme`'s and stays
+  dark.
+  There is no theme selector and no `docz:theme`: the top bar's
+  `ModeToggle` (the package's `shell/mode-toggle`) is the light/dark
+  toggle alone (`useAppearance(refreshMermaidTheme)`, the mode and
+  nothing else; the review page wears the same toggle). A document's theme is on
   its own `.docz-page` (`DocSurface`, `DocPane`), never on `<html>`.
   `src/lib/theme.ts`'s `defaultTheme()` is the theme documents render in:
   runtime `__DOCZ_CONFIG__.theme` (from `DOCZ_THEME`) → build-time
   `VITE_THEME` → `paper`, each validated against the generated `THEMES`.
   `server/serve.ts`'s `resolveTheme` checks `DOCZ_THEME` at startup and an
   unknown value is a config error that fails `/readyz`. `refreshMermaidTheme`'s
-  signal lives in `src/lib/mermaid-theme.ts` so the eager bundle never
-  imports `mermaid-block`. No component may carry a literal colour: the
-  header is `bg-bg-raised`, the logo `text-(--color-on-accent)`, the
-  palette scrim `bg-bg-base/65`. A type's routes set `--type-accent` from
-  `typeColor()` on AppShell's `display: contents` wrapper, and the logo
-  mark, repository badge, breadcrumb leaf, and active sidebar item read
-  it through `--color-accent`; inside a document `accentProperties`
-  sets the `.docz-page`'s `--color-accent` alone, so it resolves against
-  the document theme's own `--color-t-*`. The site's e2e specs loop over
+  signal lives in `src/lib/diagram-theme.ts` so the eager bundle never
+  imports `mermaid-block`. The file is NOT named for mermaid: the
+  bundler can emit it as a preloaded chunk named for the module, and
+  `e2e/rendering.spec.ts` fails a diagram-free page on any request
+  whose URL says "mermaid". No component may carry a literal colour.
+  A type's colour reaches the chrome only where docz hands it over as a
+  `tone` (see the frame); inside a document `accentProperties` sets the
+  `.docz-page`'s `--color-accent` alone, so it resolves against the
+  document theme's own `--color-t-*`. The site's e2e specs loop over
   `SHELL_MODES`; the review spec crosses them with every theme
   (`e2e/appearances.ts`).
 - **The document pane** (`src/components/doc-pane.tsx`, DESIGN-0026 §7).
@@ -137,6 +316,45 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   the changelog, and a type's index render in a `DocSurface` too.
   Tailwind's preflight strips link underlines, so pkg/theme underlines
   links itself (axe link-in-text-block).
+- **The design system's parts** (DESIGN-0028 §7, IMPL-0033 Phase 4 on).
+  Import a part by its subpath (`…/components/button`,
+  `…/blocks/empty-state`, `…/shell/…`), never a barrel, and add its
+  `parts/<kind>/<name>.css` line to `tokens.css`, in order:
+  `src/theme/parts.test.ts` fails on a part with no line (it would render
+  unstyled, and jsdom cannot see that) and on a line nothing imports.
+  The package ships TypeScript source, so `tsc -b` and eslint check it
+  with docz's settings. What docz keeps is the meaning, in small
+  wrappers:
+  `components/badges.tsx` (`StatusPill` is `Badge` in the variant
+  `statusVariant()` gives a status, by DESIGN-0028 §8's table;
+  `StatusBadge` a `Dot` and a label; `TypeDot` and `TypeBadge` take
+  `typeColor()` as a `tone`; a status has no colour of docz's own in the
+  chrome, and `Superseded` is the package's `ignored`) and
+  `components/query-states.tsx` (`EmptyPanel`, `NotFoundPanel`,
+  `ErrorPanel`, `ProseSkeleton`, and the re-exported `Skeleton` and
+  `InlineLoading`; a route takes every state from that module).
+  `ErrorPanel` takes the error itself: the package's `ErrorState` prints
+  `String(error)` for a rejection that is not an `Error`, so the wrapper
+  swaps in a `fallback` (default "Request failed"). A skeleton is
+  `aria-hidden` with a `data-testid`. Icons are Tabler components
+  (`icon={IconSearch}`, never an element), from `@tabler/icons-react`,
+  a direct dependency pinned to the version the package pins.
+  A heading through `render` (`<CardTitle render={<h1 />}>`) trips
+  `jsx-a11y/heading-has-content`, since the children arrive through the
+  part; disable that one line with the reason. A route outside
+  `RepoFrame` keeps its own `max-w-[940px]` column inside the frame, so
+  `PageHeader` takes `className="px-0"` there.
+  The directory's filters are `FilterChip`s inside one `FilterBar`
+  (`components/directory-controls.tsx`): a type is a `pressed` chip, the
+  repository a `repo = …` chip opening `OptionItem` rows in a `Popover`,
+  and "Clear" and the count are the bar's own. A part that brings Base
+  UI's menu, popover, or dialog costs 15 to 30 KB gz: keep it behind a
+  route or a `lazy()` boundary, and run `just ui bundle-budget` after
+  adding one to anything AppShell imports. Three chunks are lazy for
+  that reason: the palette, the account menu, and the repository's
+  sidebar groups. `ListRow` puts `trailing`
+  above its stretched link, so a badge or a time there is not part of
+  the link.
 - `tsconfig.json` is solution-style → `tsconfig.app.json` (browser code,
   strict + `noUncheckedIndexedAccess`) + `tsconfig.node.json` (config
   files). New config files at the repo root go in `tsconfig.node.json`'s
@@ -174,10 +392,13 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   kinds) → capture-code-meta (fence meta → `metastring` property) →
   remark-rehype allowDangerousHtml → rehype-raw → **rehype-sanitize
   with `schema.ts`** → double-clobber collapse → rehype-slug + ToC
-  collector → Shiki core highlighter, tokyo-night run through
-  `theme-contrast.ts` (every token color failing 4.5:1 on `code-bg`
-  is nudged toward white — the comment family is ~2.5:1 raw; the test
-  pins `CODE_BG` to tokens.css), slim lazy grammar set, chrome
+  collector → Shiki core highlighter with `github-light` and
+  `github-dark` at once (`themes: { light, dark }`,
+  `defaultColor: false`, DESIGN-0028 §9), each run ONCE through
+  `theme-contrast.ts` against its mode's `CODE_BG` (every token color
+  failing 4.5:1 is nudged toward the far end of the scale; the test
+  pins the pair to the package's `--code-bg` through
+  `shellToken()`), slim lazy grammar set, chrome
   transformer stamping data-language/data-caption → wrap-codeblock
   (div.codeblock header chrome; skips mermaid) → wrap-table
   (div.table-wrap, overflow-x scroll; className unforgeable
@@ -215,8 +436,8 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   the theme sets `useGradient` (`base` does), and `Theme.calculate`
   clears it exactly when the overrides carry `nodeBorder` without
   `useGradient`. `look` is PINNED (`MERMAID_LOOK` = classic): v12
-  defaults to neo, which rounds node corners — diagrams would be the
-  only rounded surface under a wiped radius scale. `layout` is NOT a
+  defaults to neo, which rounds node corners well past the shell's one
+  3px corner. `layout` is NOT a
   constant: `src/lib/mermaidLayout.ts` resolves runtime
   `DOCZ_MERMAID_LAYOUT` → build-time `VITE_MERMAID_LAYOUT` → `elk`,
   closed set `dagre|elk`, validated at BOTH ends like nav pins — the
@@ -276,7 +497,11 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   the source's own repo path — the `base` render option: reader = doc
   `path`, repo home = `docs_dir`/index.md, changelog = the configured
   file (repo root by default) — then rewrite ONLY on an exact `byPath`
-  hit (fragment reattached, `dataXref` set). Absolute/`//`/root/`#`
+  hit (fragment reattached, `dataXref` set). `byPath` also carries
+  each type's `README.md` (`typeIndexKey`, pointing at the type's
+  page): docz writes that file, it is neither a document nor a page,
+  and a miss is resolved by the BROWSER against the route, which drops
+  the repository from the URL. Absolute/`//`/root/`#`
   hrefs and misses stay byte-identical; traversal past the repo root
   fails closed (so does bad percent-encoding). Resolution needs both
   `paths` AND `base` passed to `useRenderedSource`. The reader also
@@ -308,7 +533,10 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - Auth UX (Phase 5): `/login` (`src/routes/login.tsx`) renders provider
   buttons as REAL `<a href="/auth/login?provider=…">` anchors — the
   OAuth 302 must reach the browser, so never convert them to router
-  Links. The enabled set (`src/lib/authProviders.ts`; comma-separated,
+  Links, and never to the design system's `Button` with `render`: Base
+  UI's Button gives a rendered anchor `role="button"`. A link that looks
+  like a button is the anchor (or router `Link`) wearing
+  `buttonVariants({ variant, size })`, here and everywhere else. The enabled set (`src/lib/authProviders.ts`; comma-separated,
   keys `github`/`okta`/`keycloak`, unknown dropped, empty falls back to
   GitHub) resolves at RUNTIME from `window.__DOCZ_CONFIG__.authProviders`
   — injected into index.html by the prod server (`server/serve.ts` reads
@@ -341,10 +569,20 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   read — keep it that way (open-redirect guard), and never stash
   anything but a same-origin path. Test setup clears session/local
   storage after each test — a leaked stash arms RestoreAfterLogin in
-  unrelated tests. Topbar identity is `SessionMenu`
-  (`src/components/session-menu.tsx`): getSession-driven (fixtures
-  answer with a deterministic `donaldgifford` github identity), avatar
-  is a disclosure (not `role="menu"`), and logout runs `onSettled` —
+  unrelated tests. The session sits at the sidebar's foot:
+  `SessionMenu` (`src/components/session-menu.tsx`), drawn from
+  `useSessionState()`, which AppShell calls so it can leave the footer
+  out altogether for an anonymous session (fixtures answer with a
+  deterministic `donaldgifford` github identity). The signed-in half is
+  `account-menu.tsx`: a `SidebarMenuButton` holding the identity
+  (`ShellSidebarIdentity`, initials on the icon rail) that opens the
+  design system's `DropdownMenu`, beside the sidebar and above it in
+  the sheet. It is a lazy chunk of its own: Base UI's menu is about
+  30 KB gz, which only a signed-in session needs, so the placeholder
+  holds its place while it loads. A test finds the trigger with
+  `findByRole` (`Account: <identity>`) and Sign out as a `menuitem`.
+  The sign-in link's test id is `session-sign-in`; `/login` is outside
+  the frame, so it never shows there. Logout runs `onSettled` —
   navigate to `/login` BEFORE `queryClient.clear()`, or the page being
   left refetches everything under the dead session.
 - Server observability (DESIGN-0006, IMPL-0007): every signal shares
@@ -433,15 +671,18 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - The route error boundary (`src/app/route-error.tsx`) sits on a
   PATHLESS layout route directly below `AppShell`, NOT on the root
   route. A boundary replaces the element of the route that owns it, so
-  a root-level one swaps out AppShell and takes the topbar with it —
+  a root-level one swaps out AppShell and takes the frame with it —
   stranding the user on a panel with no navigation, which is the exact
   failure it exists to fix. `route-error.test.tsx` pins both, including
-  that the root placement loses the topbar, so the extra nesting level
-  can't be refactored away as redundant. It CATCHES AND DISPLAYS only:
+  that the root placement loses the frame, so the extra nesting level
+  can't be refactored away as redundant. The pages outside the frame
+  have the same boundary on their own pathless route. It CATCHES AND DISPLAYS only:
   no `window.onerror`, no `unhandledrejection`, no beacon (a test
   verifies their absence). A link home is the ONLY affordance — a retry
   would re-render the same crashed route and throw again. Panel chrome
-  is shared via `ErrorPanelFrame` in query-states.tsx; the error state
+  is `ErrorPanel` in query-states.tsx, with the link home as its
+  `children` (the package's `RouteErrorLayout` is not used: its one
+  action is Retry); the error state
   is in the axe sweep.
 - Session classification (DESIGN-0003): auth chrome renders from
   `classifySession` (`src/lib/session.ts`) — pending / signed-in /
@@ -451,8 +692,8 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   failure are `unavailable` → SessionMenu keeps an inert placeholder
   (`session-unavailable` testid, visually identical to pending) and
   the session query re-polls ~30 s via an error-gated
-  `refetchInterval` (it never unmounts and focus-refetch is off — a
-  healthy query must never poll). `anonymous` renders NO auth chrome
+  `refetchInterval` in `useSessionState()` (the shell never unmounts
+  and focus-refetch is off — a healthy query must never poll). `anonymous` renders NO auth chrome
   anywhere and `/login` swaps to the auth-disabled panel (buttons
   render immediately; swap only on confirmed anonymous). None-mode is
   detected from the session response alone — no config, no storage.
@@ -464,33 +705,50 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   dropped — into `__DOCZ_CONFIG__.nav`. `src/lib/navLinks.ts`
   re-validates (both-ends rule); an injected array is authoritative
   even when it validates empty, then `VITE_NAV_LINKS`, then no pins.
-  AppShell renders pins between Repos and SessionMenu (one nav row =
-  small-viewport parity). `build:msw` bakes an RFCs pin so e2e and
+  AppShell renders pins as the sidebar's `Pinned` group, under
+  `Browse`; with none the group is absent. `build:msw` bakes an RFCs pin so e2e and
   dev-msw exercise the surface; the deployable build stays pin-free.
   Chart value `config.navLinks` (toJson; env omitted when empty).
   `docs` is a curated type: `--color-t-docs` (contrast-checked) +
   CURATED_TYPES + blurb — type colors are never runtime-configurable.
 - Reader lives in `src/routes/doc.tsx` + `src/components/doc-rail.tsx`
   + `src/components/query-states.tsx` (shared 401/404/error panels).
-  Since IMPL-0002 Phase 5 the right rail is ToC-ONLY: metadata is a
-  bordered table under the doc header (`doc-meta-table.tsx`, fields
-  ""-omitting, format switch html/md/json right-aligned above it) and
-  the lifecycle is a closed-by-default `<details>` owned by
-  `LifecycleRail` (renders nothing — shell included — for unknown
-  types). The header meta row ends in a "View in Confluence" link
+  Since IMPL-0002 Phase 5 the right rail is ToC-ONLY: metadata sits
+  under the doc header (`doc-meta-table.tsx`: the design system's
+  `DetailsGrid` in its `list` layout, fields ""-omitting, a
+  `SegmentedControl` for html/md with the json link beside it) and the
+  lifecycle is a closed-by-default `Disclosure` holding a vertical
+  `Stepper`, owned by `LifecycleRail` (renders nothing — box included —
+  for unknown types; closed, it shows the status in force, and its
+  steps are not in the DOM until it opens, so a test clicks it first).
+  The header meta row ends in a "View in Confluence" link
   (new tab, `noopener noreferrer`) when spec 1.6.0's `confluence_url` is
-  non-empty, and in nothing otherwise. Gated mockup rows (relationships, tags) slot into the table
-  when the DESIGN-0001 API asks land. `TocList` runs a scroll spy
-  (`src/hooks/useActiveHeading.ts`, IntersectionObserver over the
-  heading ids, top-of-viewport band) and marks the current row
-  `aria-current="location"` — it returns undefined where the observer
-  is missing (jsdom) and HOLDS the last heading when a long section
-  fills the band, so the rail never flickers to nothing.
+  non-empty, and in nothing otherwise. Gated rows (relationships,
+  tags) slot into the details when the DESIGN-0001 API asks land.
+  `TocList` is the package's `Outline` with its `use-active-heading`
+  scroll spy (IntersectionObserver over the heading ids; docz passes
+  the band, whose top margin clears the sticky top bar) and marks the
+  current row `aria-current="location"` — it is undefined where the
+  observer is missing (jsdom) and HOLDS the last heading when a long
+  section fills the band, so the rail never flickers to nothing. The
+  Outline draws its own "On this page" heading, so a route hands the
+  rail `<TocList toc={…} />` and nothing else, and it draws nothing for
+  a page with no headings. Only a page docz renders itself has an
+  outline: a fragment in the document pane has its own tabs and takes
+  no rail. A trigger's accessible name joins its label and value with
+  no space in jsdom (`/^Lifecycle\s*Approved$/`).
+- Type index (`src/routes/repo-type.tsx`): the docz-create hint is a
+  document, in a `DocSurface`; the type's documents are the package's
+  `DataTable` UNDER it, outside the surface, whose prose rules would
+  restyle a table inside. `sortable={false}`: the rows come in
+  docz-api's order and the table offers no other. Build columns with
+  `dataTableColumns<T>()` and wrap them in its `.columns([...])`, or
+  the accessors' value types do not fit `DataTableColumn<T>`. A cell
+  is `whitespace-nowrap` unless its column's `meta.className` says
+  otherwise.
 - Directory (`src/routes/directory.tsx`): hit rows are CARDS since the
   DESIGN-0005 dial-in — `DOC-ID / repo` over the title, `StatusPill` in
-  the middle, the updated stamp (date over time) on the right — NOT the
-  mockup's six-column `.doc-row`, which this surface has now diverged
-  from (mockup.html still leads for prose and chrome tokens). Both
+  the middle, the updated stamp (date over time) on the right. Both
   outer columns are two lines so they align with each other. There is
   no type badge anywhere: the doc id already spells the type out and a
   second colored chip fought the status for attention. Type color
@@ -517,13 +775,12 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   authored date. `updated_at` is INGEST-observed, not commit time: one
   reconcile is one transaction, so every doc an ingest touches shares
   the stamp to the microsecond and a fresh DB restamps a repo at
-  onboard. `src/lib/updatedAt.ts` holds `formatUpdatedStamp` (splits
-  RFC3339 into the two lines; locale pinned en-US, zone is the
-  reader's, `timeZone` arg for tests) and `formatRelativeTime` for
-  surfaces wanting relative. KEEP `formatUpdatedStamp`'s `Number.isNaN`
-  guard — it is what makes a deployment on a pre-1.5.0 docz-api render
-  "—" instead of "Invalid Date", since the type promises a string the
-  old API simply omits. Fixtures: docs forward their own stamp and
+  onboard. A stamp is drawn by the design
+  system's `Time` (`style="stacked"` on a directory row), which reads
+  "—" for one that is missing or unparseable, so a deployment on a
+  pre-1.5.0 docz-api still renders. How a stamp reads is the package's
+  to test; a docz test asserts the `<time datetime>` instead.
+  Fixtures: docs forward their own stamp and
   `created`; pages take `PAGE_INGESTED_AT[repo]`, one value per repo
   because that is genuinely how onboard stamps behave.
 - Faceted controls exclude their own dimension via separate limit-0
@@ -532,19 +789,14 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   "rows 0..offset+PAGE_SIZE shown"; the query grows `limit` from 0 so
   deep links render identical rows.
 - Repo pages share `RepoFrame` (`src/components/repo-frame.tsx`): the
-  three-column grid (sticky RepoNav · content · 190px rail, collapsing
-  at 1181px/861px) plus RepoBreadcrumbs — home, type pages, AND the
-  reader all mount inside it. Counts everywhere come from
-  `useRepoFacts` (repo-filtered limit-0 facet query) so numbers agree.
-  RepoNav's per-type doc lists are collapsible drawers: the route's
-  `:type` auto-expands, the caret button peeks without navigating, and
-  listDocs only fires for open drawers. Facets omit zero-hit types —
-  a missing typeCounts key after facts load means 0, which also
-  disables the caret. In-group rows (type drawers, pages tree) share
-  the left rail from `src/components/nav-rail.ts` — the group draws a
-  hairline, each row a 2px border over it, active rows color it in.
-  Both files import from there, never from each other (RepoNav renders
-  the pages section, so the other direction is a cycle). The repo home is the ONLY surface rendering an
+  content and, from 1181px, a 190px rail to its right, with the route's
+  breadcrumbs portalled into the top bar — home, changelog, pages, type
+  pages, AND the reader all mount inside it. It takes `crumbs` and
+  `rail` and nothing about the repository: the repository's navigation
+  is the shell's sidebar (see the frame). Its `max-w-[1062px]` is the
+  content's 784px measure plus the rail and the gap. Counts everywhere
+  come from `useRepoFacts` (repo-filtered limit-0 facet query) so
+  numbers agree. The repo home is the ONLY surface rendering an
   h1 inside `.doc-prose` (the reader strips body h1s) — its style
   lives in tokens.css; don't remove it as "unused".
   URL `{type}` resolves by name/id_prefix/alias via
@@ -557,7 +809,7 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - Repo changelog (spec 1.2.0, IMPL-0003 Phase 1):
   `/:owner/:repo/changelog` is a RESERVED static segment — it outranks
   `:type`, so a doc type literally named "changelog" is reachable only
-  via its id_prefix/alias URL. The RepoNav row under Home gates on
+  via its id_prefix/alias URL. The sidebar's row under Home gates on
   `changelogConfig()` (`src/lib/changelogConfig.ts`) reading getRepo's
   UNTYPED `config_snapshot` defensively — any wrong shape means "no
   row", zero extra requests — and hover/focus-prefetches
@@ -589,8 +841,8 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   builders interpolate path params RAW — always pass
   `encodeURIComponent(path)` (one segment, the spec-blessed spelling;
   prefetch in `usePrefetchPage` must match or cache keys diverge).
-  Discovery: RepoNav's Pages tree (`repo-nav-pages.tsx`, mounted only
-  on an apiConfig hit), palette + directory render `source: "page"`
+  Discovery: the sidebar's Pages group (`repo-sidebar.tsx`, mounted
+  only on an apiConfig hit), palette + directory render `source: "page"`
   hits keyed/linked by published path with a neutral mono marker
   (doc-only columns "—"; the directory count line appends
   "· X docs · Y pages" ONLY when pages matched, so non-opted
@@ -603,8 +855,15 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   dot-only segments rejected, and a stored payload without `kind`
   resets the store. Fixture pages live in `DEMO_PAGES` (docz-site
   only; docz-api stays non-opted for the gate tests).
-- Palette (`src/components/command-palette.tsx`, mounted in AppShell):
-  state is palette-local, never the URL. cmdk normalizes item values —
+- Palette (`src/components/command-palette.tsx`): the design system's
+  `CommandDialog` with `CommandFilters`, `CommandFooter`, and `preview`
+  (DESIGN-0028 §7). It is a lazy chunk. AppShell mounts
+  `command-palette-lazy.tsx`, which holds the ⌘K and `/` shortcuts and
+  fetches the chunk shortly after the shell mounts and on the top
+  bar's `SearchTrigger`'s hover, so cmdk and the dialog are never in the eager graph.
+  A test waits for the dialog AND for its input to have focus: a key
+  pressed before the dialog hands focus over goes to the page behind.
+  State is palette-local, never the URL. cmdk normalizes item values —
   keys are lowercased and navigation resolves through a unified
   `entries` list (recents get a `recent:` value prefix so the same doc
   in the results below keeps its own key). The empty query leads with
@@ -612,9 +871,14 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   `docz:recent-docs`, cap 8, coordinates+title ONLY — never tokens;
   reads are segment-validated and malformed payloads reset the store;
   the reader records entries on successful load). The highlighted hit
-  prefetches getDoc. Snippets render ONLY through
-  `src/components/snippet.tsx` (splits on literal <em> markers, emits
-  <mark>, everything else stays text) — never parse snippet HTML.
+  prefetches getDoc. A hit is a `ListRow` inside cmdk's item with NO
+  link of its own: the item is a `role="option"`, and a link inside one
+  fails axe's `nested-interactive`, so a click and Enter both go
+  through `onSelect`. Snippets render ONLY through the package's
+  `blocks/marked` (splits on literal <em> markers, emits <mark>,
+  everything else stays text), in the palette and on the directory —
+  never parse snippet HTML. `src/components/snippet.xss.test.tsx` is
+  docz's gate on that part, over `mocks/content/xss-payloads.json`.
   jsdom setup stubs scrollIntoView/ResizeObserver for cmdk.
 
 ## docz-review (`src/review/`, DESIGN-0024, IMPL-0027)
@@ -660,19 +924,52 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
   badges; nothing is inserted into the sanitized markdown. Lightning CSS
   warns that it does not know `::highlight` while minifying; the rule
   survives, so the warning is noise.
+- **Controls** (DESIGN-0028 §10, IMPL-0033 Phase 8). The page's
+  controls are the design system's parts, and its review logic is not
+  theirs. `controls.tsx` holds the wrappers: `ReviewButton` (the
+  package's `Button`, outlined unless `primary`; `selected` is the
+  chosen one of a set, and the `role="radio"`, `aria-checked`, or
+  `aria-pressed` stays the caller's; a disabled one keeps its pointer
+  so its `title` still says why), `StateBadge` (a document's state),
+  `ConfirmDialog` (the package's `Dialog`; there is no
+  `window.confirm`), and the field and label classes. The documents
+  are the package's `Tabs` in the `line` form, rendered as the page's
+  `<main>`, with the open document in the one `TabsContent`; the status
+  is a `SegmentedControl` named `Status` whose segments wrap, because a
+  type can have more statuses than the sidebar's 340px holds, and a
+  document with no status gets no segment for it. Text boxes stay
+  native `textarea` and `input` elements in the package's colours.
+  The page's chrome is written in the package's names only
+  (`bg-card`, `text-muted-foreground`, `border`); docz's names are for
+  the document column. A selected control is `bg-muted`, never
+  `bg-accent`, which `accent-utility.test.ts` forbids under `src`. The
+  round diff (`diff.tsx`) keeps its rendering and sits on
+  `bg-background` with `foreground` on a 12% `success` or
+  `destructive` tint and `muted-foreground` for unchanged lines, each
+  pair held to 4.5:1 in both modes by `contrast.test.ts` (v2.6.1's
+  light-mode fix). The page imports nothing from `shell/sidebar`: no
+  JavaScript file in `dist-review` mentions it, though the shared
+  stylesheet carries the sidebar's rules. In a test the documents are
+  the tablist `Documents`, the status the tablist `Status` (the
+  current one reads `Draft (current)`), and a dialog is found by its
+  question; an e2e that runs axe over an open dialog waits for its
+  animations first, or the half-faded dialog reads as low contrast. A
+  heading locator for the document's title needs `exact: true`: the
+  document's own h1 contains the title too.
 - **Appearance** (IMPL-0030 Phase 2, DESIGN-0026 §9). The page wears the
-  site's shell: a topbar with the docz mark, the light/dark toggle, and
-  Done. The document column is a `DocSurface` in the repository's theme:
+  site's shell: its own single-column frame with a header holding the
+  docz mark, the package's `ModeToggle`, and Done. The document column is a `DocSurface` in the repository's theme:
   `docz inspect` reports `.docz.yaml`'s `html.theme` as `theme`, the
   server passes it in the session (`sessionTheme`, the first document's,
   `paper` for a docz too old to say), and `main.tsx` fetches the session
   BEFORE the first render and seeds the query cache, so the column never
   paints in `paper` first. `<html>` carries no `data-theme`. There is no
   theme selector and no `docz:theme` key.
-  The mode is the reader's: `applyStoredMode()` sets `data-mode` from
-  `docz:mode` (the key exported pages use too) before the first render;
-  with nothing stored `data-mode` stays unset and the theme's
-  `prefers-color-scheme` block applies. `useAppearance(onChange)`
+  The mode is the reader's: `applyStoredMode()` sets `data-mode` and the
+  `dark` class from `docz:mode` (the key exported pages use too) before
+  the first render; with nothing stored `data-mode` stays unset, the
+  theme's `prefers-color-scheme` block applies, and the class follows
+  the system. `useAppearance(onChange)`
   dispatches `docz:mode` and calls `refreshMermaidTheme` after a change
   (never on mount), which re-initializes mermaid from the new tokens and
   redraws every mounted diagram. The toggle always shows: the shell has
@@ -763,8 +1060,14 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
 - Per-task local gate is `just ci` semantics: test, lint, `tsc -b
   --force`, build, AND `bun run format:check` — formatting misses fail
   CI even when everything else is green.
-- Bundle budget: CI fails if the eager JS tops 130 KB gz
-  (`scripts/bundle-budget.ts`, `just bundle-budget`, ~120 KB today).
+- Bundle budget: CI fails if the eager JS tops 177.6 KB gz
+  (`scripts/bundle-budget.ts`, `just ui bundle-budget`): the 171.6 KB
+  measured when the move onto the design system finished (IMPL-0033
+  Phase 9), plus 6 KB. It was 130 KB before the package. About 45 KB of
+  the total is the package's `components/sidebar`, which imports its
+  sheet and tooltip statically and is the first paint; if the package
+  puts the sheet behind a lazy boundary, measure again and lower the
+  number. The script's comment carries the numbers.
   "Eager" = the entry chunk PLUS every modulepreload'd chunk in
   index.html — Rollup splits shared statics out of `index-*.js` as
   the graph shifts, so measuring only the entry file would let an
@@ -879,9 +1182,9 @@ DESIGN-0017, ADR-0004). Publishing and CI's path filters are in
   (IMPL-0028, IMPL-0032); `just ui docker-build` passes the same
   `--build-context`, and `vite.config.ts` lists `../pkg/theme` in
   `server.fs.allow` beside the workspace root. **Both pages wear the
-  shell** (DESIGN-0026): `ui/src/theme/shell.css`, repo-guardian's look in
-  light and dark, with no `data-theme` on `<html>` and no theme selector;
-  `tokens.css`'s `@theme` values are the shell's dark set. **A document's
+  shell** (DESIGN-0026, DESIGN-0028): the design system's tokens through
+  `core.css`, with docz's own in `ui/src/theme/docz-tokens.css`, in light
+  and dark, with no `data-theme` on `<html>` and no theme selector. **A document's
   theme sits on its own `.docz-page`**: the deployment's `DOCZ_THEME` in
   the reader, the repository's `html.theme` (which `docz inspect` reports
   and the session carries, IMPL-0030) in the review page's document

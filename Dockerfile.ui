@@ -8,13 +8,23 @@
 #
 #   docker buildx bake dev-ui                       # from the repository root
 #   just ui docker-build                            # the same, without bake
+#
+# Both need NPM_TOKEN in the environment (a GitHub token with
+# read:packages); it is passed as a build secret, never as a build arg.
 #   docker run -p 8080:8080 -e DOCZ_API_URL=http://docz-api:8080 donaldgifford/docz-site:dev
 
 FROM oven/bun:1.4.4 AS build
 WORKDIR /app
 
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
+# @donaldgifford/design-system comes from GitHub Packages. .npmrc names the
+# registry and reads the token from NPM_TOKEN, which arrives as a build
+# secret for this one RUN: no ARG and no ENV carries it, so it is in no
+# layer and no `docker history` line. A build without the secret fails
+# here.
+COPY package.json bun.lock .npmrc ./
+RUN --mount=type=secret,id=NPM_TOKEN,env=NPM_TOKEN \
+    test -n "${NPM_TOKEN:-}" || { echo "NPM_TOKEN build secret is missing: pass --secret id=NPM_TOKEN,env=NPM_TOKEN (a GitHub token with read:packages)" >&2; exit 1; }; \
+    bun install --frozen-lockfile
 
 COPY . .
 # orval reads ../api/openapi.yaml, which from WORKDIR /app is /api: the

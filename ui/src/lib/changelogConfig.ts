@@ -2,7 +2,7 @@
  * Defensive reader for the `.docz.yaml` `changelog:` block inside a
  * repo's config_snapshot (docz-api spec 1.2.0). The snapshot is
  * untyped JSON (`additionalProperties: true`) authored by repo owners,
- * so any shape mistake must read as "no changelog" — the RepoNav row
+ * so any shape mistake must read as "no changelog" — the sidebar row
  * and the changelog route both gate on this returning a config
  * (DESIGN-0002 Component 3, INV-0005 OQ-1a).
  */

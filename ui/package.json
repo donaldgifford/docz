@@ -28,9 +28,12 @@
     "gen-review-fixture": "bun scripts/gen-review-fixture.ts",
     "gen-cli:check": "scripts/gen-cli-check.sh",
     "gen-themes": "bun scripts/gen-themes.ts",
-    "gen-themes:check": "scripts/gen-themes-check.sh"
+    "gen-themes:check": "scripts/gen-themes-check.sh",
+    "gen-charcoal": "bun scripts/gen-charcoal.ts",
+    "gen-charcoal:check": "scripts/gen-charcoal-check.sh"
   },
   "dependencies": {
+    "@donaldgifford/design-system": "0.6.0",
     "@fontsource-variable/ibm-plex-sans": "5.3.0",
     "@fontsource-variable/jetbrains-mono": "5.3.0",
     "@fontsource-variable/source-serif-4": "^5.3.0",
@@ -40,9 +43,9 @@
     "@opentelemetry/sdk-trace-node": "^2.11.0",
     "@opentelemetry/semantic-conventions": "^1.43.0",
     "@shikijs/rehype": "^4.3.1",
+    "@tabler/icons-react": "3.49.0",
     "@tanstack/react-query": "^5.101.2",
     "ajv": "^8.20.0",
-    "cmdk": "^1.1.1",
     "diff": "^9.0.0",
     "hast-util-raw": "^9.1.0",
     "hast-util-to-jsx-runtime": "^2.3.6",

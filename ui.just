@@ -15,8 +15,21 @@ set working-directory := "ui"
 default:
     @just --list ui
 
-# Install dependencies
+# Install dependencies. @donaldgifford/design-system comes from GitHub
+# Packages, which wants a token even for a public package; ui/.npmrc reads
+# it from NPM_TOKEN, so the token lives in the environment and in no file.
 install:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "${NPM_TOKEN:-}" ]; then
+      echo "✗ NPM_TOKEN is unset: ui/.npmrc needs it to fetch @donaldgifford/design-system" >&2
+      echo "  from GitHub Packages. Use a GitHub token with the read:packages scope:" >&2
+      echo "" >&2
+      echo "    NPM_TOKEN=\$(gh auth token) just ui install" >&2
+      echo "" >&2
+      echo "  (gh auth refresh --scopes read:packages adds the scope to gh's token.)" >&2
+      exit 1
+    fi
     bun install
 
 # Vite dev server, proxying /api,/auth,/openapi.yaml to local docz-api
@@ -59,6 +72,12 @@ gen-themes:
 # Drift gate: snapshot, regenerate, diff the generated theme list
 gen-themes-check:
     ./scripts/gen-themes-check.sh
+
+# Drift gate for pkg/theme's charcoal theme: regenerate it to a temporary
+# file from the installed design system and fail on a difference. The
+# file is written by `just gen-charcoal`, at the root.
+gen-charcoal-check:
+    ./scripts/gen-charcoal-check.sh
 
 # Lint (eslint flat config)
 lint:
@@ -159,9 +178,10 @@ preview:
 
 # Build the image without bake: context ui/, with docz-api's spec as the
 # named context the Dockerfile copies (DESIGN-0017 OQ 3). The bake spelling,
-# from the repository root, is `docker buildx bake dev-ui`.
+# from the repository root, is `docker buildx bake dev-ui`. NPM_TOKEN goes in
+# as a build secret for the install (see `install`).
 docker-build:
-    docker build -f ../Dockerfile.ui --build-context spec=../api --build-context theme=../pkg/theme -t donaldgifford/docz-site:dev .
+    docker build -f ../Dockerfile.ui --secret id=NPM_TOKEN,env=NPM_TOKEN --build-context spec=../api --build-context theme=../pkg/theme -t donaldgifford/docz-site:dev .
 
 local_compose := "docker compose -f ../deploy/ui/compose.local.yaml"
 
@@ -177,4 +197,4 @@ local-down:
     @echo "✓ docz-site stopped"
 
 # CI parity: everything the ci workflow runs, in order
-ci: gen-api gen-cli gen-themes lint fmt-check typecheck test test-server build bundle-budget e2e gen-api-check gen-cli-check gen-themes-check
+ci: gen-api gen-cli gen-themes lint fmt-check typecheck test test-server build bundle-budget e2e gen-api-check gen-cli-check gen-themes-check gen-charcoal-check

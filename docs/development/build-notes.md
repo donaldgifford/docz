@@ -1,8 +1,9 @@
 # Build notes
 
 Moved from the repository's `CLAUDE.md`: how the `just` recipes are
-laid out and what replaced each `make` form, and what
-`just lint-generated` checks.
+laid out and what replaced each `make` form, what
+`just lint-generated` checks, and the two recipes that write a committed
+file from `ui/node_modules`.
 
 ## `just` replaced `make`
 
@@ -51,3 +52,37 @@ has MD060; 0.18.1 hid the table failures), and the Test Go job installs that
 version with npm, read from the file. Three revert drills prove it bites:
 the old delimiter row fails MD060, the ASCII-only slug filter MD051, and
 `MD024` off the IMPL template's disable line MD024.
+
+## Files generated from `ui/node_modules`
+
+Two committed files under `pkg/` are written from a package `ui/bun.lock`
+pins, each by a root recipe that needs `just ui install` first and fails
+with that hint when `ui/node_modules` lacks the package.
+
+| File | Recipe | Package | Held by |
+| --- | --- | --- | --- |
+| `pkg/export/html/assets/mermaid.min.js.gz` | `just vendor-mermaid` | `mermaid` | `TestVendoredMermaid` (version and SRI hash) |
+| `pkg/theme/tokens/charcoal.css` | `just gen-charcoal` | `@donaldgifford/design-system` | `TestCharcoalMatchesPinnedDesignSystem` (version) and `just ui gen-charcoal-check` (bytes) |
+
+`charcoal.css` (IMPL-0033 Phase 3, DESIGN-0028 section 11) is the design
+system's dark set under `pkg/theme`'s token names. `ui/scripts/gen-charcoal.ts`
+reads the package's `tokens.json`, resolves its references, converts oklch
+to hex, and fills the token block of `ui/scripts/charcoal.template.css`,
+which holds the hand-written header and font block. The table of where each
+of the 58 names comes from is `ui/src/theme/charcoal.ts`; the 26 the package
+has no value for come from the dark block of `ui/src/theme/docz-tokens.css`.
+A name left without a value, or given two, fails the run and names the
+token. Running the recipe twice writes the same bytes.
+
+The Go job has no `node_modules`, so the two checks split: the Go test
+holds the version recorded in the file's header to the lockfile, and the
+`ui` job's `gen-charcoal-check` regenerates to a temporary file and fails on
+a difference. Neither rewrites the tree.
+
+A bump of the package is three things in one pull request: the lockfile,
+`just gen-charcoal`, and the export's goldens (`go test ./... -update`).
+The goldens that move are `pkg/export/html/testdata/golden/full-page-charcoal.html`
+and the page hashes in `cmd/testdata/cli-contract/v1/export-html-*.json`,
+since an exported page inlines its theme. `test/parity` reports a failure
+under `-update` because it defines no such flag; run `go test ./...` again
+without it to see the real result.

@@ -244,18 +244,19 @@ function SameRun({
 }
 
 /*
- * The diff sits on the shell's page surface, not the code background:
- * its lines use the shell's text tokens, which are dark in light mode,
- * and the code background is dark in both (the light shell put them at
- * 1.04:1). contrast.test.ts holds these pairs, tints included.
+ * The diff sits on the shell's page surface, not on a code background:
+ * its lines use the shell's text tokens, which are dark in light mode
+ * (v2.6.1 fixed a box that sat on an always-dark surface and read
+ * 1.04:1 in the light shell). contrast.test.ts holds these pairs, tints
+ * included.
  */
 function DiffLine({ kind, text }: { kind: Hunk["kind"]; text: string }) {
   const look = {
     added:
-      "bg-[color-mix(in_srgb,var(--color-st-active)_12%,transparent)] text-fg-primary",
+      "bg-[color-mix(in_srgb,var(--success)_12%,transparent)] text-foreground",
     removed:
-      "bg-[color-mix(in_srgb,var(--color-st-rejected)_12%,transparent)] text-fg-secondary",
-    same: "text-fg-tertiary",
+      "bg-[color-mix(in_srgb,var(--destructive)_12%,transparent)] text-foreground",
+    same: "text-muted-foreground",
   }[kind];
   const sign = { added: "+", removed: "-", same: " " }[kind];
   return (
@@ -272,9 +273,9 @@ export function RoundDiff({ comparison }: { comparison: RoundComparison }) {
     <section
       data-no-annotate
       aria-label="Changes since the previous round"
-      className="flex flex-col gap-2 border border-border-hairline bg-bg-raised p-3"
+      className="flex flex-col gap-2 border bg-card p-3"
     >
-      <p className="font-mono text-[12.5px] text-fg-secondary">
+      <p className="font-mono text-[12.5px] text-muted-foreground">
         {changed.size === 0
           ? "No region changed since the previous round."
           : `${String(changed.size)} region${changed.size === 1 ? "" : "s"} changed since the previous round.`}
@@ -303,12 +304,12 @@ export function RoundDiff({ comparison }: { comparison: RoundComparison }) {
         </ul>
       )}
       {lines === null ? (
-        <p className="font-mono text-[12.5px] text-fg-tertiary">
+        <p className="font-mono text-[12.5px] text-muted-foreground">
           The change is too large to show line by line; the changed regions are
           marked.
         </p>
       ) : (
-        <div className="max-h-[50vh] overflow-auto border border-border-hairline bg-bg-base p-2 font-mono text-[12.5px]">
+        <div className="max-h-[50vh] overflow-auto border bg-background p-2 font-mono text-[12.5px]">
           {parts.map((h, i) =>
             h.kind === "same" ? (
               <SameRun

@@ -40,7 +40,7 @@ import {
 } from "@/markdown/relative-links";
 import { sanitizeSchema } from "@/markdown/schema";
 import { rehypeRegions } from "@/review/regions";
-import { liftThemeContrast } from "@/markdown/theme-contrast";
+import { CODE_BG, liftThemeContrast } from "@/markdown/theme-contrast";
 import { rehypeWrapCodeblocks } from "@/markdown/wrap-codeblock";
 import { rehypeWrapTables } from "@/markdown/wrap-table";
 import { linkifyDocIds, type XrefResolver } from "@/markdown/xrefs";
@@ -72,11 +72,15 @@ let highlighterPromise: Promise<HighlighterCore> | undefined;
 
 function getHighlighter(): Promise<HighlighterCore> {
   highlighterPromise ??= createHighlighterCore({
-    // tokyo-night, with every token color that fails AA on code-bg
-    // lifted (its comment family is ~2.5:1 raw) — see theme-contrast.ts.
+    // One theme per mode (DESIGN-0028 §9), each with every token
+    // color that fails AA on its mode's code surface lifted, once —
+    // see theme-contrast.ts.
     themes: [
-      import("shiki/themes/tokyo-night.mjs").then((mod) =>
-        liftThemeContrast(mod.default),
+      import("shiki/themes/github-light.mjs").then((mod) =>
+        liftThemeContrast(mod.default, CODE_BG.light),
+      ),
+      import("shiki/themes/github-dark.mjs").then((mod) =>
+        liftThemeContrast(mod.default, CODE_BG.dark),
       ),
     ],
     langs: [
@@ -218,7 +222,12 @@ export async function renderMarkdown(
       rehypeShikiFromHighlighter(
         highlighter as Parameters<typeof rehypeShikiFromHighlighter>[0],
         {
-          theme: "tokyo-night",
+          // Both sets go on every token as --shiki-light and
+          // --shiki-dark, with no color of its own; tokens.css picks
+          // one from the `dark` class, so a mode change repaints code
+          // with no re-render.
+          themes: { light: "github-light", dark: "github-dark" },
+          defaultColor: false,
           // Languages outside the slim set fall back to plain text.
           fallbackLanguage: "text",
           transformers: [codeblockChromeTransformer],

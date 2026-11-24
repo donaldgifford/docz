@@ -4,19 +4,12 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { shellLook, shellLookCss, shellToken } from "@/test/shell-look";
+
 import {
   THEMES as GENERATED_THEMES,
   THEMES_WITH_MODES,
 } from "./__generated__/themes";
-
-// Read the file directly: vitest's CSS stubbing swallows `?raw` imports
-// of .css files (verified — they arrive as ""), and import.meta.url is
-// not a file: URL under jsdom. The node types are referenced per-file;
-// the app tsconfig deliberately stays browser-only.
-const tokensCss = readFileSync(
-  resolve(process.cwd(), "src/theme/tokens.css"),
-  "utf8",
-);
 
 /*
  * The themes (DESIGN-0025 §3, IMPL-0028 Phase 6) live in pkg/theme, and
@@ -26,9 +19,20 @@ const tokensCss = readFileSync(
  * theme with them one for light and one for dark. Paper's
  * prefers-color-scheme block repeats the dark values, which pkg/theme's
  * theme_test.go holds equal, so it is not checked twice here.
- * The shell (DESIGN-0026 §2) is checked in both modes, and tokens.css's
- * @theme values, its dark set (shell.test.ts), as the source Tailwind
- * reads.
+ *
+ * The shell is checked in both modes too. Its values are no longer hex
+ * in a stylesheet (DESIGN-0028 §13): 32 of pkg/theme's names are the
+ * design system's oklch tokens, by charcoal.ts's derivation table, and
+ * 26 are docz's own. shellLookCss() follows every var() into the
+ * package's tokens.css through oklch.ts and writes the look as the hex
+ * block this test parses. It throws on a
+ * token that resolves to nothing, so a lost mapping fails here and is
+ * never skipped.
+ *
+ * The files are read with node:fs: vitest's CSS stubbing swallows `?raw`
+ * imports of .css files (verified, they arrive as ""), and
+ * import.meta.url is not a file: URL under jsdom. The node types are
+ * referenced per file; the app tsconfig deliberately stays browser-only.
  */
 const themeDir = resolve(process.cwd(), "../pkg/theme/tokens");
 
@@ -42,15 +46,13 @@ function block(css: string, selector: string): string {
   return css.slice(start, end);
 }
 
-const shellCss = readFileSync(
-  resolve(process.cwd(), "src/theme/shell.css"),
-  "utf8",
-);
+const SHELL_MODES = ["light", "dark"] as const;
 
 const THEMES: [string, string][] = [
-  ["tokens.css", tokensCss],
-  ["shell light", block(shellCss, ":root")],
-  ["shell dark", block(shellCss, ':root[data-mode="dark"]')],
+  ...SHELL_MODES.map((mode): [string, string] => [
+    `shell ${mode}`,
+    shellLookCss(mode),
+  ]),
   ...GENERATED_THEMES.flatMap((name): [string, string][] => {
     const css = readFileSync(resolve(themeDir, `${name}.css`), "utf8");
     const root = `:root[data-theme="${name}"]`;
@@ -101,6 +103,32 @@ function contrastRatio(a: string, b: string): number {
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return ((hi ?? 0) + 0.05) / ((lo ?? 0) + 0.05);
 }
+
+/*
+ * No shell token is skipped. Every one of docz's 58 names resolves in
+ * both modes, 56 to a hex this file's parser reads and the two accent
+ * tints to an rgba() the tint check reads. Before the resolver, a name
+ * whose value became a var() simply dropped out of the regular
+ * expression and its pairs stopped being checked.
+ */
+describe.each(SHELL_MODES)("shell %s resolves every token", (mode) => {
+  const look = shellLook(mode);
+
+  it("has all 58 names", () => {
+    expect(look.size).toBe(58);
+  });
+
+  it("gives every name a hex, or an rgba() for the two tints", () => {
+    const hex = [...look].filter(([, value]) => /^#[0-9a-f]{6}$/.test(value));
+    const tints = [...look].filter(([, value]) => value.startsWith("rgba("));
+    expect(tints.map(([name]) => name).sort()).toEqual([
+      "accent-bg",
+      "accent-border",
+    ]);
+    expect(hex.length + tints.length).toBe(look.size);
+    expect(parseTokens(shellLookCss(mode)).size).toBe(hex.length);
+  });
+});
 
 describe.each(THEMES)("%s text token contrast", (_, css) => {
   const tokens = parseTokens(css);
@@ -234,9 +262,7 @@ function mix(hex: string, bg: string, alpha: number): string {
   );
 }
 
-const SHELL_LOOKS = THEMES.filter(
-  ([name]) => name === "tokens.css" || name.startsWith("shell "),
-);
+const SHELL_LOOKS = THEMES.filter(([name]) => name.startsWith("shell "));
 
 describe.each(SHELL_LOOKS)("%s type accent tint contrast", (_, css) => {
   const tokens = parseTokens(css);
@@ -264,36 +290,27 @@ describe.each(SHELL_LOOKS)("%s type accent tint contrast", (_, css) => {
 
 /*
  * The review page's round diff (ui/src/review/diff.tsx) sets its lines on
- * the shell's page surface: added text in fg-primary on a 12% st-active
- * tint, removed in fg-secondary on a 12% st-rejected tint, unchanged in
- * fg-tertiary. Each pair is held in both shell modes, because the box once
- * sat on the always-dark code background and the light shell read 1.04:1.
+ * the shell's page surface, in the design system's names: added and
+ * removed text in `foreground` on a 12% `success` or `destructive` tint,
+ * unchanged text in `muted-foreground`. Each pair is held in both shell
+ * modes, because the box once sat on an always-dark code background and
+ * the light shell read 1.04:1 (fixed in v2.6.1).
  */
 const DIFF_LINES = [
-  ["fg-primary", "st-active"],
-  ["fg-secondary", "st-rejected"],
-  ["fg-tertiary", null],
+  ["foreground", "success"],
+  ["foreground", "destructive"],
+  ["muted-foreground", null],
 ] as const;
 
-describe.each(SHELL_LOOKS)("%s round diff contrast", (_, css) => {
-  const tokens = parseTokens(css);
-
-  it.each(DIFF_LINES)("%s holds 4.5:1 on the diff surface", (text, tint) => {
-    const fg = tokens.get(text);
-    const base = tokens.get("bg-base");
-    const hue = tint === null ? undefined : tokens.get(tint);
-    if (
-      fg === undefined ||
-      base === undefined ||
-      (tint !== null && hue === undefined)
-    ) {
-      throw new Error(`a token for ${text} on the diff surface is missing`);
-    }
-    const bg = hue === undefined ? base : mix(hue, base, 0.12);
+describe.each(["light", "dark"] as const)("%s round diff contrast", (mode) => {
+  it.each(DIFF_LINES)("%s on %s holds 4.5:1", (text, tint) => {
+    const fg = shellToken(mode, text);
+    const base = shellToken(mode, "background");
+    const bg = tint === null ? base : mix(shellToken(mode, tint), base, 0.12);
     const ratio = contrastRatio(fg, bg);
     expect(
       ratio,
-      `--color-${text} (${fg}) on the diff surface (${bg}) is ${ratio.toFixed(2)}:1`,
+      `--${text} (${fg}) on the diff surface (${bg}) is ${ratio.toFixed(2)}:1`,
     ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
   });
 });

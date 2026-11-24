@@ -1,12 +1,20 @@
+import {
+  DataTable,
+  dataTableColumns,
+} from "@donaldgifford/design-system/blocks/data-table";
+import { PageHeader } from "@donaldgifford/design-system/blocks/page-header";
+import { useMemo } from "react";
 import { Link, useParams } from "react-router";
 
 import { useGetRepo, useListDocs } from "@/api/__generated__/docz-api";
 import { NotFoundError, SessionRequiredError } from "@/api/fetcher";
-import { StatusPill } from "@/components/badges";
+import { StatusPill, TypeBadge } from "@/components/badges";
 import { TocList } from "@/components/doc-rail";
 import {
+  EmptyPanel,
   ErrorPanel,
   NotFoundPanel,
+  ProseSkeleton,
   SessionRequiredRedirect,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
@@ -19,22 +27,23 @@ import { arr } from "@/lib/wire";
 import type { DocType, Document } from "@/api/__generated__/docz-api.schemas";
 
 /*
- * Type page synthesized in the shape of docz's generated README tables
+ * Type page synthesized from what docz's generated README holds
  * (DESIGN-0001 "Type pages"): plural label, curated blurb, docz-create
- * hint, and the doc table between "docz auto-generated" markers. No
- * repo file is fetched — everything derives from listTypes + listDocs;
- * if docz-api ever serves the real type README.md it renders in place
- * of this synthesis.
+ * hint, and the type's documents. No repo file is fetched — everything
+ * derives from listTypes + listDocs; if docz-api ever serves the real
+ * type README.md it renders in place of this synthesis.
+ *
+ * The hint is a document, in the document theme. The table is the
+ * design system's DataTable (DESIGN-0028 §7) and sits under it, outside
+ * the document surface, whose prose rules would restyle it.
  */
 
-function GenMarker({ children }: { children: string }) {
-  return (
-    <div className="my-6 flex items-center gap-3 text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase before:h-px before:flex-1 before:bg-border-hairline before:content-[''] after:h-px after:flex-1 after:bg-border-hairline after:content-['']">
-      {children}
-    </div>
-  );
-}
+const column = dataTableColumns<Document>();
 
+/**
+ * A type's documents, in the order docz-api lists them: the table has
+ * no sort of its own, as it had none before.
+ */
 function DocsTable({
   repoId,
   docType,
@@ -45,76 +54,70 @@ function DocsTable({
   docs: readonly Document[];
 }) {
   const prefetchDoc = usePrefetchDoc();
-  return (
-    <table className="w-full border-collapse text-[14px]">
-      <thead>
-        <tr>
-          {["ID", "Title", "Status", "Date", "Link"].map((heading) => (
-            <th
-              key={heading}
-              className="border-b border-border-default px-[0.7rem] py-2 text-left font-mono text-[12px] font-normal tracking-[0.05em] text-fg-muted uppercase"
-            >
-              {heading}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {docs.map((doc) => {
-          const [tableOwner = "", tableRepo = ""] = repoId.split("/");
+  const columns = useMemo(() => {
+    const [owner = "", repo = ""] = repoId.split("/");
+    return column.columns([
+      column.accessor("doc_id", {
+        header: "ID",
+        cell: ({ row }) => {
           const prefetch = () => {
-            prefetchDoc(tableOwner, tableRepo, docType.name, doc.doc_id);
+            prefetchDoc(owner, repo, docType.name, row.original.doc_id);
           };
           return (
-            <tr key={doc.doc_id}>
-              <td className="border-b border-border-hairline px-[0.7rem] py-2 align-top whitespace-nowrap">
-                <Link
-                  to={`/${repoId}/${docType.name}/${doc.doc_id}`}
-                  onMouseEnter={prefetch}
-                  onFocus={prefetch}
-                  className="font-mono text-[13px] text-accent hover:underline"
-                >
-                  {doc.doc_id}
-                </Link>
-              </td>
-              <td className="border-b border-border-hairline px-[0.7rem] py-2 align-top text-fg-primary">
-                {doc.title}
-              </td>
-              <td className="border-b border-border-hairline px-[0.7rem] py-2 align-top">
-                {doc.status === "" ? (
-                  <span className="text-fg-muted">—</span>
-                ) : (
-                  <StatusPill status={doc.status} />
-                )}
-              </td>
-              <td className="border-b border-border-hairline px-[0.7rem] py-2 align-top font-mono text-[12.5px] text-fg-tertiary">
-                {doc.created === "" ? "—" : doc.created}
-              </td>
-              <td className="border-b border-border-hairline px-[0.7rem] py-2 align-top font-mono text-[12.5px] break-all text-fg-tertiary">
-                {doc.path.split("/").at(-1) ?? doc.path}
-              </td>
-            </tr>
+            <Link
+              to={`/${repoId}/${docType.name}/${row.original.doc_id}`}
+              onMouseEnter={prefetch}
+              onFocus={prefetch}
+              className="font-mono text-xs whitespace-nowrap text-primary hover:underline"
+            >
+              {row.original.doc_id}
+            </Link>
           );
-        })}
-      </tbody>
-    </table>
-  );
-}
+        },
+      }),
+      // A title and a file name wrap; the table never scrolls sideways
+      // for one long row.
+      column.accessor("title", {
+        header: "Title",
+        meta: { className: "whitespace-normal" },
+      }),
+      column.accessor("status", {
+        header: "Status",
+        cell: ({ row }) =>
+          row.original.status === "" ? (
+            <span className="text-muted-foreground">—</span>
+          ) : (
+            <StatusPill status={row.original.status} />
+          ),
+      }),
+      column.accessor("created", {
+        header: "Date",
+        cell: ({ row }) => (
+          <span className="font-mono text-xs whitespace-nowrap text-muted-foreground">
+            {row.original.created === "" ? "—" : row.original.created}
+          </span>
+        ),
+      }),
+      column.accessor("path", {
+        header: "Link",
+        meta: { hideBelow: "md", className: "whitespace-normal" },
+        cell: ({ row }) => (
+          <span className="font-mono text-xs break-all text-muted-foreground">
+            {row.original.path.split("/").at(-1) ?? row.original.path}
+          </span>
+        ),
+      }),
+    ]);
+  }, [repoId, docType.name, prefetchDoc]);
 
-function TypeSkeleton() {
   return (
-    <div aria-hidden data-testid="repo-type-skeleton" className="animate-pulse">
-      <div className="mb-6 h-8 w-2/5 bg-bg-elevated" />
-      <div className="space-y-3">
-        {Array.from({ length: 5 }, (_, i) => (
-          <div
-            key={i}
-            className="h-3 bg-bg-raised"
-            style={{ width: `${String(94 - (i % 3) * 10)}%` }}
-          />
-        ))}
-      </div>
-    </div>
+    <DataTable
+      label={`All ${docType.plural_label}`}
+      columns={columns}
+      data={docs}
+      getRowId={(doc) => doc.doc_id}
+      sortable={false}
+    />
   );
 }
 
@@ -154,7 +157,7 @@ export function Component() {
     const error = repoQuery.error ?? docsQuery.error;
     return (
       <ErrorPanel
-        message={error instanceof Error ? error.message : "Request failed"}
+        error={error}
         onRetry={() => {
           void (repoQuery.isError ? repoQuery.refetch() : docsQuery.refetch());
         }}
@@ -176,59 +179,62 @@ export function Component() {
 
   return (
     <RepoFrame
-      owner={owner}
-      name={repo}
       crumbs={[
         { label: repoId, to: `/${repoId}` },
         { label: docType?.name ?? type },
       ]}
-      rail={
-        <>
-          <div className="mb-3 border-b border-border-hairline pb-2 text-[11px] font-medium tracking-[0.08em] text-fg-muted uppercase">
-            On this page
-          </div>
-          <TocList toc={toc} />
-        </>
-      }
+      rail={<TocList toc={toc} />}
     >
       {docType === undefined || docs === undefined ? (
-        <TypeSkeleton />
+        <ProseSkeleton data-testid="repo-type-skeleton" />
       ) : (
-        <DocSurface accent={typeColor(docType.name)}>
-          <article className="doc-prose">
-            <h1 className="mb-4 font-serif text-[clamp(1.7rem,4vw,2.3rem)] leading-[1.15] font-bold text-fg-primary">
-              {docType.plural_label}
-            </h1>
-            <p className="mb-7 text-[14px] text-fg-tertiary">
-              {typeBlurb(docType)}
-            </p>
-
-            <h2 id="creating">Creating a new {docType.name}</h2>
-            {/* eslint-disable jsx-a11y/no-noninteractive-tabindex --
+        <>
+          {/* The page's title is chrome, in the shell's look; the body
+              below it is still a document, in the document theme. */}
+          <PageHeader
+            className="px-0 pt-0"
+            title={docType.plural_label}
+            meta={<TypeBadge type={docType.name} />}
+            description={typeBlurb(docType)}
+          />
+          <DocSurface accent={typeColor(docType.name)}>
+            <article className="doc-prose">
+              <h2 id="creating">Creating a new {docType.name}</h2>
+              {/* eslint-disable jsx-a11y/no-noninteractive-tabindex --
               scrollable region must be keyboard-reachable (see MarkdownPre) */}
-            <pre
-              role="region"
-              aria-label="code block"
-              tabIndex={0}
-              className="overflow-x-auto"
-            >
-              <code>{`$ docz create ${docType.name} "Your ${docType.name} title"`}</code>
-            </pre>
-            {/* eslint-enable jsx-a11y/no-noninteractive-tabindex */}
+              <pre
+                role="region"
+                aria-label="code block"
+                tabIndex={0}
+                className="overflow-x-auto"
+              >
+                <code>{`$ docz create ${docType.name} "Your ${docType.name} title"`}</code>
+              </pre>
+              {/* eslint-enable jsx-a11y/no-noninteractive-tabindex */}
+            </article>
+          </DocSurface>
 
-            <GenMarker>begin docz auto-generated</GenMarker>
-            <h2 id="all">All {docType.plural_label}</h2>
+          <section aria-labelledby="all" className="mt-8">
+            <h2 id="all" className="mb-3 text-lg font-semibold">
+              All {docType.plural_label}
+            </h2>
             {docs.length === 0 ? (
-              <p className="font-mono text-[14px] text-fg-muted">
-                No {docType.name} documents yet —{" "}
-                <code>docz create {docType.name}</code> scaffolds the first one.
-              </p>
+              <EmptyPanel
+                title={`No ${docType.name} documents yet`}
+                description={
+                  <>
+                    <code className="font-mono">
+                      docz create {docType.name}
+                    </code>{" "}
+                    scaffolds the first one.
+                  </>
+                }
+              />
             ) : (
               <DocsTable repoId={repoId} docType={docType} docs={docs} />
             )}
-            <GenMarker>end docz auto-generated</GenMarker>
-          </article>
-        </DocSurface>
+          </section>
+        </>
       )}
     </RepoFrame>
   );

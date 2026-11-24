@@ -1,10 +1,7 @@
-/// <reference types="node" />
-import { readdirSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
-
 import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import tokyoNight from "shiki/themes/tokyo-night.mjs";
+import githubDark from "shiki/themes/github-dark.mjs";
+import githubLight from "shiki/themes/github-light.mjs";
 import { describe, expect, it } from "vitest";
 
 import { renderMarkdown } from "@/markdown/processor";
@@ -14,13 +11,22 @@ import {
   contrastRatio,
   liftColor,
   liftThemeContrast,
+  type CodeMode,
 } from "@/markdown/theme-contrast";
+import { shellToken } from "@/test/shell-look";
 
 const HEX_RE = /^#[0-9a-f]{6}$/i;
 
-type RawSetting = NonNullable<typeof tokyoNight.tokenColors>[number];
+type Theme = typeof githubLight;
+type RawSetting = NonNullable<Theme["tokenColors"]>[number];
 
-function entriesOf(theme: typeof tokyoNight): RawSetting[] {
+/** The theme each mode highlights in (DESIGN-0028 question 6). */
+const THEMES: [CodeMode, Theme][] = [
+  ["light", githubLight],
+  ["dark", githubDark],
+];
+
+function entriesOf(theme: Theme): RawSetting[] {
   return [
     ...(Array.isArray(theme.tokenColors) ? theme.tokenColors : []),
     ...(Array.isArray(theme.settings) ? theme.settings : []),
@@ -32,69 +38,81 @@ function hexForeground(entry: RawSetting): string | null {
   return typeof fg === "string" && HEX_RE.test(fg) ? fg : null;
 }
 
-describe("liftThemeContrast", () => {
-  it("is the lightest code surface the shell or a pkg/theme theme has", () => {
-    const sources = [
-      resolve(process.cwd(), "src/theme/shell.css"),
-      ...readdirSync(resolve(process.cwd(), "../pkg/theme/tokens")).map(
-        (file) => resolve(process.cwd(), "../pkg/theme/tokens", file),
-      ),
-    ];
-    const surfaces = sources.flatMap((file) =>
-      [
-        ...readFileSync(file, "utf8").matchAll(
-          /--color-code-bg:\s*(#[0-9a-fA-F]{6})/g,
-        ),
-      ].map((m) => (m[1] ?? "").toLowerCase()),
-    );
-    expect(surfaces).toContain(CODE_BG);
-    // Lifting against the lightest dark surface clears every darker one.
-    for (const bg of surfaces) {
-      expect(contrastRatio("#ffffff", bg)).toBeGreaterThanOrEqual(
-        contrastRatio("#ffffff", CODE_BG),
-      );
-    }
+function failing(theme: Theme, bg: string): RawSetting[] {
+  return entriesOf(theme).filter((entry) => {
+    const fg = hexForeground(entry);
+    return fg !== null && contrastRatio(fg, bg) < AA_NORMAL_TEXT;
   });
+}
 
-  it("brings every tokyo-night foreground to AA on the code surface", () => {
-    const failingBefore = entriesOf(tokyoNight).filter((entry) => {
-      const fg = hexForeground(entry);
-      return fg !== null && contrastRatio(fg, CODE_BG) < AA_NORMAL_TEXT;
-    });
-    // The comment family is the known offender; if the theme ever
-    // ships AA-clean, the lift becomes a no-op and this guard notices.
-    expect(failingBefore.length).toBeGreaterThan(0);
+describe("CODE_BG", () => {
+  // The lift is arithmetic on a hex surface, and the page paints the
+  // design system's --code-bg. They are the same colour or the lift
+  // clears a bar the page does not have.
+  it.each(["light", "dark"] as const)(
+    "is the design system's --code-bg in %s",
+    (mode) => {
+      expect(CODE_BG[mode]).toBe(shellToken(mode, "code-bg"));
+    },
+  );
 
-    const lifted = entriesOf(liftThemeContrast(tokyoNight));
-    expect(lifted.length).toBeGreaterThan(50);
-    for (const entry of lifted) {
-      const fg = hexForeground(entry);
-      if (fg === null) continue;
+  it("holds the package's own text colour, for a block with no grammar", () => {
+    for (const mode of ["light", "dark"] as const) {
       expect(
-        contrastRatio(fg, CODE_BG),
-        `${JSON.stringify(entry.scope)} ${fg}`,
+        contrastRatio(shellToken(mode, "foreground"), CODE_BG[mode]),
+        mode,
       ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
     }
   });
+});
 
-  it("keeps passing entries by reference and font styles on lifted ones", () => {
-    const original = tokyoNight.tokenColors ?? [];
-    const lifted = liftThemeContrast(tokyoNight).tokenColors ?? [];
-    expect(lifted).toHaveLength(original.length);
-    original.forEach((entry, i) => {
-      const liftedEntry = lifted[i];
-      if (liftedEntry === undefined) {
-        throw new Error(`entry ${String(i)} vanished`);
-      }
-      const fg = hexForeground(entry);
-      if (fg === null || contrastRatio(fg, CODE_BG) >= AA_NORMAL_TEXT) {
-        expect(liftedEntry).toBe(entry);
-      } else {
-        expect(liftedEntry.settings.fontStyle).toBe(entry.settings.fontStyle);
-        expect(liftedEntry.scope).toBe(entry.scope);
-      }
-    });
+describe("liftThemeContrast", () => {
+  it("has something to lift", () => {
+    // If both themes ever ship AA-clean on these surfaces the lift is a
+    // no-op, and this guard notices.
+    const before = THEMES.flatMap(([mode, theme]) =>
+      failing(theme, CODE_BG[mode]),
+    );
+    expect(before.length).toBeGreaterThan(0);
   });
+
+  it.each(THEMES)(
+    "brings every %s foreground to AA on that mode's code surface",
+    (mode, theme) => {
+      const lifted = entriesOf(liftThemeContrast(theme, CODE_BG[mode]));
+      expect(lifted.length).toBeGreaterThan(30);
+      for (const entry of lifted) {
+        const fg = hexForeground(entry);
+        if (fg === null) continue;
+        expect(
+          contrastRatio(fg, CODE_BG[mode]),
+          `${JSON.stringify(entry.scope)} ${fg}`,
+        ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+      }
+    },
+  );
+
+  it.each(THEMES)(
+    "keeps passing %s entries by reference and font styles on lifted ones",
+    (mode, theme) => {
+      const original = theme.tokenColors ?? [];
+      const lifted = liftThemeContrast(theme, CODE_BG[mode]).tokenColors ?? [];
+      expect(lifted).toHaveLength(original.length);
+      original.forEach((entry, i) => {
+        const liftedEntry = lifted[i];
+        if (liftedEntry === undefined) {
+          throw new Error(`entry ${String(i)} vanished`);
+        }
+        const fg = hexForeground(entry);
+        if (fg === null || contrastRatio(fg, CODE_BG[mode]) >= AA_NORMAL_TEXT) {
+          expect(liftedEntry).toBe(entry);
+        } else {
+          expect(liftedEntry.settings.fontStyle).toBe(entry.settings.fontStyle);
+          expect(liftedEntry.scope).toBe(entry.scope);
+        }
+      });
+    },
+  );
 
   it("nudges toward white on dark surfaces and black on light ones", () => {
     expect(liftColor("#ffffff", "#000000")).toBe("#ffffff");
@@ -106,75 +124,42 @@ describe("liftThemeContrast", () => {
   });
 });
 
-/*
- * The lift runs once, against CODE_BG (classic's code surface). Every
- * theme in pkg/theme keeps code dark, so a foreground lifted to AA on
- * classic's must also reach AA on each theme's own --color-code-bg; a
- * theme whose code surface is lighter fails here (IMPL-0030 Phase 3).
- */
-describe("every pkg/theme code surface", () => {
-  const tokensDir = resolve(process.cwd(), "../pkg/theme/tokens");
-  const surfaces = readdirSync(tokensDir)
-    .filter((f) => f.endsWith(".css"))
-    .flatMap((file) =>
-      [
-        ...readFileSync(resolve(tokensDir, file), "utf8").matchAll(
-          /--color-code-bg:\s*(#[0-9a-fA-F]{6})/g,
-        ),
-      ].map((m): [string, string] => [file, (m[1] ?? "").toLowerCase()]),
-    );
-
-  it("finds a code surface in every theme", () => {
-    expect(new Set(surfaces.map(([file]) => file)).size).toBe(
-      readdirSync(tokensDir).filter((f) => f.endsWith(".css")).length,
-    );
-  });
-
-  it.each(surfaces)("%s %s holds every lifted foreground to AA", (_, bg) => {
-    for (const entry of entriesOf(liftThemeContrast(tokyoNight))) {
-      const fg = hexForeground(entry);
-      if (fg === null) continue;
-      expect(
-        contrastRatio(fg, bg),
-        `${JSON.stringify(entry.scope)} ${fg} on ${bg}`,
-      ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
-    }
-  });
-});
-
-function cssColorToHex(color: string): string {
-  if (color.startsWith("#")) {
-    return color;
-  }
-  const match = /rgb\((\d+), (\d+), (\d+)\)/.exec(color);
-  if (match === null) {
-    throw new Error(`unparsed color ${color}`);
-  }
-  return `#${match
-    .slice(1, 4)
-    .map((v) => Number(v).toString(16).padStart(2, "0"))
-    .join("")}`;
-}
-
-describe("rendered code comments", () => {
-  it("meet AA against the code surface and stay italic", async () => {
+describe("rendered code", () => {
+  async function tokens(): Promise<HTMLElement[]> {
     const { content } = await renderMarkdown(
       "```ts\n// a comment\nconst x = 1;\n```",
     );
     const { container } = render(<MemoryRouter>{content}</MemoryRouter>);
-    // The innermost colored span is the token; its parent line span
-    // carries the same text but no color.
-    const tokens = [...container.querySelectorAll<HTMLElement>("pre span")]
-      .filter((el) => el.textContent.includes("// a comment"))
-      .filter((el) => el.style.color !== "");
-    const token = tokens.at(-1);
-    if (token === undefined) {
+    return [...container.querySelectorAll<HTMLElement>("pre span")].filter(
+      (el) => el.style.getPropertyValue("--shiki-light") !== "",
+    );
+  }
+
+  it("carries both themes on every token and a colour of neither", async () => {
+    const all = await tokens();
+    expect(all.length).toBeGreaterThan(3);
+    for (const token of all) {
+      // CSS picks the set from the `dark` class; an inline colour
+      // would outrank it and pin one mode.
+      expect(token.style.color).toBe("");
+      expect(token.style.getPropertyValue("--shiki-dark")).toMatch(HEX_RE);
+    }
+  });
+
+  it("meets AA in each mode, the comment included", async () => {
+    const all = await tokens();
+    const comment = all.find((el) => el.textContent.includes("// a comment"));
+    if (comment === undefined) {
       throw new Error("no colored comment token rendered");
     }
-    const hex = cssColorToHex(token.style.color);
-    expect(contrastRatio(hex, CODE_BG), hex).toBeGreaterThanOrEqual(
-      AA_NORMAL_TEXT,
-    );
-    expect(token.style.fontStyle).toBe("italic");
+    for (const token of all) {
+      for (const mode of ["light", "dark"] as const) {
+        const hex = token.style.getPropertyValue(`--shiki-${mode}`);
+        expect(
+          contrastRatio(hex, CODE_BG[mode]),
+          `${token.textContent} ${hex} in ${mode}`,
+        ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+      }
+    }
   });
 });

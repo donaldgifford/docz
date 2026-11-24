@@ -59,9 +59,71 @@ test("cold deep-link into the reader", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: SITE_DESIGN_TITLE }),
   ).toBeVisible();
-  // Reader chrome came with it: breadcrumbs and the repo nav.
+  // The frame came with it (DESIGN-0028 §6): the breadcrumbs in the
+  // top bar, and in the sidebar the repository's groups with the
+  // document's type open on the document itself.
   await expect(
     page.getByRole("navigation", { name: "Breadcrumb" }),
+  ).toBeVisible();
+  const sidebar = page.getByRole("navigation", { name: "docz navigation" });
+  await expect(sidebar.getByText("donaldgifford/docz-site")).toBeVisible();
+  await expect(sidebar.getByRole("link", { name: "Home" })).toBeVisible();
+  await expect(
+    sidebar.getByRole("button", { name: "design, show contents" }),
+  ).toHaveAttribute("aria-expanded", "true");
+  await expect(
+    sidebar.getByRole("link", { name: `DESIGN-0001 · ${SITE_DESIGN_TITLE}` }),
+  ).toHaveAttribute("aria-current", "page");
+});
+
+test("the mode toggle moves the frame and the document, and holds", async ({
+  page,
+}) => {
+  // Nothing stored: the page follows the system.
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("/donaldgifford/docz-site/design/DESIGN-0001");
+  await expect(
+    page.getByRole("heading", { level: 1, name: SITE_DESIGN_TITLE }),
+  ).toBeVisible();
+  const html = page.locator("html");
+  await expect(html).toHaveClass(/\bdark\b/);
+  await expect(html).not.toHaveAttribute("data-mode");
+
+  // One toggle writes both: the class the frame reads and the
+  // attribute the document's theme reads.
+  await page.getByRole("button", { name: "Switch to light mode" }).click();
+  await expect(html).not.toHaveClass(/\bdark\b/);
+  await expect(html).toHaveAttribute("data-mode", "light");
+
+  // The choice outlives a reload, against the system's.
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Switch to dark mode" }),
+  ).toBeVisible();
+  await expect(html).not.toHaveClass(/\bdark\b/);
+  await expect(html).toHaveAttribute("data-mode", "light");
+});
+
+test("the sidebar is a sheet on a narrow screen", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto("/donaldgifford/docz-site/design/DESIGN-0001");
+  await expect(
+    page.getByRole("heading", { level: 1, name: SITE_DESIGN_TITLE }),
+  ).toBeVisible();
+
+  // The document has the whole width: nothing scrolls sideways.
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  const sidebar = page.getByRole("navigation", { name: "docz navigation" });
+  await expect(sidebar).toBeHidden();
+
+  await page.getByRole("button", { name: "Toggle Sidebar" }).click();
+  await expect(sidebar.getByRole("link", { name: "Directory" })).toBeVisible();
+  await expect(
+    sidebar.getByRole("link", { name: `DESIGN-0001 · ${SITE_DESIGN_TITLE}` }),
   ).toBeVisible();
 });
 
@@ -86,6 +148,10 @@ test("401 redirects to the login page", async ({ page }) => {
   await expect(
     page.getByRole("link", { name: "Continue with GitHub" }),
   ).toHaveAttribute("href", "/auth/login?provider=github");
+  // /login renders outside the frame: no session, so no navigation.
+  await expect(
+    page.getByRole("navigation", { name: "docz navigation" }),
+  ).toHaveCount(0);
 });
 
 test("login loop restores the stashed destination", async ({ page }) => {

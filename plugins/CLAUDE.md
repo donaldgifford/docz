@@ -43,7 +43,12 @@ created. It is three pieces, and `ui/CLAUDE.md` has the detail.
 
 - **The page** is docz-site's second Vite entry, `ui/review.html`, built by
   `just ui build-review` into `ui/dist-review/`, reusing the reader's
-  markdown pipeline in a review render mode.
+  markdown pipeline in a review render mode. Its controls are the design
+  system's parts (DESIGN-0028 §10): buttons, a tab per document, the
+  status as a segmented control, and a dialog before it discards a
+  draft. The package comes from GitHub Packages, so building the page
+  or the binary needs `NPM_TOKEN` in the environment; running the binary
+  needs nothing, and its page asks no other origin for anything.
 - **The binary** is a Bun server in `ui/review/`, compiled by
   `bun build --compile` with the page embedded, for linux and darwin on
   x64 and arm64. It drives `docz inspect` and `docz validate` through the

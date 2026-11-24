@@ -24,7 +24,7 @@ import { router } from "@/app/router";
 import { applyStoredMode } from "@/lib/appearance";
 
 // The mode goes on <html> before anything renders, so the first paint is
-// the reader's mode (DESIGN-0026 §2); with none stored, shell.css follows
+// the reader's mode (DESIGN-0026 §2); with none stored, the shell follows
 // the system.
 applyStoredMode();
 

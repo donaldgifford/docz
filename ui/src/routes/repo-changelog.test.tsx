@@ -72,7 +72,7 @@ describe("repo changelog", () => {
     mountAt("/donaldgifford/docz-site/changelog");
 
     // Fixture config enables changelog: the panel names the file (in a
-    // code span — the RepoNav hint also says CHANGELOG.md, twice).
+    // code span — the sidebar's hint also says CHANGELOG.md, twice).
     expect(await screen.findByText(/absent at HEAD/)).toBeInTheDocument();
     expect(
       screen.getByText("CHANGELOG.md", { selector: "code" }),

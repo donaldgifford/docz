@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { getGetRepoChangelogQueryOptions } from "@/api/__generated__/docz-api";
 
 /*
- * Hover/focus prefetch for the RepoNav changelog row, mirroring
+ * Hover/focus prefetch for the sidebar's changelog row, mirroring
  * usePrefetchDoc: by the time the click lands the body is usually
  * cached and the page paints without a skeleton. staleTime only
  * applies to the prefetch — the mounted query revalidates per its own

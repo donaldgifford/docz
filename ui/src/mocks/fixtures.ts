@@ -407,7 +407,7 @@ export const demoOrgHandlers = [
       docs_dir: "docs",
       last_synced_sha: `fixture-head-${str(params.name)}`,
       // Both demo repos opt into the changelog: block (spec 1.2.0) so
-      // the RepoNav row's config_snapshot gate is exercised; faker
+      // the sidebar row's config_snapshot gate is exercised; faker
       // repos get random snapshots without it, keeping the row hidden.
       // Only docz-site opts into the api: block (DESIGN-0004) — its
       // `exclude: null` mirrors the real nil-slice marshal (the arr()
@@ -706,7 +706,7 @@ export const demoOrgHandlers = [
   }),
 
   // Deterministic demo identity — the faker handler's random strings
-  // would make the topbar avatar/initial flicker between runs.
+  // would make the sidebar's avatar/initial flicker between runs.
   http.get("*/api/v1/auth/session", () =>
     HttpResponse.json({
       provider: "github",

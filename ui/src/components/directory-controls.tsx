@@ -1,39 +1,30 @@
-import { useEffect, useRef, useState } from "react";
+import { FilterChip } from "@donaldgifford/design-system/blocks/filter-chip";
+import {
+  OptionItem,
+  OptionSeparator,
+} from "@donaldgifford/design-system/blocks/option-rows";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@donaldgifford/design-system/components/popover";
+import { useState } from "react";
 
-import { typeColor } from "@/lib/colors";
+import { TypeDot } from "@/components/badges";
 
 /*
- * Directory filter controls per the mockup's controls-row + chips.
- * Both are dumb: they render facet counts handed to them and report
- * picks upward — the route owns the URL state (DESIGN-0001: the URL is
- * the only source of filter truth).
+ * The directory's filters (DESIGN-0028 §7), as the chips of the design
+ * system's FilterBar, which the route draws around them. Both are
+ * dumb: they render facet counts handed to them and report picks
+ * upward — the route owns the URL state (DESIGN-0001: the URL is the
+ * only source of filter truth).
  */
 
-function PickerItem({
-  label,
-  count,
-  selected,
-  onClick,
-}: {
-  label: string;
-  count: number;
-  selected: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex w-full items-center justify-between gap-6 px-3 py-[0.4rem] text-left font-mono text-[13px] hover:bg-bg-raised ${
-        selected ? "text-fg-primary" : "text-fg-tertiary"
-      }`}
-    >
-      <span>{label}</span> <span className="text-fg-muted">{count}</span>
-    </button>
-  );
-}
-
-/** Dropdown scoping the directory to one repo, with per-repo counts. */
+/**
+ * The `repo = …` chip, which opens the repositories as option rows with
+ * each one's count. Picking a row scopes the directory to it and closes
+ * the popover.
+ */
 export function RepoPicker({
   current,
   counts,
@@ -44,27 +35,6 @@ export function RepoPicker({
   onPick: (repo: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    function closeOnOutsidePress(event: PointerEvent) {
-      if (
-        event.target instanceof Node &&
-        rootRef.current?.contains(event.target) === true
-      ) {
-        return;
-      }
-      setOpen(false);
-    }
-    document.addEventListener("pointerdown", closeOnOutsidePress);
-    return () => {
-      document.removeEventListener("pointerdown", closeOnOutsidePress);
-    };
-  }, [open]);
 
   const repos = Object.entries(counts).sort(([a], [b]) => a.localeCompare(b));
   const total = repos.reduce((sum, [, count]) => sum + count, 0);
@@ -75,105 +45,47 @@ export function RepoPicker({
   };
 
   return (
-    // Keyboard path: Escape dismisses the open dropdown and hands focus
-    // back to the trigger (pointer users get pointerdown-outside above).
-    // The div only catches Escape bubbling from the interactive children
-    // — the rule's documented event-delegation exception.
-    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
-    <div
-      ref={rootRef}
-      className="relative"
-      onKeyDown={(event) => {
-        if (event.key === "Escape" && open) {
-          event.stopPropagation();
-          setOpen(false);
-          triggerRef.current?.focus();
-        }
-      }}
-    >
-      <button
-        ref={triggerRef}
-        type="button"
-        aria-haspopup="true"
-        aria-expanded={open}
-        onClick={() => {
-          setOpen((value) => !value);
-        }}
-        className="flex items-center gap-2 border border-border-default bg-bg-raised px-3 py-[0.35rem] font-mono text-[13px] text-fg-secondary hover:border-border-strong rounded-sm"
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={<FilterChip name="repo" value={current ?? "all"} />}
+      />
+      <PopoverContent
+        align="start"
+        aria-label="Repository"
+        className="w-auto min-w-60 gap-0 p-1"
       >
-        <span className="text-fg-muted">repo:</span>{" "}
-        <span>{current ?? "all"}</span>
-        <span aria-hidden className="text-[10px] text-fg-muted">
-          ▾
-        </span>
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 z-10 mt-1 min-w-60 border border-border-strong bg-bg-elevated py-1 shadow-[0_10px_36px_rgba(0,0,0,0.55)]">
-          <PickerItem
-            label="all repos"
-            count={total}
-            selected={current === null}
+        <OptionItem
+          current={current === null}
+          detail={String(total)}
+          onClick={() => {
+            pick(null);
+          }}
+        >
+          all repos
+        </OptionItem>
+        <OptionSeparator />
+        {repos.map(([repo, count]) => (
+          <OptionItem
+            key={repo}
+            current={current === repo}
+            detail={String(count)}
             onClick={() => {
-              pick(null);
+              pick(repo);
             }}
-          />
-          <div className="my-1 border-t border-border-hairline" />
-          {repos.map(([repo, count]) => (
-            <PickerItem
-              key={repo}
-              label={repo}
-              count={count}
-              selected={current === repo}
-              onClick={() => {
-                pick(repo);
-              }}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Chip({
-  label,
-  dotColor,
-  pressed,
-  onClick,
-}: {
-  label: string;
-  dotColor?: string;
-  pressed: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={pressed}
-      onClick={onClick}
-      className={`mono-chip-y inline-flex items-center gap-[0.4rem] border px-[0.7rem] font-mono text-[12.5px] tracking-[0.04em] uppercase ${
-        pressed
-          ? "border-border-strong bg-bg-raised text-fg-primary"
-          : "border-border-default text-fg-tertiary hover:text-fg-secondary"
-      }`}
-    >
-      {dotColor !== undefined && (
-        <span
-          aria-hidden
-          className="size-[7px]"
-          style={{ background: dotColor }}
-        />
-      )}
-      {label}
-    </button>
+          >
+            {repo}
+          </OptionItem>
+        ))}
+      </PopoverContent>
+    </Popover>
   );
 }
 
 /**
  * Type chips from the union of the `type` facet values — never a
  * hardcoded list. Single-select: searchDocs takes one `type` per query
- * (see src/lib/searchParams.ts), so a chip toggles itself and replaces
- * any other selection.
+ * (see src/lib/searchParams.ts), so one click on a chip turns it on in
+ * place of any other, and a click on the one that is on turns it off.
  */
 export function TypeChips({
   available,
@@ -188,25 +100,27 @@ export function TypeChips({
     return null;
   }
   return (
-    <div className="mt-[0.9rem] flex flex-wrap gap-2">
-      <Chip
-        label="all types"
+    <>
+      <FilterChip
         pressed={selected === null}
-        onClick={() => {
+        onPressedChange={() => {
           onSelect(null);
         }}
-      />
+      >
+        all types
+      </FilterChip>
       {available.map((type) => (
-        <Chip
+        <FilterChip
           key={type}
-          label={type}
-          dotColor={typeColor(type)}
           pressed={selected === type}
-          onClick={() => {
-            onSelect(selected === type ? null : type);
+          onPressedChange={(pressed) => {
+            onSelect(pressed ? type : null);
           }}
-        />
+        >
+          <TypeDot type={type} />
+          {type}
+        </FilterChip>
       ))}
-    </div>
+    </>
   );
 }

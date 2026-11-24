@@ -100,7 +100,7 @@ describe("reader four-state matrix", () => {
       await screen.findByText("meilisearch is on fire"),
     ).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "retry" }));
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
     await findRenderedDesign0001();
   });
 
@@ -129,7 +129,7 @@ describe("reader four-state matrix", () => {
     ).not.toBeInTheDocument();
     expect(sessionStorage.getItem("docz:auth:return-to")).toBeNull();
 
-    await userEvent.click(screen.getByRole("button", { name: "retry" }));
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
     await findRenderedDesign0001();
   });
 });
@@ -152,17 +152,13 @@ describe("metadata table omission", () => {
 
     // header meta: no pill, author falls back
     expect(screen.getByText("unassigned")).toBeInTheDocument();
-    // table rows for ""-valued fields are gone entirely
+    // details for ""-valued fields are gone entirely
     expect(screen.queryByText("Created")).not.toBeInTheDocument();
     // fields the DTO always carries stay
-    const table = within(
-      screen.getByRole("table", { name: "Document metadata" }),
-    );
+    const details = within(screen.getByRole("region", { name: "Metadata" }));
+    expect(details.getByText("Source")).toBeInTheDocument();
     expect(
-      table.getByRole("rowheader", { name: "Source" }),
-    ).toBeInTheDocument();
-    expect(
-      table.getByRole("link", { name: "donaldgifford/docz-site" }),
+      details.getByRole("link", { name: "donaldgifford/docz-site" }),
     ).toHaveAttribute("href", "/donaldgifford/docz-site");
     expect(screen.getByRole("link", { name: "json" })).toHaveAttribute(
       "href",
@@ -170,31 +166,34 @@ describe("metadata table omission", () => {
     );
   });
 
-  it("renders the populated table with the format switch", async () => {
+  it("renders the populated details with the format switch", async () => {
     mountAt(DOC_URL);
     await findRenderedDesign0001();
 
-    expect(screen.getByRole("rowheader", { name: "Type" })).toBeInTheDocument();
-    expect(screen.getByText("design · DESIGN-0001")).toBeInTheDocument();
+    const details = within(screen.getByRole("region", { name: "Metadata" }));
     expect(
-      screen.getByText(
+      details.getAllByRole("term").map((term) => term.textContent),
+    ).toEqual(["Type", "Repo", "Source", "Created"]);
+    expect(details.getByText("design · DESIGN-0001")).toBeInTheDocument();
+    expect(
+      details.getByText(
         "docs/design/0001-docz-site-cross-repo-docz-reader-and-search-ui.md",
-        { selector: "td *" },
+        { selector: "dd *" },
       ),
     ).toBeInTheDocument();
     // git_sha is the blob SHA, a cache key rather than a commit, so the
-    // reader shows no row for it (#169).
-    expect(
-      screen.queryByRole("rowheader", { name: "Commit" }),
-    ).not.toBeInTheDocument();
+    // reader shows no detail for it (#169).
+    expect(details.queryByText("Commit")).not.toBeInTheDocument();
     expect(
       screen.queryByText("fixture-sha-design-0001".slice(0, 7)),
     ).not.toBeInTheDocument();
 
-    const group = screen.getByRole("group", { name: "Document format" });
-    const html = within(group).getByRole("button", { name: "html" });
-    expect(html).toHaveAttribute("aria-pressed", "true");
-    await userEvent.click(within(group).getByRole("button", { name: "md" }));
+    const formats = screen.getByRole("tablist", { name: "Document format" });
+    expect(within(formats).getByRole("tab", { name: "html" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await userEvent.click(within(formats).getByRole("tab", { name: "md" }));
     expect(
       screen.getByRole("region", { name: "raw markdown" }),
     ).toBeInTheDocument();
@@ -244,18 +243,24 @@ describe("lifecycle disclosure", () => {
         { timeout: 10_000 },
       );
 
-      const disclosure = await screen.findByTestId("lifecycle-disclosure");
-      expect(disclosure).not.toHaveAttribute("open");
-      const rail = await screen.findByTestId("lifecycle-rail");
-      const states = [...rail.querySelectorAll("[data-lifecycle-state]")].map(
-        (el) => [el.textContent, el.getAttribute("data-lifecycle-state")],
-      );
-      expect(states).toEqual([
+      // Closed, it says the status in force; the steps come with opening.
+      const trigger = await screen.findByRole("button", {
+        name: /^Lifecycle\s*Approved$/,
+      });
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+      await userEvent.click(trigger);
+      const steps = document.querySelector('[data-slot="stepper"]');
+      expect(
+        [...(steps?.querySelectorAll("li") ?? [])].map((step) => [
+          step.textContent,
+          step.dataset.status,
+        ]),
+      ).toEqual([
         ["Draft", "done"],
         ["In Review", "done"],
         ["Approved", "current"],
-        ["Implemented", "pending"],
-        ["Abandoned", "pending"],
+        ["Implemented", "upcoming"],
+        ["Abandoned", "upcoming"],
       ]);
     },
   );
@@ -293,23 +298,14 @@ describe("portal sibling navigation", () => {
     mountAt(DOC_URL);
     await findRenderedDesign0001();
 
-    // The repo nav frames the reader; other types' drawers start
-    // closed, so peek into impl first (the nav renders twice — narrow
-    // drawer + desktop rail; either works).
-    const [implToggle] = await screen.findAllByRole("button", {
-      name: "impl documents",
-    });
-    if (implToggle === undefined) {
-      throw new Error("impl drawer toggle not found");
-    }
-    await userEvent.click(implToggle);
-    const [navLink] = await screen.findAllByRole("link", {
-      name: /IMPL-0001 · docz-site MVP/,
-    });
-    if (navLink === undefined) {
-      throw new Error("sibling nav link not found");
-    }
-    await userEvent.click(navLink);
+    // The sidebar holds the repository's documents; other types' rows
+    // start closed, so open impl first.
+    await userEvent.click(
+      await screen.findByRole("button", { name: "impl, show contents" }),
+    );
+    await userEvent.click(
+      await screen.findByRole("link", { name: /IMPL-0001 · docz-site MVP/ }),
+    );
 
     expect(
       await screen.findByRole(
@@ -318,8 +314,10 @@ describe("portal sibling navigation", () => {
         { timeout: 10_000 },
       ),
     ).toBeInTheDocument();
-    // The previous doc is gone from the article; the nav still lists it.
-    expect(navLink).toHaveAttribute("aria-current", "page");
+    // The sidebar follows: the document it opened is the current page.
+    expect(
+      screen.getByRole("link", { name: /IMPL-0001 · docz-site MVP/ }),
+    ).toHaveAttribute("aria-current", "page");
   });
 });
 

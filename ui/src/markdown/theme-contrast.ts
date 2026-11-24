@@ -2,20 +2,24 @@ import type { ThemeRegistrationRaw } from "shiki/core";
 
 /*
  * Lifts a Shiki theme's token colors to WCAG AA (4.5:1) against the
- * reader's code-block surface. tokyo-night's comment family sits near
- * 2.5:1 on --color-code-bg, which full-rule axe flags as a serious
- * violation on every commented block (the rendering specimen surfaced
- * it). Rather than fork the theme, each failing foreground is nudged
+ * code-block surface. Code the site renders follows the page
+ * (DESIGN-0028 §9): it is highlighted in github-light and github-dark
+ * at once, on the design system's --code-bg, and CSS picks the set
+ * from the `dark` class. Each theme has foregrounds under 4.5:1 on
+ * its mode's surface (github-light's comment grey is one), which
+ * full-rule axe flags as a serious violation on every block that has
+ * one. Rather than fork a theme, each failing foreground is nudged
  * toward the far end of the luminance scale until it clears the bar;
  * passing colors and every font style are untouched, so the theme
- * still reads as tokyo-night.
+ * still reads as itself.
  *
- * CODE_BG is the lightest --color-code-bg the shell or any pkg/theme
- * theme has (classic's), so a colour lifted against it clears every
- * darker one; theme-contrast.test.ts pins that and re-checks every
- * lifted color on each theme's surface (IMPL-0030).
+ * CODE_BG is --code-bg in each mode, in hex because the lift is
+ * arithmetic on channels. theme-contrast.test.tsx pins both to the
+ * package's tokens, so a bump that moves the surface fails there and
+ * the lift never runs against a colour the page no longer has.
  */
-export const CODE_BG = "#161b28";
+export const CODE_BG = { light: "#f6f7f9", dark: "#17191c" } as const;
+export type CodeMode = keyof typeof CODE_BG;
 export const AA_NORMAL_TEXT = 4.5;
 
 const HEX_RE = /^#[0-9a-f]{6}$/i;
@@ -24,7 +28,7 @@ type RawSetting = NonNullable<ThemeRegistrationRaw["tokenColors"]>[number];
 
 export function liftThemeContrast(
   theme: ThemeRegistrationRaw,
-  bg: string = CODE_BG,
+  bg: string,
 ): ThemeRegistrationRaw {
   const lift = (entries: RawSetting[]): RawSetting[] =>
     entries.map((entry) => {

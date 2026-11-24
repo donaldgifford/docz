@@ -7,8 +7,55 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Bug Fixes
 
+- *(ui)* Send a relative link to a type's README to the type's page
+- *(deps)* Bump OpenTelemetry to 1.47.0 for GO-2026-6974 and GO-2026-6975
+
+### Documentation
+
+- *(impl)* Record the beta's result and the package access in IMPL-0033
+- *(impl)* Record the keyboard check in IMPL-0033
+- *(inv)* Add INV-0038 on a relative --repo-root doubling the root
+- *(design)* DESIGN-0029 roots are absolute, per INV-0038
+
+### Miscellaneous Tasks
+
+- *(chart)* Bump charts/docz to 1.5.0-beta.2 for v2.7.0-beta.2
+
+## [2.7.0-beta.1] - 2026-11-23
+
+### Features
+
+- *(ui)* Pin @donaldgifford/design-system 0.6.0 with its registry
+- *(ui)* Fail `just ui install` early when NPM_TOKEN is unset
+- *(ui)* Add oklch.ts, the token resolver and oklch-to-hex conversion
+- *(ui)* Compile the stylesheet on the design system's core.css
+- *(ui)* Set the dark class on <html> beside data-mode
+- *(ui)* Read the shell's values from the design system's tokens
+- *(ui)* Generate pkg/theme's charcoal tokens from the design system
+- *(theme)* Generate charcoal from the design system 0.6.0
+- *(ui)* Map a status to the design system's badge variant
+- *(ui)* Draw status and type marks with the design system's Badge and Dot
+- *(ui)* Draw the states, cards, page headers, and sign-in with the design system
+- *(ui)* Draw the account menu with the design system's DropdownMenu
+- *(ui)* Build the palette on the design system's CommandDialog
+- *(ui)* Draw the directory's filters and hit rows with the design system
+- *(ui)* Switch a document's format with the design system's SegmentedControl
+- *(ui)* Draw the reader's outline, lifecycle, and details with the design system
+- *(ui)* List a type's documents in the design system's DataTable
+- *(ui)* Put every route in the design system's frame
+- *(ui)* Highlight site-rendered code in a light and a dark theme
+- *(ui)* Move the review page's controls onto the design system
+
+### Bug Fixes
+
 - *(deps)* Go 1.26.11 and brotli 1.2.7 for govulncheck
 - *(deps)* Golang.org/x/net 0.62.0 for CVE-2026-78661
+- *(ui)* Hand mermaid hex for the shell's oklch tokens
+- *(ui)* Pre-bundle the shim Base UI's store imports in dev
+
+### Refactor
+
+- *(ui)* Remove shell.css and scope docz's names to documents
 
 ### Documentation
 
@@ -28,10 +75,38 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(inv)* Add the 0.5.0 release note's three cautions to INV-0036
 - *(inv)* Add design-system 0.6.0 to INV-0036
 - *(design)* Add DESIGN-0028 and IMPL-0033 for the design-system adoption
+- *(ui)* Say how to install with the registry token
+- *(ui)* Rewrite CLAUDE.md for the new head of the stylesheet
+- Record that charcoal.css is generated and how a bump goes
+- *(impl)* Put IMPL-0033's deferred markers behind the task text
+- *(impl)* Record IMPL-0033 Phase 5
+- *(impl)* Record IMPL-0033 Phase 6
+- *(impl)* Record IMPL-0033 Phase 7
+- *(impl)* Record IMPL-0033 Phase 8
+- *(impl)* Record IMPL-0033 Phase 9
+- *(impl)* Record two decisions in IMPL-0033
 - *(inv)* Add INV-0037 on nested .docz.yaml files in one repository
 - *(design)* Add DESIGN-0029 for projects and the repo and site jobs
-- *(inv)* Add INV-0038 on a relative --repo-root doubling the root
-- *(design)* DESIGN-0029 roots are absolute, per INV-0038
+- *(impl)* Record the pull request, the beta, and the app-switcher issue in IMPL-0033
+
+### Testing
+
+- *(ui)* Fail on bg-accent, text-accent, or border-accent under src
+- *(theme)* Hold charcoal.css to the design system ui/bun.lock pins
+- *(ui)* Hold tokens.css's parts/ lines to the parts src imports
+- *(ui)* Find the review page's tabs in the widget spec
+
+### Miscellaneous Tasks
+
+- Pass the registry token to every ui install
+- *(ui)* Take the registry token as a build secret
+- Pass the registry token to every step that bakes a ui target
+- *(ui)* Pass the registry token in the just and compose image builds
+- Add just gen-charcoal and its drift check
+- *(ui)* Raise the eager JavaScript budget to 165 KB
+- *(ui)* Drop the direct cmdk dependency
+- *(ui)* Set the bundle budget to the measured total plus 6 KB
+- *(chart)* Bump charts/docz to 1.5.0-beta.1 for v2.7.0-beta.1
 
 ## [2.6.2] - 2026-11-05
 

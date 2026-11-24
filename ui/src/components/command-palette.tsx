@@ -1,11 +1,28 @@
+import { FilterChip } from "@donaldgifford/design-system/blocks/filter-chip";
+import { ListRow } from "@donaldgifford/design-system/blocks/list-row";
+import { Marked } from "@donaldgifford/design-system/blocks/marked";
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandFilters,
+  CommandFooter,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@donaldgifford/design-system/components/command";
 import { keepPreviousData } from "@tanstack/react-query";
-import { Command } from "cmdk";
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import { useNavigate } from "react-router";
 
 import { useSearchDocs } from "@/api/__generated__/docz-api";
-import { StatusBadge } from "@/components/badges";
-import { Snippet } from "@/components/snippet";
+import { StatusBadge, StatusPill, TypeDot } from "@/components/badges";
 import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
 import { usePrefetchPage } from "@/hooks/usePrefetchPage";
 import { readRecentDocs } from "@/lib/recentDocs";
@@ -16,21 +33,28 @@ import type {
 } from "@/api/__generated__/docz-api.schemas";
 
 /*
- * ⌘K palette per the mockup's search modal: input row, facet pills,
- * results grouped by repo on the left, a preview of the highlighted hit
- * on the right (built purely from hit data — no extra fetch), footer
- * hints. Search state here is palette-local (DESIGN-0001: the pills are
- * facet shortcuts applied to the palette query only); the directory URL
- * is untouched until Enter navigates to the reader.
+ * ⌘K palette (DESIGN-0028 §7): the design system's CommandDialog with
+ * its three optional regions, a row of filters under the input, a
+ * preview of the highlighted hit beside the list (built purely from hit
+ * data, no extra fetch), and key hints along the foot. Search state
+ * here is palette-local (DESIGN-0001: the filters are facet shortcuts
+ * applied to the palette query only); the directory URL is untouched
+ * until a hit is opened.
+ *
+ * This module is its own chunk. command-palette-lazy.tsx holds the
+ * shortcut and loads it on first use, so cmdk, the dialog, and
+ * everything below stay out of the first paint.
  */
 
 const Q_DEBOUNCE_MS = 200;
 const PALETTE_LIMIT = 50;
 
-type PalettePill =
+type PaletteFilter =
   | { kind: "all" }
   | { kind: "repo"; value: string }
   | { kind: "type"; value: string };
+
+const ALL: PaletteFilter = { kind: "all" };
 
 function useDebouncedValue<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -43,18 +67,6 @@ function useDebouncedValue<T>(value: T, ms: number): T {
     };
   }, [value, ms]);
   return debounced;
-}
-
-function isEditableTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-  return (
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement ||
-    target.isContentEditable
-  );
 }
 
 // Lowercased: cmdk normalizes item values, so keys must round-trip
@@ -80,64 +92,120 @@ function hitMarker(hit: SearchHit): string {
   return hit.source === "page" ? `page · ${hit.path}` : hit.doc_id;
 }
 
-const GROUP_CLASS =
-  "[&_[cmdk-group-heading]]:px-[0.6rem] [&_[cmdk-group-heading]]:pt-[0.6rem] [&_[cmdk-group-heading]]:pb-[0.3rem] [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[11.5px] [&_[cmdk-group-heading]]:tracking-[0.06em] [&_[cmdk-group-heading]]:text-fg-muted [&_[cmdk-group-heading]]:uppercase";
+function repoName(repo: string): string {
+  return repo.split("/").at(-1) ?? repo;
+}
 
-const ITEM_CLASS =
-  "cursor-pointer border-l-2 border-l-transparent px-[0.6rem] py-2 data-[selected=true]:border-l-accent data-[selected=true]:bg-bg-elevated";
+/** A recent entry as a hit: coordinates and title, nothing else known. */
+function recentHit(
+  entry: ReturnType<typeof readRecentDocs>[number],
+): SearchHit {
+  // Recents store coordinates and title only — never dates, never
+  // tokens — so status, author, and the 1.5.0 stamps are unknown here
+  // and stay "" permanently. The palette shows none of them.
+  const unknown = {
+    status: "",
+    author: "",
+    created: "",
+    updated_at: "",
+    snippet: "",
+  };
+  return entry.kind === "page"
+    ? {
+        ...unknown,
+        source: "page",
+        repo: entry.repo,
+        doc_id: "",
+        type: "",
+        title: entry.title,
+        path: entry.path,
+      }
+    : {
+        ...unknown,
+        source: "doc",
+        repo: entry.repo,
+        doc_id: entry.docId,
+        type: entry.type,
+        title: entry.title,
+        path: "",
+      };
+}
 
-function PillButton({
-  label,
-  active,
-  onClick,
+/**
+ * One hit, drawn by the design system's ListRow inside cmdk's item.
+ * The item is the control: a click or Enter on it selects the hit,
+ * which closes the palette and navigates. The row carries no link of
+ * its own, because cmdk's item is a `role="option"` and a link inside
+ * one is a control nested in a control (axe's nested-interactive).
+ */
+function HitRow({
+  hit,
+  showStatus,
 }: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
+  hit: SearchHit;
+  /** Results show the status and the snippet; recents know neither. */
+  showStatus: boolean;
 }) {
   return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={`mono-chip-y border px-[0.6rem] font-mono text-[12.5px] ${
-        active
-          ? "border-(--color-accent-border) bg-(--color-accent-bg) text-accent"
-          : "border-border-default text-fg-tertiary hover:text-fg-secondary"
-      }`}
-    >
-      {label}
-    </button>
+    <ListRow
+      className="w-full"
+      // Pages carry the neutral marker, never a type badge
+      // (DESIGN-0004 OQ-3a).
+      eyebrow={
+        showStatus
+          ? hitMarker(hit)
+          : `${hitMarker(hit)} · ${repoName(hit.repo)}`
+      }
+      title={hit.title}
+      detail={
+        showStatus && hit.snippet !== "" ? (
+          <Marked text={hit.snippet} />
+        ) : undefined
+      }
+      trailing={
+        showStatus && hit.status !== "" ? (
+          <StatusPill status={hit.status} />
+        ) : undefined
+      }
+    />
   );
 }
 
 function PreviewPane({ hit }: { hit: SearchHit | undefined }) {
   if (hit === undefined) {
-    return (
-      <p className="font-mono text-[13px] text-fg-muted">Nothing selected.</p>
-    );
+    return <p className="text-xs text-muted-foreground">Nothing selected.</p>;
   }
   return (
-    <>
-      <div className="font-mono text-[12.5px] text-accent">
-        {hitMarker(hit)} · {hit.repo.split("/").at(-1) ?? hit.repo}
+    <div className="flex flex-col gap-2">
+      <div className="font-mono text-xs text-muted-foreground">
+        {hitMarker(hit)} · {repoName(hit.repo)}
       </div>
-      <h3 className="mt-[0.3rem] mb-2 text-[16px] font-semibold text-fg-primary">
-        {hit.title}
-      </h3>
-      <div className="mb-4 flex flex-wrap items-center gap-2 font-mono text-[12.5px] text-fg-tertiary">
-        {hit.status !== "" && <StatusBadge status={hit.status} />}
-        {hit.author !== "" && (
-          <>
-            <span className="text-fg-muted">·</span>
-            <span>{hit.author}</span>
-          </>
-        )}
-      </div>
-      <p className="text-[14px] leading-[1.55] text-fg-tertiary">
-        <Snippet snippet={hit.snippet} />
-      </p>
-    </>
+      <h3 className="text-lg/tight font-semibold">{hit.title}</h3>
+      {(hit.status !== "" || hit.author !== "") && (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          {hit.status !== "" && <StatusBadge status={hit.status} />}
+          {hit.author !== "" && <span>{hit.author}</span>}
+        </div>
+      )}
+      {hit.snippet !== "" && (
+        <p className="text-xs/relaxed text-muted-foreground">
+          <Marked text={hit.snippet} />
+        </p>
+      )}
+    </div>
+  );
+}
+
+function KeyHint({ keys, children }: { keys: string[]; children: ReactNode }) {
+  return (
+    <span className="flex items-center gap-1">
+      {keys.map((key) => (
+        <kbd key={key} className="rounded-sm border px-1 font-mono">
+          {key}
+        </kbd>
+      ))}
+      {children}
+    </span>
   );
 }
 
@@ -150,44 +218,19 @@ export function CommandPalette({
 }) {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
-  const [pill, setPill] = useState<PalettePill>({ kind: "all" });
+  const [filter, setFilter] = useState<PaletteFilter>(ALL);
   const [active, setActive] = useState("");
   const debouncedQ = useDebouncedValue(q, Q_DEBOUNCE_MS);
-
-  // Global hotkeys: ⌘K/Ctrl+K toggles anywhere; "/" opens unless typing
-  // in an editable element; Esc closes.
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if ((event.metaKey || event.ctrlKey) && event.key === "k") {
-        event.preventDefault();
-        onOpenChange(!open);
-        return;
-      }
-      if (!open && event.key === "/" && !isEditableTarget(event.target)) {
-        event.preventDefault();
-        onOpenChange(true);
-        return;
-      }
-      if (open && event.key === "Escape") {
-        event.preventDefault();
-        onOpenChange(false);
-      }
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open, onOpenChange]);
 
   const hitsParams: SearchDocsParams = { limit: PALETTE_LIMIT };
   if (debouncedQ !== "") {
     hitsParams.q = debouncedQ;
   }
-  if (pill.kind === "repo") {
-    hitsParams.repo = pill.value;
+  if (filter.kind === "repo") {
+    hitsParams.repo = filter.value;
   }
-  if (pill.kind === "type") {
-    hitsParams.type = pill.value;
+  if (filter.kind === "type") {
+    hitsParams.type = filter.value;
   }
   const hitsQuery = useSearchDocs(hitsParams, {
     query: { enabled: open, placeholderData: keepPreviousData },
@@ -195,19 +238,19 @@ export function CommandPalette({
   const result =
     hitsQuery.data?.status === 200 ? hitsQuery.data.data : undefined;
 
-  // Pill sources come from the query WITHOUT the pill filter, so every
-  // repo/type stays offered while one is selected.
-  const pillParams: SearchDocsParams = { limit: 0 };
+  // The filters' sources come from the query WITHOUT the filter, so
+  // every repo and type stays offered while one is selected.
+  const facetParams: SearchDocsParams = { limit: 0 };
   if (debouncedQ !== "") {
-    pillParams.q = debouncedQ;
+    facetParams.q = debouncedQ;
   }
-  const pillsQuery = useSearchDocs(pillParams, {
+  const facetsQuery = useSearchDocs(facetParams, {
     query: { enabled: open, placeholderData: keepPreviousData },
   });
-  const pillFacets =
-    pillsQuery.data?.status === 200 ? pillsQuery.data.data.facets : undefined;
-  const repoPills = Object.keys(pillFacets?.repo ?? {}).sort();
-  const typePills = Object.keys(pillFacets?.type ?? {}).sort();
+  const facets =
+    facetsQuery.data?.status === 200 ? facetsQuery.data.data.facets : undefined;
+  const repoFilters = Object.keys(facets?.repo ?? {}).sort();
+  const typeFilters = Object.keys(facets?.type ?? {}).sort();
 
   const hits = useMemo(() => result?.hits ?? [], [result]);
 
@@ -217,44 +260,10 @@ export function CommandPalette({
   // prefetch reuse the same machinery. Values get a `recent:` prefix;
   // the same doc also appearing in the results list below keeps its
   // own key.
-  const recentHits = useMemo<SearchHit[]>(() => {
-    if (!open || debouncedQ !== "") {
-      return [];
-    }
-    return readRecentDocs().map((entry) =>
-      entry.kind === "page"
-        ? {
-            source: "page" as const,
-            repo: entry.repo,
-            doc_id: "",
-            type: "",
-            title: entry.title,
-            path: entry.path,
-            status: "",
-            author: "",
-            // Recents store coordinates and title only — never dates,
-            // never tokens — so the 1.5.0 stamps are unknown here and
-            // stay "" permanently, like status and author above. The
-            // palette shows neither.
-            created: "",
-            updated_at: "",
-            snippet: "",
-          }
-        : {
-            source: "doc" as const,
-            repo: entry.repo,
-            doc_id: entry.docId,
-            type: entry.type,
-            title: entry.title,
-            path: "",
-            status: "",
-            author: "",
-            created: "",
-            updated_at: "",
-            snippet: "",
-          },
-    );
-  }, [open, debouncedQ]);
+  const recentHits = useMemo<SearchHit[]>(
+    () => (!open || debouncedQ !== "" ? [] : readRecentDocs().map(recentHit)),
+    [open, debouncedQ],
+  );
 
   const entries = useMemo(
     () => [
@@ -307,16 +316,18 @@ export function CommandPalette({
     return [...byRepo.entries()];
   }, [hits]);
 
-  if (!open) {
-    return null;
-  }
+  const close = () => {
+    onOpenChange(false);
+  };
 
-  const openDoc = (key: string) => {
-    const hit = entries.find((entry) => entry.value === key)?.hit;
+  // Following a hit: cmdk calls this with the item's value on Enter and
+  // on a click, and the palette closes before the route changes.
+  const openEntry = (value: string) => {
+    const hit = entries.find((entry) => entry.value === value)?.hit;
     if (hit === undefined) {
       return;
     }
-    onOpenChange(false);
+    close();
     void navigate(hitHref(hit));
   };
 
@@ -332,213 +343,121 @@ export function CommandPalette({
     }
   };
 
+  const toggle = (next: PaletteFilter, pressed: boolean) => {
+    setFilter(pressed ? next : ALL);
+  };
+
   return (
-    // Backdrop click is a redundant pointer affordance — Esc is the
-    // keyboard path (global listener above), hence no key handler here.
-    <div
-      data-testid="command-palette"
-      role="presentation"
-      className="fixed inset-x-0 top-10 bottom-0 z-[120] flex items-start justify-center bg-bg-base/65 backdrop-blur-[2px] sm:px-4 sm:pt-[7vh]"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          onOpenChange(false);
-        }
-      }}
-    >
-      <Command
-        // The panel is a modal dialog to assistive tech; cmdk's root
-        // carries no role of its own, so it takes the dialog semantics.
-        role="dialog"
-        aria-modal="true"
-        aria-label="Search documents"
-        label="Search documents"
-        shouldFilter={false}
-        value={active}
-        onValueChange={setActive}
-        onKeyDown={(event) => {
+    <CommandDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Search documents"
+      description="Search the documents and pages of every repository."
+      // Esc closes, and the footer says so; the corner button would
+      // only crowd the input.
+      showCloseButton={false}
+      commandProps={{
+        label: "Search documents",
+        // docz-api searches; cmdk must not filter the answer again.
+        shouldFilter: false,
+        value: active,
+        onValueChange: setActive,
+        onKeyDown: (event: KeyboardEvent) => {
           // Tab steps the highlight (and with it the preview) without
           // leaving the input; ↑/↓/↵ are cmdk built-ins.
           if (event.key === "Tab") {
             event.preventDefault();
             moveActive(event.shiftKey ? -1 : 1);
           }
-        }}
-        // Full-screen below sm; the mockup's floating modal above it.
-        className="flex h-full w-full flex-col border-border-strong bg-bg-raised shadow-[0_28px_90px_rgba(0,0,0,0.6)] sm:h-auto sm:max-h-[76vh] sm:w-[min(780px,96vw)] sm:border"
-      >
-        <div className="flex items-center gap-3 border-b border-border-default px-4 py-[0.85rem]">
-          <svg
-            aria-hidden
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="text-fg-tertiary"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
-          {/* Focusing the query input on open is the expected modal
-              palette behavior (⌘K convention); nothing else is usable
-              until it has focus. */}
-          {/* eslint-disable jsx-a11y/no-autofocus */}
-          <Command.Input
-            autoFocus
-            value={q}
-            onValueChange={setQ}
-            placeholder="search docs, rfcs, authors…"
-            className="flex-1 bg-transparent font-mono text-[15px] text-fg-primary outline-none placeholder:text-fg-muted"
-          />
-          {/* eslint-enable jsx-a11y/no-autofocus */}
-          <span className="flex items-center gap-[0.4rem] font-mono text-[12px] text-fg-muted">
-            <kbd className="border border-border-default px-1 rounded-sm">
-              esc
-            </kbd>
-            to close
-          </span>
-        </div>
+        },
+      }}
+      preview={<PreviewPane hit={activeHit} />}
+    >
+      <CommandInput
+        value={q}
+        onValueChange={setQ}
+        placeholder="search docs, rfcs, authors…"
+      />
 
-        <div className="flex flex-wrap gap-[0.4rem] border-b border-border-hairline px-4 py-[0.55rem]">
-          <PillButton
-            label={`all${result === undefined ? "" : ` ${String(result.estimated_total_hits)}`}`}
-            active={pill.kind === "all"}
-            onClick={() => {
-              setPill({ kind: "all" });
+      <CommandFilters aria-label="Narrow the search">
+        <FilterChip
+          pressed={filter.kind === "all"}
+          onPressedChange={() => {
+            setFilter(ALL);
+          }}
+        >
+          all
+          {result === undefined
+            ? ""
+            : ` ${String(result.estimated_total_hits)}`}
+        </FilterChip>
+        {repoFilters.map((repo) => (
+          <FilterChip
+            key={`repo:${repo}`}
+            pressed={filter.kind === "repo" && filter.value === repo}
+            onPressedChange={(pressed) => {
+              toggle({ kind: "repo", value: repo }, pressed);
             }}
-          />
-          {repoPills.map((repo) => (
-            <PillButton
-              key={`repo:${repo}`}
-              label={repo.split("/").at(-1) ?? repo}
-              active={pill.kind === "repo" && pill.value === repo}
-              onClick={() => {
-                setPill(
-                  pill.kind === "repo" && pill.value === repo
-                    ? { kind: "all" }
-                    : { kind: "repo", value: repo },
-                );
-              }}
-            />
-          ))}
-          {typePills.map((type) => (
-            <PillButton
-              key={`type:${type}`}
-              label={type}
-              active={pill.kind === "type" && pill.value === type}
-              onClick={() => {
-                setPill(
-                  pill.kind === "type" && pill.value === type
-                    ? { kind: "all" }
-                    : { kind: "type", value: type },
-                );
-              }}
-            />
-          ))}
-        </div>
-
-        <div className="grid min-h-0 flex-1 grid-cols-1 sm:grid-cols-2">
-          <Command.List className="max-h-full overflow-y-auto p-[0.3rem] sm:border-r sm:border-border-hairline">
-            <Command.Empty className="px-4 py-6 font-mono text-[13.5px] text-fg-tertiary">
-              No results{debouncedQ === "" ? "" : ` for “${debouncedQ}”`}.
-            </Command.Empty>
-            {recentHits.length > 0 && (
-              <Command.Group heading="recent" className={GROUP_CLASS}>
-                {recentHits.map((hit) => {
-                  const value = `recent:${hitKey(hit)}`;
-                  return (
-                    <Command.Item
-                      key={value}
-                      value={value}
-                      onSelect={openDoc}
-                      className={ITEM_CLASS}
-                    >
-                      <div className="mb-[2px] font-mono text-[12.5px] text-fg-tertiary">
-                        {hitMarker(hit)} ·{" "}
-                        {hit.repo.split("/").at(-1) ?? hit.repo}
-                      </div>
-                      <div className="text-[14.5px] text-fg-primary">
-                        {hit.title}
-                      </div>
-                    </Command.Item>
-                  );
-                })}
-              </Command.Group>
-            )}
-            {groups.map(([repo, groupHits]) => (
-              <Command.Group
-                key={repo}
-                heading={`${repo} — ${String(groupHits.length)} ${
-                  groupHits.length === 1 ? "match" : "matches"
-                }`}
-                className={GROUP_CLASS}
-              >
-                {groupHits.map((hit) => {
-                  const key = hitKey(hit);
-                  return (
-                    <Command.Item
-                      key={key}
-                      value={key}
-                      onSelect={openDoc}
-                      className={ITEM_CLASS}
-                    >
-                      <div className="mb-[2px] flex items-center justify-between gap-2">
-                        {/* Pages carry the neutral marker, never a
-                            type badge (DESIGN-0004 OQ-3a). */}
-                        <span className="font-mono text-[12.5px] text-fg-tertiary">
-                          {hitMarker(hit)}
-                        </span>
-                        {hit.status !== "" && (
-                          <StatusBadge status={hit.status} />
-                        )}
-                      </div>
-                      <div className="text-[14.5px] text-fg-primary">
-                        {hit.title}
-                      </div>
-                      <div className="mt-[2px] line-clamp-2 text-[13px] leading-[1.45] text-fg-tertiary">
-                        <Snippet snippet={hit.snippet} />
-                      </div>
-                    </Command.Item>
-                  );
-                })}
-              </Command.Group>
-            ))}
-          </Command.List>
-
-          <div
-            data-testid="palette-preview"
-            className="hidden overflow-y-auto px-[1.1rem] py-4 sm:block"
           >
-            <PreviewPane hit={activeHit} />
-          </div>
-        </div>
+            {repoName(repo)}
+          </FilterChip>
+        ))}
+        {typeFilters.map((type) => (
+          <FilterChip
+            key={`type:${type}`}
+            pressed={filter.kind === "type" && filter.value === type}
+            onPressedChange={(pressed) => {
+              toggle({ kind: "type", value: type }, pressed);
+            }}
+          >
+            <TypeDot type={type} />
+            {type}
+          </FilterChip>
+        ))}
+      </CommandFilters>
 
-        <div className="flex items-center gap-[1.1rem] border-t border-border-default px-4 py-[0.55rem] font-mono text-[12px] text-fg-muted">
-          <span className="flex items-center gap-[0.3rem]">
-            <kbd className="border border-border-default px-1 rounded-sm">
-              ↑
-            </kbd>
-            <kbd className="border border-border-default px-1 rounded-sm">
-              ↓
-            </kbd>
-            navigate
-          </span>
-          <span className="flex items-center gap-[0.3rem]">
-            <kbd className="border border-border-default px-1 rounded-sm">
-              ↵
-            </kbd>
-            open
-          </span>
-          <span className="flex items-center gap-[0.3rem]">
-            <kbd className="border border-border-default px-1 rounded-sm">
-              tab
-            </kbd>
-            preview
-          </span>
-          <span className="ml-auto">docz-index</span>
-        </div>
-      </Command>
-    </div>
+      <CommandList>
+        <CommandEmpty>
+          No results{debouncedQ === "" ? "" : ` for “${debouncedQ}”`}.
+        </CommandEmpty>
+        {recentHits.length > 0 && (
+          <CommandGroup heading="recent">
+            {recentHits.map((hit) => {
+              const value = `recent:${hitKey(hit)}`;
+              return (
+                <CommandItem key={value} value={value} onSelect={openEntry}>
+                  <HitRow hit={hit} showStatus={false} />
+                </CommandItem>
+              );
+            })}
+          </CommandGroup>
+        )}
+        {groups.map(([repo, groupHits]) => (
+          <CommandGroup
+            key={repo}
+            heading={`${repo} — ${String(groupHits.length)} ${
+              groupHits.length === 1 ? "match" : "matches"
+            }`}
+          >
+            {groupHits.map((hit) => {
+              const value = hitKey(hit);
+              return (
+                <CommandItem key={value} value={value} onSelect={openEntry}>
+                  <HitRow hit={hit} showStatus />
+                </CommandItem>
+              );
+            })}
+          </CommandGroup>
+        ))}
+      </CommandList>
+
+      <CommandFooter>
+        <KeyHint keys={["↑", "↓"]}>navigate</KeyHint>
+        <KeyHint keys={["↵"]}>open</KeyHint>
+        <KeyHint keys={["tab"]}>preview</KeyHint>
+        <KeyHint keys={["esc"]}>close</KeyHint>
+        <span className="ml-auto font-mono">docz-index</span>
+      </CommandFooter>
+    </CommandDialog>
   );
 }

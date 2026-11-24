@@ -1,9 +1,17 @@
 /*
- * Type and status colors (DESIGN-0001 "Type and status color system"):
- * curated map first, deterministic fallback second, neutral default
- * last. Values are CSS custom-property references so the palette stays
- * single-sourced in src/theme/tokens.css. `.docz.yaml` types/statuses
- * are free-form — there is deliberately no hardcoded "valid" list.
+ * Type and status colours (DESIGN-0001 "Type and status color system",
+ * DESIGN-0028 §8): curated map first, deterministic fallback second,
+ * neutral default last. `.docz.yaml` types and statuses are free-form,
+ * so there is deliberately no hardcoded "valid" list.
+ *
+ * A type's colour is a CSS custom-property reference: docz's own
+ * `--color-t-*` (src/theme/docz-tokens.css in the chrome, the document's
+ * theme inside a .docz-page), or for a custom type one of eight
+ * `--color-hash-*`, falling back to the design system's `--category-1`
+ * to `--category-8`. Only a document theme sets `--color-hash-*`, so
+ * the reference reads the document's colour inside a .docz-page and the
+ * package's in the chrome. A status has no colour here: it takes one of
+ * the design system's Badge variants.
  */
 
 const CURATED_TYPES: Readonly<Record<string, string | undefined>> = {
@@ -47,10 +55,14 @@ export function typeColor(type: string): string {
   if (curated !== undefined) {
     return `var(--color-t-${curated})`;
   }
-  return `var(--color-hash-${String(fnv1a(key) % HASH_PALETTE_SIZE)})`;
+  const slot = fnv1a(key) % HASH_PALETTE_SIZE;
+  return `var(--color-hash-${String(slot)}, var(--category-${String(slot + 1)}))`;
 }
 
-const STATUS_GROUPS: readonly [token: string, statuses: string[]][] = [
+type StatusGroup =
+  "draft" | "proposed" | "accepted" | "rejected" | "superseded" | "deprecated";
+
+const STATUS_GROUPS: readonly [token: StatusGroup, statuses: string[]][] = [
   ["draft", ["draft", "open"]],
   ["proposed", ["proposed", "in review", "in progress"]],
   [
@@ -72,19 +84,41 @@ const STATUS_GROUPS: readonly [token: string, statuses: string[]][] = [
   ["deprecated", ["deprecated", "archived", "paused", "inconclusive"]],
 ];
 
-const STATUS_TOKENS: Readonly<Record<string, string | undefined>> =
+const STATUS_TOKENS: Readonly<Record<string, StatusGroup | undefined>> =
   Object.fromEntries(
     STATUS_GROUPS.flatMap(([token, statuses]) =>
       statuses.map((status) => [status, token]),
     ),
   );
 
-/** Neutral for anything outside the convention — never an error. */
-export const NEUTRAL_STATUS_COLOR = "var(--color-fg-muted)";
+/**
+ * The design system's `Badge` variants a status can take (DESIGN-0028
+ * §8). Each is one of the package's status roles or states, so a status
+ * carries no colour of docz's own in the chrome.
+ */
+export type StatusVariant =
+  "warning" | "info" | "success" | "destructive" | "ignored" | "outline";
 
-export function statusColor(status: string): string {
-  const token = STATUS_TOKENS[normalize(status)];
-  return token !== undefined
-    ? `var(--color-st-${token})`
-    : NEUTRAL_STATUS_COLOR;
+const STATUS_VARIANTS: Readonly<Record<StatusGroup, StatusVariant>> = {
+  draft: "warning",
+  proposed: "info",
+  accepted: "success",
+  rejected: "destructive",
+  superseded: "ignored",
+  // Ended without a verdict, or parked: no fill, so these never read as
+  // either success or failure.
+  deprecated: "outline",
+};
+
+/** Neutral for anything outside the convention, never an error. */
+export const NEUTRAL_STATUS_VARIANT: StatusVariant = "outline";
+
+/**
+ * The `Badge` variant for a status. `.docz.yaml` statuses are free-form,
+ * so an unknown one is neutral, and matching ignores case and extra
+ * whitespace.
+ */
+export function statusVariant(status: string): StatusVariant {
+  const group = STATUS_TOKENS[normalize(status)];
+  return group !== undefined ? STATUS_VARIANTS[group] : NEUTRAL_STATUS_VARIANT;
 }

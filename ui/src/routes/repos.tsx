@@ -1,8 +1,19 @@
+import { PageHeader } from "@donaldgifford/design-system/blocks/page-header";
+import { Badge } from "@donaldgifford/design-system/components/badge";
+import {
+  Card,
+  CardContent,
+} from "@donaldgifford/design-system/components/card";
 import { Link } from "react-router";
 
 import { useListRepos } from "@/api/__generated__/docz-api";
 import { SessionRequiredError } from "@/api/fetcher";
-import { ErrorPanel, SessionRequiredRedirect } from "@/components/query-states";
+import {
+  EmptyPanel,
+  ErrorPanel,
+  SessionRequiredRedirect,
+  Skeleton,
+} from "@/components/query-states";
 import { useRepoFacts } from "@/hooks/useRepoFacts";
 import { arr } from "@/lib/wire";
 
@@ -15,6 +26,9 @@ import type { RepoSummary } from "@/api/__generated__/docz-api.schemas";
  * contract either; the card shows the last-synced SHA instead.
  */
 
+/** The page's column, shared by the grid and its skeleton. */
+const GRID = "grid grid-cols-1 gap-4 md:grid-cols-2";
+
 function RepoCard({ repo }: { repo: RepoSummary }) {
   const { facts } = useRepoFacts(repo.repo);
   const typeCounts = Object.entries(facts?.typeCounts ?? {}).sort(([a], [b]) =>
@@ -22,55 +36,47 @@ function RepoCard({ repo }: { repo: RepoSummary }) {
   );
 
   return (
-    <Link
-      to={`/${repo.repo}`}
-      className="block border border-border-default bg-bg-raised px-[1.2rem] py-[1.1rem] transition-colors hover:border-border-strong rounded-sm"
+    // The whole card is the link: one target, one focus ring.
+    <Card
+      render={<Link to={`/${repo.repo}`} />}
+      className="transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
     >
-      <div className="mb-3 flex items-center gap-3">
-        <span className="font-mono text-[14px] font-semibold text-fg-primary">
-          {repo.repo}
-        </span>
-        <span className="mono-chip-y border border-border-default px-[7px] font-mono text-[11.5px] text-fg-muted rounded-sm">
+      <CardContent className="flex items-center gap-2.5">
+        <span className="truncate font-semibold">{repo.repo}</span>
+        <Badge variant="outline" className="ml-auto">
           {repo.default_branch}
-        </span>
-      </div>
+        </Badge>
+      </CardContent>
 
-      <div className="mb-3 flex min-h-4 flex-wrap gap-x-4 gap-y-1 font-mono text-[12px] text-fg-tertiary">
+      <CardContent className="flex min-h-4 flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
         {typeCounts.map(([type, count]) => (
           <span key={type}>
-            <b className="font-medium text-fg-secondary">{count}</b> {type}
+            <b className="font-medium text-foreground">{count}</b> {type}
           </span>
         ))}
-      </div>
+      </CardContent>
 
-      <div className="flex flex-wrap gap-4 font-mono text-[12px] text-fg-muted">
-        <span className="text-t-framework">{repo.docs_dir}/</span>
+      <CardContent className="flex flex-wrap gap-4 font-mono text-xs text-muted-foreground">
+        <span>{repo.docs_dir}/</span>
         <span>
           docs:{" "}
-          <b className="font-medium text-fg-secondary">{facts?.total ?? "—"}</b>
+          <b className="font-medium text-foreground">{facts?.total ?? "—"}</b>
         </span>
         <span className="ml-auto">
           {repo.last_synced_sha === ""
             ? "never synced"
             : `sync ${repo.last_synced_sha.slice(0, 7)}`}
         </span>
-      </div>
-    </Link>
+      </CardContent>
+    </Card>
   );
 }
 
 function CardSkeletons() {
   return (
-    <div
-      aria-hidden
-      data-testid="repos-skeleton"
-      className="grid animate-pulse grid-cols-1 gap-4 md:grid-cols-2"
-    >
+    <div aria-hidden data-testid="repos-skeleton" className={GRID}>
       {Array.from({ length: 4 }, (_, i) => (
-        <div
-          key={i}
-          className="h-28 border border-border-hairline bg-bg-raised"
-        />
+        <Skeleton key={i} className="h-24" />
       ))}
     </div>
   );
@@ -89,30 +95,22 @@ export function Component() {
 
   return (
     <main className="mx-auto max-w-[940px] px-5">
-      <header className="pt-10 pb-6">
-        <div className="font-mono text-[13.5px] tracking-[0.05em] text-accent">
-          / docz <span className="text-fg-muted">/</span> repositories
-        </div>
-        <h1 className="mt-2 mb-1 text-[clamp(1.6rem,4vw,2rem)] font-semibold tracking-[-0.01em] text-fg-primary">
-          Repositories
-        </h1>
-        <p className="text-[14px] text-fg-tertiary">
-          Every repo registered with docz-api. Each renders its own homepage
-          from the{" "}
-          <code className="font-mono text-[0.85em] text-accent">index.md</code>{" "}
-          its{" "}
-          <code className="font-mono text-[0.85em] text-accent">docz.yaml</code>{" "}
-          points at, plus a section per configured doc type.
-        </p>
-      </header>
+      <PageHeader
+        className="px-0"
+        title="Repositories"
+        description={
+          <>
+            Every repo registered with docz-api. Each renders its own homepage
+            from the <code className="font-mono">index.md</code> its{" "}
+            <code className="font-mono">docz.yaml</code> points at, plus a
+            section per configured doc type.
+          </>
+        }
+      />
 
       {reposQuery.isError ? (
         <ErrorPanel
-          message={
-            reposQuery.error instanceof Error
-              ? reposQuery.error.message
-              : "Request failed"
-          }
+          error={reposQuery.error}
           onRetry={() => {
             void reposQuery.refetch();
           }}
@@ -120,16 +118,12 @@ export function Component() {
       ) : repos === undefined ? (
         <CardSkeletons />
       ) : repos.length === 0 ? (
-        <div className="mx-auto my-16 w-max max-w-full border border-border-default bg-bg-raised px-8 py-6 text-center rounded-sm">
-          <p className="font-mono text-[14px] text-fg-secondary">
-            No repositories yet
-          </p>
-          <p className="mt-2 max-w-96 text-[14px] text-fg-tertiary">
-            Onboard a repo with the docz GitHub App to see it here.
-          </p>
-        </div>
+        <EmptyPanel
+          title="No repositories yet"
+          description="Onboard a repo with the docz GitHub App to see it here."
+        />
       ) : (
-        <div className="mb-16 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className={`mb-16 ${GRID}`}>
           {repos.map((repo) => (
             <RepoCard key={repo.repo} repo={repo} />
           ))}

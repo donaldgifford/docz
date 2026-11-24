@@ -21,20 +21,13 @@ export const routes: RouteObject[] = [
         // It has to sit BELOW AppShell, not on the root route: a
         // boundary replaces the element of the route that OWNS it, so
         // putting it on `path: "/"` would swap out AppShell itself and
-        // take the topbar with it — leaving the user stranded on the
+        // take the frame with it — leaving the user stranded on the
         // panel with nothing to navigate by, which is the failure this
         // is meant to fix. Here the panel renders through AppShell's
-        // Outlet and the chrome survives. A route test pins that.
+        // Outlet and the frame survives. A route test pins that.
         ErrorBoundary: RouteErrorBoundary,
         children: [
           { index: true, lazy: () => import("@/routes/directory") },
-          { path: "login", lazy: () => import("@/routes/login") },
-          // The OAuth consent page docz-api's /oauth/authorize sends a
-          // person to (DESIGN-0023 §5); `oauth` joins the reserved words.
-          {
-            path: "oauth/consent",
-            lazy: () => import("@/routes/consent"),
-          },
           { path: "repos", lazy: () => import("@/routes/repos") },
           { path: ":owner/:repo", lazy: () => import("@/routes/repo-home") },
           // Static segment — outranks `:type` in route ranking, so
@@ -66,6 +59,22 @@ export const routes: RouteObject[] = [
           { path: "*", lazy: () => import("@/routes/not-found") },
         ],
       },
+    ],
+  },
+  {
+    // Outside the frame (DESIGN-0028 §6): neither page has a session to
+    // show navigation for, so each is a card on the page with no
+    // sidebar and no top bar. Static paths, so they outrank the
+    // shell's `:owner/:repo`; `login` and `oauth` are reserved words.
+    // The boundary is this pathless route's own, as the shell's is
+    // below.
+    ErrorBoundary: RouteErrorBoundary,
+    HydrateFallback: () => null,
+    children: [
+      { path: "/login", lazy: () => import("@/routes/login") },
+      // The OAuth consent page docz-api's /oauth/authorize sends a
+      // person to (DESIGN-0023 §5).
+      { path: "/oauth/consent", lazy: () => import("@/routes/consent") },
     ],
   },
 ];

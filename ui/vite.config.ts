@@ -32,6 +32,21 @@ const BROWSER_FLOOR = ["chrome119", "edge119", "firefox122", "safari17.4"];
  */
 const REVIEW = "review";
 
+/*
+ * The dev server only (a build bundles everything). The design system
+ * ships TypeScript source, which Vite's optimizer does not pre-bundle,
+ * and Vite does not discover the dependencies of a file under
+ * node_modules. So Base UI reaches the browser as its own ESM, and its
+ * store (under every dialog, tabs, popover, and menu) imports
+ * use-sync-external-store's shim, which is CommonJS and has no named
+ * export until it is pre-bundled. Without these two the page is blank
+ * with "does not provide an export named 'useSyncExternalStore'".
+ */
+const DEV_PREBUNDLE = [
+  "@base-ui/react > use-sync-external-store/shim",
+  "@base-ui/react > use-sync-external-store/shim/with-selector",
+];
+
 export default defineConfig(({ mode }) => ({
   plugins:
     mode === REVIEW
@@ -53,6 +68,7 @@ export default defineConfig(({ mode }) => ({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
+  optimizeDeps: { include: DEV_PREBUNDLE },
   server: {
     // src/theme/tokens.css imports the themes from ../pkg/theme
     // (DESIGN-0025 §3). Setting allow replaces Vite's default, so the

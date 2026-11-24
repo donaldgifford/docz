@@ -86,13 +86,30 @@ describe("StatusSelect", () => {
         onChange={onChange}
       />,
     );
-    const select = screen.getByLabelText("Status");
-    expect(select).toHaveValue("Draft");
+    const control = within(screen.getByRole("tablist", { name: "Status" }));
     expect(
-      screen.getByRole("option", { name: "Draft (current)" }),
-    ).toBeInTheDocument();
-    await user.selectOptions(select, "In Review");
+      control.getByRole("tab", { name: "Draft (current)" }),
+    ).toHaveAttribute("aria-selected", "true");
+    await user.click(control.getByRole("tab", { name: "In Review" }));
     expect(onChange).toHaveBeenCalledWith("In Review");
+  });
+
+  it("shows the chosen status, which may not be the current one", () => {
+    render(
+      <StatusSelect
+        statuses={INSPECT.statuses}
+        current="Draft"
+        value="In Review"
+        onChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("tab", { name: "In Review" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(
+      screen.getByRole("tab", { name: "Draft (current)" }),
+    ).toHaveAttribute("aria-selected", "false");
   });
 
   it("keeps a current status the type does not list", () => {
@@ -104,9 +121,24 @@ describe("StatusSelect", () => {
         onChange={vi.fn()}
       />,
     );
-    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([
+    expect(screen.getAllByRole("tab").map((o) => o.textContent)).toEqual([
       "Odd (current)",
       "Draft",
+    ]);
+  });
+
+  it("adds no segment for a document with no status", () => {
+    render(
+      <StatusSelect
+        statuses={["Draft", "Accepted"]}
+        current=""
+        value=""
+        onChange={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByRole("tab").map((o) => o.textContent)).toEqual([
+      "Draft",
+      "Accepted",
     ]);
   });
 });

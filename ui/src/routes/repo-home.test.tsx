@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
@@ -37,12 +37,32 @@ describe("repo home", () => {
     const tocLink = screen.getByRole("link", { name: "Start here" });
     expect(tocLink).toHaveAttribute("href", "#start-here");
 
-    // The shared repo nav frames the page (drawer + desktop copies).
+    // The repository's groups join the sidebar on its routes.
+    const nav = within(
+      screen.getByRole("navigation", { name: "docz navigation" }),
+    );
+    expect(await nav.findByText("donaldgifford/docz-api")).toBeInTheDocument();
+    expect(nav.getByRole("link", { name: "Home" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
+  it("sends a link to a type's README to the type's page", async () => {
+    server.use(
+      http.get("*/api/v1/repos/:owner/:name/index", () =>
+        HttpResponse.json({
+          repo: "donaldgifford/docz-api",
+          index_md: "# Home\n\nSee [the designs](design/README.md).\n",
+          index_sha: "fixture-index-sha-type-link",
+        }),
+      ),
+    );
+    mountAt("/donaldgifford/docz-api");
+
     expect(
-      screen.getAllByRole("navigation", {
-        name: "donaldgifford/docz-api navigation",
-      }).length,
-    ).toBeGreaterThan(0);
+      await screen.findByRole("link", { name: "the designs" }),
+    ).toHaveAttribute("href", "/donaldgifford/docz-api/design");
   });
 
   it("falls back to the generated home when index.md is absent", async () => {
@@ -96,7 +116,7 @@ describe("repo home", () => {
     expect(await screen.findByText("Something went wrong")).toBeInTheDocument();
 
     failing = false;
-    await userEvent.click(screen.getByRole("button", { name: "retry" }));
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(
       await screen.findByRole("heading", { level: 1, name: "docz-api" }),
     ).toBeInTheDocument();

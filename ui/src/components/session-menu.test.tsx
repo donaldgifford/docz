@@ -25,6 +25,13 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+/*
+ * The menu is the design system's DropdownMenu, whose keyboard and
+ * dismissal are its own tests'. These hold docz's part: which of the
+ * session's states draws what, the identity shown, and that signing
+ * out leaves nothing of the old session behind.
+ */
+
 describe("session menu", () => {
   it("shows the GitHub login and signs out through /login", async () => {
     let signedIn = true;
@@ -51,9 +58,9 @@ describe("session menu", () => {
     await user.click(
       await screen.findByRole("button", { name: "Account: donaldgifford" }),
     );
-    expect(screen.getByText("via github")).toBeInTheDocument();
+    expect(await screen.findByText("via github")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Sign out" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Sign out" }));
 
     expect(
       await screen.findByRole("link", { name: "Continue with GitHub" }),
@@ -68,7 +75,7 @@ describe("session menu", () => {
         screen.queryByRole("button", { name: "Account: donaldgifford" }),
       ).not.toBeInTheDocument();
     });
-    expect(screen.queryByTestId("topbar-sign-in")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("session-sign-in")).not.toBeInTheDocument();
   });
 
   it("falls back to email for OIDC identities", async () => {
@@ -98,13 +105,13 @@ describe("session menu", () => {
     );
     mountAt("/repos");
 
-    expect(await screen.findByTestId("topbar-sign-in")).toHaveAttribute(
+    expect(await screen.findByTestId("session-sign-in")).toHaveAttribute(
       "href",
       "/login",
     );
   });
 
-  it("hides the topbar Sign in on /login itself", async () => {
+  it("draws no frame, and so no Sign in, on /login itself", async () => {
     server.use(
       http.get("*/api/v1/auth/session", () =>
         HttpResponse.json({ error: "session required" }, { status: 401 }),
@@ -115,12 +122,34 @@ describe("session menu", () => {
     expect(
       await screen.findByRole("link", { name: "Continue with GitHub" }),
     ).toBeInTheDocument();
-    // Wait for getSession to settle (placeholder gone) — the signed-out
-    // branch renders nothing here instead of the redundant link.
+    // /login renders outside the frame (DESIGN-0028 §6): the page is
+    // the sign-in affordance, with no sidebar to repeat it in.
+    expect(
+      screen.queryByRole("navigation", { name: "docz navigation" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("session-sign-in")).not.toBeInTheDocument();
+  });
+
+  it("leaves the sidebar no foot at all in none-mode", async () => {
+    server.use(
+      http.get("*/api/v1/auth/session", () =>
+        HttpResponse.json({
+          provider: "none",
+          subject: "anonymous",
+          via: "anonymous",
+          scopes: [],
+          login: "anonymous",
+        }),
+      ),
+    );
+    mountAt("/repos");
+
+    await screen.findByRole("navigation", { name: "docz navigation" });
     await waitFor(() => {
-      expect(screen.queryByTestId("session-pending")).not.toBeInTheDocument();
+      expect(
+        document.querySelector('[data-slot="sidebar-footer"]'),
+      ).not.toBeInTheDocument();
     });
-    expect(screen.queryByTestId("topbar-sign-in")).not.toBeInTheDocument();
   });
 
   it("renders no auth chrome at all in none-mode", async () => {
@@ -142,7 +171,7 @@ describe("session menu", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("session-pending")).not.toBeInTheDocument();
     });
-    expect(screen.queryByTestId("topbar-sign-in")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("session-sign-in")).not.toBeInTheDocument();
     expect(screen.queryByTestId("session-unavailable")).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /^Account:/ }),
@@ -161,7 +190,7 @@ describe("session menu", () => {
     expect(await screen.findByTestId("session-unavailable")).toBeVisible();
     // The 503-never-logout invariant: the unknown state must not offer
     // the login link.
-    expect(screen.queryByTestId("topbar-sign-in")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("session-sign-in")).not.toBeInTheDocument();
   });
 
   it("recovers from a 503 to the avatar once the backend does", async () => {
@@ -196,21 +225,5 @@ describe("session menu", () => {
     expect(
       await screen.findByRole("button", { name: "Account: donaldgifford" }),
     ).toBeInTheDocument();
-  });
-
-  it("closes on Escape and hands focus back to the trigger", async () => {
-    // fixture session: donaldgifford
-    mountAt("/repos");
-    const user = userEvent.setup();
-
-    const trigger = await screen.findByRole("button", {
-      name: "Account: donaldgifford",
-    });
-    await user.click(trigger);
-    expect(trigger).toHaveAttribute("aria-expanded", "true");
-
-    await user.keyboard("{Escape}");
-    expect(trigger).toHaveAttribute("aria-expanded", "false");
-    expect(trigger).toHaveFocus();
   });
 });

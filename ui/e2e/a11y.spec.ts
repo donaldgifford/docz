@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { SHELL_MODES, useShellMode } from "./appearances";
+import { arrived, SHELL_MODES, useShellMode } from "./appearances";
 
 /*
  * Full-rule axe in a real browser — including color-contrast, which
@@ -78,6 +78,65 @@ for (const appearance of SHELL_MODES) {
 
       await page.goto("/donaldgifford/docz-site/design");
       await expect(page.getByRole("table")).toBeVisible();
+      await expectNoBlockingViolations(page);
+    });
+
+    // The frame's other states (DESIGN-0028 §6): the icon rail, a
+    // type's popover on it, and the sheet on a narrow screen.
+    test("the icon rail and its popover pass full-rule axe", async ({
+      page,
+    }) => {
+      await useShellMode(page, appearance);
+      await page.goto("/donaldgifford/docz-site/design/DESIGN-0001");
+      const sidebar = page.getByRole("navigation", {
+        name: "docz navigation",
+      });
+      await expect(sidebar.getByRole("link", { name: "Home" })).toBeVisible();
+
+      await page
+        .getByRole("button", { name: "Toggle Sidebar" })
+        .first()
+        .click();
+      const type = sidebar.getByRole("button", { name: "design" });
+      await expect(type).toBeVisible();
+      await expectNoBlockingViolations(page);
+
+      await type.click();
+      const popover = page.getByRole("dialog", { name: "design" });
+      await expect(
+        popover.getByRole("link", { name: /^DESIGN-0001/ }),
+      ).toBeVisible();
+      await arrived(popover);
+      await expectNoBlockingViolations(page);
+    });
+
+    test("the sidebar's sheet passes full-rule axe", async ({ page }) => {
+      await useShellMode(page, appearance);
+      await page.setViewportSize({ width: 360, height: 740 });
+      await page.goto("/donaldgifford/docz-site/design/DESIGN-0001");
+      await expect(
+        page.getByRole("heading", {
+          level: 1,
+          name: "docz-site: cross-repo docz reader and search UI",
+        }),
+      ).toBeVisible();
+      await expectNoBlockingViolations(page);
+
+      await page.getByRole("button", { name: "Toggle Sidebar" }).click();
+      await expect(
+        page
+          .getByRole("navigation", { name: "docz navigation" })
+          .getByRole("link", { name: "Directory" }),
+      ).toBeVisible();
+      await expectNoBlockingViolations(page);
+    });
+
+    test("login, outside the frame, passes full-rule axe", async ({ page }) => {
+      await useShellMode(page, appearance);
+      await page.goto("/login");
+      await expect(
+        page.getByRole("link", { name: "Continue with GitHub" }),
+      ).toBeVisible();
       await expectNoBlockingViolations(page);
     });
   });

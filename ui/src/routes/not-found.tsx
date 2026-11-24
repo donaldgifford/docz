@@ -1,16 +1,26 @@
+import { buttonVariants } from "@donaldgifford/design-system/components/button";
+import { IconSearch } from "@tabler/icons-react";
 import { Link } from "react-router";
 
+import { EmptyPanel } from "@/components/query-states";
+
+/** The catch-all route: a path no route matches. */
 export function Component() {
   return (
-    <main className="p-6">
-      <h1 className="font-mono text-fg-secondary">404 — nothing here</h1>
-      <p className="text-fg-tertiary">
-        This path doesn&apos;t match any route.{" "}
-        <Link to="/" className="text-accent">
-          Back to the directory
-        </Link>
-        .
-      </p>
+    <main className="px-5">
+      <EmptyPanel
+        icon={IconSearch}
+        title="404 — nothing here"
+        description="This path doesn't match any route."
+        action={
+          <Link
+            to="/"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            Back to the directory
+          </Link>
+        }
+      />
     </main>
   );
 }
