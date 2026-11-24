@@ -497,11 +497,10 @@ The palette, the menus, and the directory's filters are the package's.
 - [x] Rewrite `command-palette.test.tsx` and `session-menu.test.tsx`
   against the new parts, asserting docz's behaviour and not the
   package's.
-- [ ] Check keyboard use by hand in both modes: open, move, select, and
+- [x] Check keyboard use by hand in both modes: open, move, select, and
   close the palette; the menu; the popover.
-  **Deferred** - human required: a person at the keyboard, for the
-  palette, the account menu, and the repository popover. The unit and
-  e2e suites drive the same keys.
+  Checked by the author on 2026-11-24, on `v2.7.0-beta.1` on the
+  homelab: all three work.
 - [x] Move the classes in the files touched here to the package's
   names, and record the eager JavaScript size.
 
