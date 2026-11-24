@@ -8,6 +8,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Bug Fixes
 
 - *(ui)* Send a relative link to a type's README to the type's page
+- *(deps)* Bump OpenTelemetry to 1.47.0 for GO-2026-6974 and GO-2026-6975
 
 ### Documentation
 
