@@ -17,6 +17,10 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(inv)* Add INV-0038 on a relative --repo-root doubling the root
 - *(design)* DESIGN-0029 roots are absolute, per INV-0038
 
+### Miscellaneous Tasks
+
+- *(chart)* Bump charts/docz to 1.5.0-beta.2 for v2.7.0-beta.2
+
 ## [2.7.0-beta.1] - 2026-11-23
 
 ### Features
