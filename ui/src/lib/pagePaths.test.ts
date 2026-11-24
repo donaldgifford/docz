@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { pageSourceKeys, pageSourcePath } from "@/lib/pagePaths";
+import { pageSourceKeys, pageSourcePath, typeIndexKey } from "@/lib/pagePaths";
 
 /*
  * The reconstruction table (DESIGN-0004 Component 3): published path →
@@ -61,5 +61,16 @@ describe("pageSourcePath", () => {
       "docs/guides/local-dev.md",
     );
     expect(pageSourcePath("README.md", "docs", ADDITIONAL)).toBe("README.md");
+  });
+});
+
+describe("typeIndexKey", () => {
+  it.each([
+    ["docs", "design", "docs/design/README.md"],
+    ["", "design", "design/README.md"],
+    ["./docs/", "adr", "docs/adr/README.md"],
+    ["docs", "decisions/adr", "docs/decisions/adr/README.md"],
+  ])("joins %j and %j", (docsDir, typeDir, want) => {
+    expect(typeIndexKey(docsDir, typeDir)).toBe(want);
   });
 });

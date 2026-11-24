@@ -7,7 +7,7 @@ import {
   useListRepoPages,
 } from "@/api/__generated__/docz-api";
 import { apiConfig } from "@/lib/apiConfig";
-import { pageSourceKeys } from "@/lib/pagePaths";
+import { pageSourceKeys, typeIndexKey } from "@/lib/pagePaths";
 import { arr } from "@/lib/wire";
 
 import type { XrefResolver } from "@/markdown/xrefs";
@@ -22,7 +22,8 @@ const FIVE_MINUTES = 5 * 60_000;
  * whitelist relative markdown links resolve through. Since IMPL-0005
  * `byPath` also carries published pages under their RECONSTRUCTED
  * source paths (both README/index keys for a directory page), so docs
- * and pages cross-link both directions. Hrefs are always built from
+ * and pages cross-link both directions. It carries each type's
+ * `README.md` too, pointing at the type's page. Hrefs are always built from
  * API data, never from document text.
  */
 export interface RepoDocIndex {
@@ -85,6 +86,16 @@ export function useRepoDocIndex(
         byPath.set(doc.path, href);
       }
     });
+    if (detail !== undefined) {
+      // A type's own README is not a document or a page, so a link to it
+      // would miss and the browser would resolve it against the route.
+      for (const docType of types) {
+        const key = typeIndexKey(detail.docs_dir, docType.dir);
+        if (!byPath.has(key)) {
+          byPath.set(key, `/${owner}/${name}/${docType.name}`);
+        }
+      }
+    }
     if (cfg !== undefined && pageList !== undefined && detail !== undefined) {
       for (const page of arr(pageList.pages)) {
         const href = `/${owner}/${name}/pages/${page.path}`;

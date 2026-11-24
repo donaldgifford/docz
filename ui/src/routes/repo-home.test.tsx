@@ -48,6 +48,23 @@ describe("repo home", () => {
     );
   });
 
+  it("sends a link to a type's README to the type's page", async () => {
+    server.use(
+      http.get("*/api/v1/repos/:owner/:name/index", () =>
+        HttpResponse.json({
+          repo: "donaldgifford/docz-api",
+          index_md: "# Home\n\nSee [the designs](design/README.md).\n",
+          index_sha: "fixture-index-sha-type-link",
+        }),
+      ),
+    );
+    mountAt("/donaldgifford/docz-api");
+
+    expect(
+      await screen.findByRole("link", { name: "the designs" }),
+    ).toHaveAttribute("href", "/donaldgifford/docz-api/design");
+  });
+
   it("falls back to the generated home when index.md is absent", async () => {
     mountAt("/donaldgifford/docz-site");
 

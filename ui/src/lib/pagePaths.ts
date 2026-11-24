@@ -43,3 +43,16 @@ export function pageSourcePath(
     pageSourceKeys(publishedPath, docsDir, additionalDocs)[0] ?? publishedPath
   );
 }
+
+/**
+ * The repo path of a type's generated index: `README.md` in the type's
+ * directory under `docs_dir`. docz writes that file, and the site shows
+ * the type's page in its place, so a relative link to it (a home page's
+ * "see the designs") resolves there. Empty and "." segments drop out,
+ * as they do when a link is resolved.
+ */
+export function typeIndexKey(docsDir: string, typeDir: string): string {
+  return [...docsDir.split("/"), ...typeDir.split("/"), "README.md"]
+    .filter((segment) => segment !== "" && segment !== ".")
+    .join("/");
+}

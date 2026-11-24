@@ -497,7 +497,11 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   the source's own repo path — the `base` render option: reader = doc
   `path`, repo home = `docs_dir`/index.md, changelog = the configured
   file (repo root by default) — then rewrite ONLY on an exact `byPath`
-  hit (fragment reattached, `dataXref` set). Absolute/`//`/root/`#`
+  hit (fragment reattached, `dataXref` set). `byPath` also carries
+  each type's `README.md` (`typeIndexKey`, pointing at the type's
+  page): docz writes that file, it is neither a document nor a page,
+  and a miss is resolved by the BROWSER against the route, which drops
+  the repository from the URL. Absolute/`//`/root/`#`
   hrefs and misses stay byte-identical; traversal past the repo root
   fails closed (so does bad percent-encoding). Resolution needs both
   `paths` AND `base` passed to `useRenderedSource`. The reader also
